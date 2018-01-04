@@ -384,7 +384,8 @@ func LoadGlobalConfig(fileName string) *model.Config {
 	config.SetDefaults()
 
 	if err := config.IsValid(); err != nil {
-		panic(T(err.Id))
+		err.Translate(T)
+		panic(err.Message)
 	}
 
 	if needSave {
