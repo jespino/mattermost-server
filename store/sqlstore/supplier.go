@@ -23,6 +23,7 @@ import (
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/store"
 	"github.com/mattermost/mattermost-server/utils"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -343,6 +344,28 @@ func (ss *SqlSupplier) DoesTableExist(tableName string) bool {
 
 		return count > 0
 
+	} else if ss.DriverName() == model.DATABASE_DRIVER_SQLITE {
+
+		count, err := ss.GetMaster().SelectInt(
+			`SELECT
+		    COUNT(0) AS table_exists
+			FROM
+			    sqlite_master
+			WHERE
+			    type='table' and name
+			    AND name = ?
+		    `,
+			tableName,
+		)
+
+		if err != nil {
+			l4g.Critical(utils.T("store.sql.table_exists.critical"), err)
+			time.Sleep(time.Second)
+			os.Exit(EXIT_TABLE_EXISTS_MYSQL)
+		}
+
+		return count > 0
+
 	} else if ss.DriverName() == model.DATABASE_DRIVER_MYSQL {
 
 		count, err := ss.GetMaster().SelectInt(
@@ -393,6 +416,27 @@ func (ss *SqlSupplier) DoesColumnExist(tableName string, columnName string) bool
 			l4g.Critical(utils.T("store.sql.column_exists.critical"), err)
 			time.Sleep(time.Second)
 			os.Exit(EXIT_DOES_COLUMN_EXISTS_POSTGRES)
+		}
+
+		return count > 0
+
+	} else if ss.DriverName() == model.DATABASE_DRIVER_SQLITE {
+
+		count, err := ss.GetMaster().SelectInt(
+			`SELECT
+				COUNT(0) AS column_exists
+			FROM
+				pragma_table_info(?)
+			WHERE
+				name = ?`,
+			tableName,
+			columnName,
+		)
+
+		if err != nil {
+			l4g.Critical(utils.T("store.sql.column_exists.critical"), err)
+			time.Sleep(time.Second)
+			os.Exit(EXIT_DOES_COLUMN_EXISTS_MYSQL)
 		}
 
 		return count > 0
@@ -454,6 +498,16 @@ func (ss *SqlSupplier) CreateColumnIfNotExists(tableName string, columnName stri
 
 		return true
 
+	} else if ss.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		_, err := ss.GetMaster().ExecNoTimeout("ALTER TABLE " + tableName + " ADD " + columnName + " " + mySqlColType + " DEFAULT '" + defaultValue + "'")
+		if err != nil {
+			l4g.Critical(utils.T("store.sql.create_column.critical"), err)
+			time.Sleep(time.Second)
+			os.Exit(EXIT_CREATE_COLUMN_MYSQL)
+		}
+
+		return true
+
 	} else {
 		l4g.Critical(utils.T("store.sql.create_column_missing_driver.critical"))
 		time.Sleep(time.Second)
@@ -501,6 +555,8 @@ func (ss *SqlSupplier) RenameColumnIfExists(tableName string, oldColumnName stri
 	var err error
 	if ss.DriverName() == model.DATABASE_DRIVER_MYSQL {
 		_, err = ss.GetMaster().ExecNoTimeout("ALTER TABLE " + tableName + " CHANGE " + oldColumnName + " " + newColumnName + " " + colType)
+	} else if ss.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		_, err = ss.GetMaster().ExecNoTimeout("ALTER TABLE " + tableName + " CHANGE " + oldColumnName + " " + newColumnName + " " + colType)
 	} else if ss.DriverName() == model.DATABASE_DRIVER_POSTGRES {
 		_, err = ss.GetMaster().ExecNoTimeout("ALTER TABLE " + tableName + " RENAME COLUMN " + oldColumnName + " TO " + newColumnName)
 	}
@@ -523,6 +579,8 @@ func (ss *SqlSupplier) GetMaxLengthOfColumnIfExists(tableName string, columnName
 	var err error
 	if ss.DriverName() == model.DATABASE_DRIVER_MYSQL {
 		result, err = ss.GetMaster().SelectStr("SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.columns WHERE table_name = '" + tableName + "' AND COLUMN_NAME = '" + columnName + "'")
+	} else if ss.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		result, err = ss.GetMaster().SelectStr("SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.columns WHERE table_name = '" + tableName + "' AND COLUMN_NAME = '" + columnName + "'")
 	} else if ss.DriverName() == model.DATABASE_DRIVER_POSTGRES {
 		result, err = ss.GetMaster().SelectStr("SELECT character_maximum_length FROM information_schema.columns WHERE table_name = '" + strings.ToLower(tableName) + "' AND column_name = '" + strings.ToLower(columnName) + "'")
 	}
@@ -543,6 +601,8 @@ func (ss *SqlSupplier) AlterColumnTypeIfExists(tableName string, columnName stri
 
 	var err error
 	if ss.DriverName() == model.DATABASE_DRIVER_MYSQL {
+		_, err = ss.GetMaster().ExecNoTimeout("ALTER TABLE " + tableName + " MODIFY " + columnName + " " + mySqlColType)
+	} else if ss.DriverName() == model.DATABASE_DRIVER_SQLITE {
 		_, err = ss.GetMaster().ExecNoTimeout("ALTER TABLE " + tableName + " MODIFY " + columnName + " " + mySqlColType)
 	} else if ss.DriverName() == model.DATABASE_DRIVER_POSTGRES {
 		_, err = ss.GetMaster().ExecNoTimeout("ALTER TABLE " + strings.ToLower(tableName) + " ALTER COLUMN " + strings.ToLower(columnName) + " TYPE " + postgresColType)
