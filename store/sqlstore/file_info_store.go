@@ -228,6 +228,8 @@ func (s SqlFileInfoStore) PermanentDeleteBatch(endTime int64, limit int64) store
 		var query string
 		if s.DriverName() == "postgres" {
 			query = "DELETE from FileInfo WHERE Id = any (array (SELECT Id FROM FileInfo WHERE CreateAt < :EndTime LIMIT :Limit))"
+		} else if s.DriverName() == "sqlite3" {
+			query = "DELETE from FileInfo WHERE Id IN (SELECT Id FROM FileInfo WHERE CreateAt < :EndTime LIMIT :Limit)"
 		} else {
 			query = "DELETE from FileInfo WHERE CreateAt < :EndTime LIMIT :Limit"
 		}

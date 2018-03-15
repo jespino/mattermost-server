@@ -56,6 +56,10 @@ func NewMySQLContainer() (*RunningContainer, *model.SqlSettings, error) {
 	return container, databaseSettings("mysql", "mmuser:mostest@tcp(127.0.0.1:"+port+")/mattermost_test?charset=utf8mb4,utf8"), nil
 }
 
+func NewSQliteContainer() (*RunningContainer, *model.SqlSettings, error) {
+	return nil, databaseSettings("sqlite3", "/dev/shm/test.db"), nil
+}
+
 func NewPostgreSQLContainer() (*RunningContainer, *model.SqlSettings, error) {
 	container, err := runContainer([]string{
 		"-e", "POSTGRES_USER=mmuser",

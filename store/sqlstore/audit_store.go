@@ -84,6 +84,8 @@ func (s SqlAuditStore) PermanentDeleteBatch(endTime int64, limit int64) store.St
 		var query string
 		if s.DriverName() == "postgres" {
 			query = "DELETE from Audits WHERE Id = any (array (SELECT Id FROM Audits WHERE CreateAt < :EndTime LIMIT :Limit))"
+		} else if s.DriverName() == "sqlite3" {
+			query = "DELETE from Audits WHERE Id in (SELECT Id FROM Audits WHERE CreateAt < :EndTime LIMIT :Limit)"
 		} else {
 			query = "DELETE from Audits WHERE CreateAt < :EndTime LIMIT :Limit"
 		}
