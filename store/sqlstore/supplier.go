@@ -185,7 +185,11 @@ func (s *SqlSupplier) Next() store.LayeredStoreSupplier {
 }
 
 func setupConnection(con_type string, dataSource string, settings *model.SqlSettings) *gorp.DbMap {
-	db, err := dbsql.Open(*settings.DriverName, dataSource)
+	driver := *settings.DriverName
+	if driver == model.DATABASE_DRIVER_COCKROACH {
+		driver = model.DATABASE_DRIVER_POSTGRES
+	}
+	db, err := dbsql.Open(driver, dataSource)
 	if err != nil {
 		l4g.Critical("Failed to open SQL connection to err:%v", err.Error())
 		time.Sleep(time.Second)
@@ -224,6 +228,8 @@ func setupConnection(con_type string, dataSource string, settings *model.SqlSett
 	} else if *settings.DriverName == model.DATABASE_DRIVER_MYSQL {
 		dbmap = &gorp.DbMap{Db: db, TypeConverter: mattermConverter{}, Dialect: gorp.MySQLDialect{Engine: "InnoDB", Encoding: "UTF8MB4"}, QueryTimeout: connectionTimeout}
 	} else if *settings.DriverName == model.DATABASE_DRIVER_POSTGRES {
+		dbmap = &gorp.DbMap{Db: db, TypeConverter: mattermConverter{}, Dialect: gorp.PostgresDialect{}, QueryTimeout: connectionTimeout}
+	} else if *settings.DriverName == model.DATABASE_DRIVER_COCKROACH {
 		dbmap = &gorp.DbMap{Db: db, TypeConverter: mattermConverter{}, Dialect: gorp.PostgresDialect{}, QueryTimeout: connectionTimeout}
 	} else {
 		l4g.Critical(utils.T("store.sql.dialect_driver.critical"))
@@ -364,7 +370,26 @@ func (ss *SqlSupplier) DoesTableExist(tableName string) bool {
 		}
 
 		return count > 0
+	} else if ss.DriverName() == model.DATABASE_DRIVER_COCKROACH {
+		count, err := ss.GetMaster().SelectInt(
+			`SELECT
+		    COUNT(0) AS table_exists
+			FROM
+			    information_schema.TABLES
+			WHERE
+			    table_schema = current_database()
+			        AND table_name = $1
+		    `,
+			tableName,
+		)
 
+		if err != nil {
+			l4g.Critical(utils.T("store.sql.table_exists.critical"), err)
+			time.Sleep(time.Second)
+			os.Exit(EXIT_TABLE_EXISTS)
+		}
+
+		return count > 0
 	} else {
 		l4g.Critical(utils.T("store.sql.column_exists_missing_driver.critical"))
 		time.Sleep(time.Second)
@@ -420,6 +445,29 @@ func (ss *SqlSupplier) DoesColumnExist(tableName string, columnName string) bool
 
 		return count > 0
 
+	} else if ss.DriverName() == model.DATABASE_DRIVER_COCKROACH {
+
+		count, err := ss.GetMaster().SelectInt(
+			`SELECT
+		    COUNT(0) AS column_exists
+		FROM
+		    information_schema.columns
+		WHERE
+		    table_schema = current_database()
+		        AND table_name = $1
+		        AND column_name = $2`,
+			tableName,
+			columnName,
+		)
+
+		if err != nil {
+			l4g.Critical(utils.T("store.sql.column_exists.critical"), err)
+			time.Sleep(time.Second)
+			os.Exit(EXIT_DOES_COLUMN_EXISTS_MYSQL)
+		}
+
+		return count > 0
+
 	} else {
 		l4g.Critical(utils.T("store.sql.column_exists_missing_driver.critical"))
 		time.Sleep(time.Second)
@@ -444,7 +492,7 @@ func (ss *SqlSupplier) CreateColumnIfNotExists(tableName string, columnName stri
 
 		return true
 
-	} else if ss.DriverName() == model.DATABASE_DRIVER_MYSQL {
+	} else if ss.DriverName() == model.DATABASE_DRIVER_MYSQL || ss.DriverName() == model.DATABASE_DRIVER_COCKROACH {
 		_, err := ss.GetMaster().ExecNoTimeout("ALTER TABLE " + tableName + " ADD " + columnName + " " + mySqlColType + " DEFAULT '" + defaultValue + "'")
 		if err != nil {
 			l4g.Critical(utils.T("store.sql.create_column.critical"), err)
@@ -499,7 +547,7 @@ func (ss *SqlSupplier) RenameColumnIfExists(tableName string, oldColumnName stri
 	}
 
 	var err error
-	if ss.DriverName() == model.DATABASE_DRIVER_MYSQL {
+	if ss.DriverName() == model.DATABASE_DRIVER_MYSQL || ss.DriverName() == model.DATABASE_DRIVER_COCKROACH {
 		_, err = ss.GetMaster().ExecNoTimeout("ALTER TABLE " + tableName + " CHANGE " + oldColumnName + " " + newColumnName + " " + colType)
 	} else if ss.DriverName() == model.DATABASE_DRIVER_POSTGRES {
 		_, err = ss.GetMaster().ExecNoTimeout("ALTER TABLE " + tableName + " RENAME COLUMN " + oldColumnName + " TO " + newColumnName)
@@ -521,7 +569,7 @@ func (ss *SqlSupplier) GetMaxLengthOfColumnIfExists(tableName string, columnName
 
 	var result string
 	var err error
-	if ss.DriverName() == model.DATABASE_DRIVER_MYSQL {
+	if ss.DriverName() == model.DATABASE_DRIVER_MYSQL || ss.DriverName() == model.DATABASE_DRIVER_COCKROACH {
 		result, err = ss.GetMaster().SelectStr("SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.columns WHERE table_name = '" + tableName + "' AND COLUMN_NAME = '" + columnName + "'")
 	} else if ss.DriverName() == model.DATABASE_DRIVER_POSTGRES {
 		result, err = ss.GetMaster().SelectStr("SELECT character_maximum_length FROM information_schema.columns WHERE table_name = '" + strings.ToLower(tableName) + "' AND column_name = '" + strings.ToLower(columnName) + "'")
@@ -542,7 +590,7 @@ func (ss *SqlSupplier) AlterColumnTypeIfExists(tableName string, columnName stri
 	}
 
 	var err error
-	if ss.DriverName() == model.DATABASE_DRIVER_MYSQL {
+	if ss.DriverName() == model.DATABASE_DRIVER_MYSQL || ss.DriverName() == model.DATABASE_DRIVER_COCKROACH {
 		_, err = ss.GetMaster().ExecNoTimeout("ALTER TABLE " + tableName + " MODIFY " + columnName + " " + mySqlColType)
 	} else if ss.DriverName() == model.DATABASE_DRIVER_POSTGRES {
 		_, err = ss.GetMaster().ExecNoTimeout("ALTER TABLE " + strings.ToLower(tableName) + " ALTER COLUMN " + strings.ToLower(columnName) + " TYPE " + postgresColType)
@@ -630,7 +678,7 @@ func (ss *SqlSupplier) createIndexIfNotExists(indexName string, tableName string
 			time.Sleep(time.Second)
 			os.Exit(EXIT_CREATE_INDEX_FULL_MYSQL)
 		}
-	} else if ss.DriverName() == model.DATABASE_DRIVER_SQLITE {
+	} else if ss.DriverName() == model.DATABASE_DRIVER_SQLITE || ss.DriverName() == model.DATABASE_DRIVER_COCKROACH {
 		_, err := ss.GetMaster().ExecNoTimeout("CREATE INDEX IF NOT EXISTS " + indexName + " ON " + tableName + " (" + strings.Join(columnNames, ", ") + ")")
 		if err != nil {
 			l4g.Critical("Failed to create index %v", err)
@@ -666,6 +714,24 @@ func (ss *SqlSupplier) RemoveIndexIfExists(indexName string, tableName string) b
 	} else if ss.DriverName() == model.DATABASE_DRIVER_MYSQL {
 
 		count, err := ss.GetMaster().SelectInt("SELECT COUNT(0) AS index_exists FROM information_schema.statistics WHERE TABLE_SCHEMA = DATABASE() and table_name = ? AND index_name = ?", tableName, indexName)
+		if err != nil {
+			l4g.Critical(utils.T("store.sql.check_index.critical"), err)
+			time.Sleep(time.Second)
+			os.Exit(EXIT_REMOVE_INDEX_MYSQL)
+		}
+
+		if count <= 0 {
+			return false
+		}
+
+		_, err = ss.GetMaster().ExecNoTimeout("DROP INDEX " + indexName + " ON " + tableName)
+		if err != nil {
+			l4g.Critical(utils.T("store.sql.remove_index.critical"), err)
+			time.Sleep(time.Second)
+			os.Exit(EXIT_REMOVE_INDEX_MYSQL)
+		}
+	} else if ss.DriverName() == model.DATABASE_DRIVER_COCKROACH {
+		count, err := ss.GetMaster().SelectInt("SELECT COUNT(0) AS index_exists FROM information_schema.statistics WHERE TABLE_SCHEMA = current_database() and table_name = $1 AND index_name = $2", tableName, indexName)
 		if err != nil {
 			l4g.Critical(utils.T("store.sql.check_index.critical"), err)
 			time.Sleep(time.Second)
