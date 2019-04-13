@@ -907,3 +907,32 @@ func TestGetViewUsersRestrictionsForTeam(t *testing.T) {
 		assert.ElementsMatch(t, []string{team1townsquare.Id, team1offtopic.Id, team1channel1.Id, team1channel2.Id, team2townsquare.Id, team2offtopic.Id, team2channel1.Id}, restrictions)
 	})
 }
+
+func TestPromoteGuestToUser(t *testing.T) {
+	th := Setup(t).InitBasic()
+	defer th.TearDown()
+
+	err2 := json.Unmarshal([]byte(token.Extra), &tokenData)
+	assert.Nil(t, err2)
+	assert.Equal(t, th.BasicUser.Id, tokenData.UserId)
+	assert.Equal(t, th.BasicUser.Email, tokenData.Email)
+
+	// Password token with same eMail as during creation
+	err = th.App.ResetPasswordFromToken(token.Token, "abcdefgh")
+	assert.Nil(t, err)
+
+	// Password token with modified eMail after creation
+	token, err = th.App.CreatePasswordRecoveryToken(th.BasicUser.Id, th.BasicUser.Email)
+	assert.Nil(t, err)
+
+	th.App.UpdateConfig(func(c *model.Config) {
+		*c.EmailSettings.RequireEmailVerification = false
+	})
+
+	th.BasicUser.Email = th.MakeEmail()
+	_, err = th.App.UpdateUser(th.BasicUser, false)
+	assert.Nil(t, err)
+
+	err = th.App.ResetPasswordFromToken(token.Token, "abcdefgh")
+	assert.NotNil(t, err)
+}
