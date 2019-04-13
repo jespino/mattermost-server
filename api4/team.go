@@ -888,6 +888,30 @@ func inviteUsersToTeam(c *Context, w http.ResponseWriter, r *http.Request) {
 	ReturnStatusOK(w)
 }
 
+func inviteGuestsToChannels(c *Context, w http.ResponseWriter, r *http.Request) {
+	guestsInvite := model.GuestsInviteFromJson(r.Body)
+
+	if err := guestsInvite.IsValid(); err != nil {
+		c.Err = err
+		return
+	}
+
+	for _, channelId := range guestsInvite.Channels {
+		if !c.App.SessionHasPermissionToChannel(c.App.Session, channelId, model.PERMISSION_INVITE_GUEST) {
+			c.SetPermissionError(model.PERMISSION_INVITE_GUEST)
+			return
+		}
+	}
+
+	err := c.App.InviteGuestsToChannels(guestsInvite.Emails, guestsInvite.Channels, c.App.Session.UserId)
+	if err != nil {
+		c.Err = err
+		return
+	}
+
+	ReturnStatusOK(w)
+}
+
 func getInviteInfo(c *Context, w http.ResponseWriter, r *http.Request) {
 	c.RequireInviteId()
 	if c.Err != nil {

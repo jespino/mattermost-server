@@ -1048,6 +1048,62 @@ func (a *App) InviteNewUsersToTeam(emailList []string, teamId, senderId string) 
 	return nil
 }
 
+func (a *App) InviteGuestsToChannels(guestsInvite *model.GuestsInvite, senderId string) *model.AppError {
+	if !*a.Config().ServiceSettings.EnableEmailInvitations {
+		return model.NewAppError("InviteNewUsersToTeam", "api.team.invite_members.disabled.app_error", nil, "", http.StatusNotImplemented)
+	}
+
+	if err := guestsInvite.IsValid(); err != nil {
+		return err
+	}
+
+	tchan := a.Srv.Store.Team().Get(guestsInvite.TeamId)
+	cchan := a.Srv.Store.Channel().GetChannelsByIds(guestsInvite.Channels)
+	uchan := a.Srv.Store.User().Get(senderId)
+
+	result := <-cchan
+	if result.Err != nil {
+		return result.Err
+	}
+	channels := result.Data.([]*model.Channel)
+
+	result = <-uchan
+	if result.Err != nil {
+		return result.Err
+	}
+	user := result.Data.(*model.User)
+
+	result = <-tchan
+	if result.Err != nil {
+		return result.Err
+	}
+	team := result.Data.(*model.Team)
+
+	for _, channel := range channels {
+		if channel.TeamId != guestsInvite.TeamId {
+			return model.NewAppError("InviteGuestsToChannels", "api.team.invite_guests.channel_in_invalid_team.app_error", nil, "", http.StatusBadRequest)
+		}
+	}
+
+	var invalidEmailList []string
+	for _, email := range guestsInvite.Emails {
+		if !a.isTeamEmailAddressAllowed(email, team.AllowedDomains) {
+			invalidEmailList = append(invalidEmailList, email)
+		}
+	}
+
+	if len(invalidEmailList) > 0 {
+		s := strings.Join(invalidEmailList, ", ")
+		err := model.NewAppError("InviteGuestsToChannels", "api.team.invite_members.invalid_email.app_error", map[string]interface{}{"Addresses": s}, "", http.StatusBadRequest)
+		return err
+	}
+
+	nameFormat := *a.Config().TeamSettings.TeammateNameDisplay
+	a.SendGuestInviteEmails(team, channels, user.GetDisplayName(nameFormat), user.Id, guestsInvite.Emails, a.GetSiteURL())
+
+	return nil
+}
+
 func (a *App) FindTeamByName(name string) bool {
 	if result := <-a.Srv.Store.Team().GetByName(name); result.Err != nil {
 		return false

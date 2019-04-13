@@ -86,6 +86,9 @@ var PERMISSION_READ_OTHERS_BOTS *Permission
 var PERMISSION_MANAGE_BOTS *Permission
 var PERMISSION_MANAGE_OTHERS_BOTS *Permission
 var PERMISSION_VIEW_MEMBERS *Permission
+var PERMISSION_INVITE_GUEST *Permission
+var PERMISSION_REMOVE_GUEST *Permission
+var PERMISSION_PROMOTE_GUEST *Permission
 
 // General permission that encompasses all system admin functions
 // in the future this could be broken up to allow access to some
@@ -526,6 +529,24 @@ func initializePermissions() {
 		"authentication.permisssions.view_members.description",
 		PERMISSION_SCOPE_TEAM,
 	}
+	PERMISSION_INVITE_GUEST = &Permission{
+		"invite_guest",
+		"authentication.permissions.invite_guest.name",
+		"authentication.permissions.invite_guest.description",
+		PERMISSION_SCOPE_CHANNEL,
+	}
+	PERMISSION_REMOVE_GUEST = &Permission{
+		"remove_guest",
+		"authentication.permissions.remove_guest.name",
+		"authentication.permissions.remove_guest.description",
+		PERMISSION_SCOPE_CHANNEL,
+	}
+	PERMISSION_PROMOTE_GUEST = &Permission{
+		"promote_guest",
+		"authentication.permissions.promote_guest.name",
+		"authentication.permissions.promote_guest.description",
+		PERMISSION_SCOPE_SYSTEM,
+	}
 
 	ALL_PERMISSIONS = []*Permission{
 		PERMISSION_INVITE_USER,
@@ -599,6 +620,9 @@ func initializePermissions() {
 		PERMISSION_MANAGE_OTHERS_BOTS,
 		PERMISSION_MANAGE_SYSTEM,
 		PERMISSION_VIEW_MEMBERS,
+		PERMISSION_INVITE_GUEST,
+		PERMISSION_REMOVE_GUEST,
+		PERMISSION_PROMOTE_GUEST,
 	}
 }
 

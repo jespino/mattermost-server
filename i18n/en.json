@@ -1835,6 +1835,10 @@
     "translation": "Error invalidating email invites."
   },
   {
+    "id": "api.team.invite_guests.channel_in_invalid_team.app_error",
+    "translation": "Error inviting guests, channels doesn't belongs to the team."
+  },
+  {
     "id": "api.team.invite_members.disabled.app_error",
     "translation": "Email invitations are disabled."
   },
@@ -2045,6 +2049,10 @@
   {
     "id": "api.templates.invite_body.title",
     "translation": "You've been invited"
+  },
+  {
+    "id": "api.templates.invite_guest_subject",
+    "translation": "[{{ .SiteName }}] {{ .SenderName }} invited you to join {{ .TeamDisplayName }} Team as a guest"
   },
   {
     "id": "api.templates.invite_subject",
@@ -3627,6 +3635,10 @@
     "translation": "Failed to decode search results"
   },
   {
+    "id": "ent.elasticsearch.search_users.disabled",
+    "translation": ""
+  },
+  {
     "id": "ent.elasticsearch.search_users.search_failed",
     "translation": "Search failed to complete"
   },
@@ -4693,6 +4705,26 @@
   {
     "id": "model.group_syncable.type.app_error",
     "translation": "invalid type property for group syncable"
+  },
+  {
+    "id": "model.guest.is_valid.channel.app_error",
+    "translation": "invalid channel for guests invite"
+  },
+  {
+    "id": "model.guest.is_valid.channels.app_error",
+    "translation": "you must provide a list of channels for guests invite"
+  },
+  {
+    "id": "model.guest.is_valid.email.app_error",
+    "translation": "invalid email for guests invite"
+  },
+  {
+    "id": "model.guest.is_valid.emails.app_error",
+    "translation": "you must provide a list of emails for guests invite"
+  },
+  {
+    "id": "model.guest.is_valid.team_id.app_error",
+    "translation": "invalid team_id for guests invite"
   },
   {
     "id": "model.incoming_hook.channel_id.app_error",
