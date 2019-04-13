@@ -2134,3 +2134,13 @@ func (a *App) getListOfAllowedChannelsForTeam(teamId string, viewRestrictions *m
 
 	return listOfAllowedChannels, nil
 }
+
+// PromoteGuestToUser Convert user's roles and all his mermbership's roles from
+// guest roles to regular user roles.
+func (a *App) PromoteGuestToUser(user *model.User) *model.AppError {
+	result := <-a.Srv.Store().User().PromoteGuestToUser(user.Id)
+	if result.Err {
+		return result.Err
+	}
+	return nil
+}
