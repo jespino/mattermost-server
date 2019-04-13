@@ -1689,6 +1689,10 @@ func (us SqlUserStore) PromoteGuestToUser(userId string) store.StoreChannel {
 			Set("Roles", strings.Join(roles, " ")).
 			Where(sq.Eq{"Id": userId})
 
+		if us.DriverName() == model.DATABASE_DRIVER_POSTGRES {
+			query = query.PlaceholderFormat(sq.Dollar)
+		}
+
 		queryString, args, err := query.ToSql()
 		if err != nil {
 			result.Err = model.NewAppError("SqlUserStore.PromoteGuestToUser", "store.sql_user.app_error", nil, err.Error(), http.StatusInternalServerError)
@@ -1705,6 +1709,10 @@ func (us SqlUserStore) PromoteGuestToUser(userId string) store.StoreChannel {
 			Set("SchemeGuest", false).
 			Where(sq.Eq{"UserId": userId})
 
+		if us.DriverName() == model.DATABASE_DRIVER_POSTGRES {
+			query = query.PlaceholderFormat(sq.Dollar)
+		}
+
 		queryString, args, err = query.ToSql()
 		if err != nil {
 			result.Err = model.NewAppError("SqlUserStore.PromoteGuestToUser", "store.sql_user.app_error", nil, err.Error(), http.StatusInternalServerError)
@@ -1720,6 +1728,10 @@ func (us SqlUserStore) PromoteGuestToUser(userId string) store.StoreChannel {
 			Set("SchemeUser", true).
 			Set("SchemeGuest", false).
 			Where(sq.Eq{"UserId": userId})
+
+		if us.DriverName() == model.DATABASE_DRIVER_POSTGRES {
+			query = query.PlaceholderFormat(sq.Dollar)
+		}
 
 		queryString, args, err = query.ToSql()
 		if err != nil {
