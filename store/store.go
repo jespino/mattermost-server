@@ -302,6 +302,7 @@ type UserStore interface {
 	Count(options model.UserCountOptions) StoreChannel
 	GetTeamGroupUsers(teamID string) StoreChannel
 	GetChannelGroupUsers(channelID string) StoreChannel
+	PromoteGuestToUser(userID string) StoreChannel
 }
 
 type BotStore interface {

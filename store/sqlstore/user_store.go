@@ -1687,7 +1687,7 @@ func (us SqlUserStore) PromoteGuestToUser(userId string) store.StoreChannel {
 
 		query := sq.Update("Users").
 			Set("Roles", strings.Join(roles, " ")).
-			Where("Id", userId)
+			Where(sq.Eq{"Id": userId})
 
 		queryString, args, err := query.ToSql()
 		if err != nil {
@@ -1695,7 +1695,7 @@ func (us SqlUserStore) PromoteGuestToUser(userId string) store.StoreChannel {
 			return
 		}
 
-		if _, err := transaction.Exec(queryString, args); err != nil {
+		if _, err := transaction.Exec(queryString, args...); err != nil {
 			result.Err = model.NewAppError("SqlUserStore.PromoteGuestToUser", "store.sql_user.promote_guest.user_update.app_error", nil, "user_id="+userId, http.StatusInternalServerError)
 			return
 		}
@@ -1703,7 +1703,7 @@ func (us SqlUserStore) PromoteGuestToUser(userId string) store.StoreChannel {
 		query = sq.Update("ChannelMembers").
 			Set("SchemeUser", true).
 			Set("SchemeGuest", false).
-			Where("Id", userId)
+			Where(sq.Eq{"UserId": userId})
 
 		queryString, args, err = query.ToSql()
 		if err != nil {
@@ -1711,7 +1711,7 @@ func (us SqlUserStore) PromoteGuestToUser(userId string) store.StoreChannel {
 			return
 		}
 
-		if _, err := transaction.Exec(queryString, args); err != nil {
+		if _, err := transaction.Exec(queryString, args...); err != nil {
 			result.Err = model.NewAppError("SqlUserStore.PromoteGuestToUser", "store.sql_user.promote_guest.channel_members_update.app_error", nil, "user_id="+userId, http.StatusInternalServerError)
 			return
 		}
@@ -1719,7 +1719,7 @@ func (us SqlUserStore) PromoteGuestToUser(userId string) store.StoreChannel {
 		query = sq.Update("TeamMembers").
 			Set("SchemeUser", true).
 			Set("SchemeGuest", false).
-			Where("Id", userId)
+			Where(sq.Eq{"UserId": userId})
 
 		queryString, args, err = query.ToSql()
 		if err != nil {
@@ -1727,7 +1727,7 @@ func (us SqlUserStore) PromoteGuestToUser(userId string) store.StoreChannel {
 			return
 		}
 
-		if _, err := transaction.Exec(queryString, args); err != nil {
+		if _, err := transaction.Exec(queryString, args...); err != nil {
 			result.Err = model.NewAppError("SqlUserStore.PromoteGuestToUser", "store.sql_user.promote_guest.team_members_update.app_error", nil, "user_id="+userId, http.StatusInternalServerError)
 			return
 		}

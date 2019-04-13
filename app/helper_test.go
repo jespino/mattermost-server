@@ -183,30 +183,6 @@ func (me *TestHelper) CreateUserOrGuest(guest bool) *model.User {
 	return user
 }
 
-func (me *TestHelper) CreateGuest() *model.User {
-	id := model.NewId()
-
-	user := &model.User{
-		Email:         "success+" + id + "@simulator.amazonses.com",
-		Username:      "un_" + id,
-		Nickname:      "nn_" + id,
-		Password:      "Password1",
-		EmailVerified: true,
-		Roles:         "system_guest",
-	}
-
-	utils.DisableDebugLogForTest()
-	var err *model.AppError
-	if user, err = me.App.CreateUser(user); err != nil {
-		mlog.Error(err.Error())
-
-		time.Sleep(time.Second)
-		panic(err)
-	}
-	utils.EnableDebugLogForTest()
-	return user
-}
-
 func (me *TestHelper) CreateChannel(team *model.Team) *model.Channel {
 	return me.createChannel(team, model.CHANNEL_OPEN)
 }
