@@ -889,8 +889,12 @@ func inviteUsersToTeam(c *Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func inviteGuestsToChannels(c *Context, w http.ResponseWriter, r *http.Request) {
-	guestsInvite := model.GuestsInviteFromJson(r.Body)
+	if c.App.License() == nil {
+		c.Err = model.NewAppError("Api4.InviteGuestsToChannels", "api.team.invate_guests_to_channels.license.error", nil, "", http.StatusNotImplemented)
+		return
+	}
 
+	guestsInvite := model.GuestsInviteFromJson(r.Body)
 	if err := guestsInvite.IsValid(); err != nil {
 		c.Err = err
 		return

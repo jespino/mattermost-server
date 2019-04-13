@@ -1837,6 +1837,11 @@ func promoteGuestToUser(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if c.App.License() == nil {
+		c.Err = model.NewAppError("Api4.PromoteGuestToUser", "api.team.promote_guest_to_user.license.error", nil, "", http.StatusNotImplemented)
+		return
+	}
+
 	if !c.App.SessionHasPermissionTo(c.App.Session, model.PERMISSION_PROMOTE_GUEST) {
 		c.SetPermissionError(model.PERMISSION_PROMOTE_GUEST)
 		return
