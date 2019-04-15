@@ -6,6 +6,7 @@ package app
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"net/http"
 
@@ -391,9 +392,19 @@ func (a *App) SendGuestInviteEmails(team *model.Team, channels []*model.Channel,
 				map[string]interface{}{"TeamDisplayName": team.DisplayName})
 			bodyPage.Props["TeamURL"] = siteURL + "/" + team.Name
 
+			channelIds := []string{}
+			for _, channel := range channels {
+				channelIds = append(channelIds, channel.Id)
+			}
+
 			token := model.NewToken(
-				TOKEN_TYPE_TEAM_INVITATION,
-				model.MapToJson(map[string]string{"teamId": team.Id, "email": invite, "guest": "true"}),
+				TOKEN_TYPE_GUEST_INVITATION,
+				model.MapToJson(map[string]string{
+					"teamId":   team.Id,
+					"channels": strings.Join(channelIds, " "),
+					"email":    invite,
+					"guest":    "true",
+				}),
 			)
 
 			props := make(map[string]string)
