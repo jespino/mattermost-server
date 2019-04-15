@@ -2169,8 +2169,8 @@ func (a *App) PromoteGuestToUser(user *model.User) *model.AppError {
 
 // DemoteUserToGuest Convert user's roles and all his mermbership's roles from
 // regular user roles to guest roles.
-func (a *App) DemoteGuestToUser(user *model.User) *model.AppError {
-	result := <-a.Srv.Store.User().DemoteGuestToUser(user.Id)
+func (a *App) DemoteUserToGuest(user *model.User) *model.AppError {
+	result := <-a.Srv.Store.User().DemoteUserToGuest(user.Id)
 	if result.Err != nil {
 		return result.Err
 	}

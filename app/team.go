@@ -1048,7 +1048,7 @@ func (a *App) InviteNewUsersToTeam(emailList []string, teamId, senderId string) 
 	return nil
 }
 
-func (a *App) InviteGuestsToChannels(guestsInvite *model.GuestsInvite, senderId string) *model.AppError {
+func (a *App) InviteGuestsToChannels(teamId string, guestsInvite *model.GuestsInvite, senderId string) *model.AppError {
 	if !*a.Config().ServiceSettings.EnableEmailInvitations {
 		return model.NewAppError("InviteNewUsersToTeam", "api.team.invite_members.disabled.app_error", nil, "", http.StatusNotImplemented)
 	}
@@ -1057,7 +1057,7 @@ func (a *App) InviteGuestsToChannels(guestsInvite *model.GuestsInvite, senderId 
 		return err
 	}
 
-	tchan := a.Srv.Store.Team().Get(guestsInvite.TeamId)
+	tchan := a.Srv.Store.Team().Get(teamId)
 	cchan := a.Srv.Store.Channel().GetChannelsByIds(guestsInvite.Channels)
 	uchan := a.Srv.Store.User().Get(senderId)
 
@@ -1080,7 +1080,7 @@ func (a *App) InviteGuestsToChannels(guestsInvite *model.GuestsInvite, senderId 
 	team := result.Data.(*model.Team)
 
 	for _, channel := range channels {
-		if channel.TeamId != guestsInvite.TeamId {
+		if channel.TeamId != teamId {
 			return model.NewAppError("InviteGuestsToChannels", "api.team.invite_guests.channel_in_invalid_team.app_error", nil, "", http.StatusBadRequest)
 		}
 	}
@@ -1099,7 +1099,7 @@ func (a *App) InviteGuestsToChannels(guestsInvite *model.GuestsInvite, senderId 
 	}
 
 	nameFormat := *a.Config().TeamSettings.TeammateNameDisplay
-	a.SendGuestInviteEmails(team, channels, user.GetDisplayName(nameFormat), user.Id, guestsInvite.Emails, a.GetSiteURL())
+	a.SendGuestInviteEmails(team, channels, user.GetDisplayName(nameFormat), user.Id, guestsInvite.Emails, a.GetSiteURL(), guestsInvite.Message)
 
 	return nil
 }

@@ -56,6 +56,7 @@ func (api *API) InitTeam() {
 	api.BaseRoutes.TeamMember.Handle("/schemeRoles", api.ApiSessionRequired(updateTeamMemberSchemeRoles)).Methods("PUT")
 	api.BaseRoutes.Team.Handle("/import", api.ApiSessionRequired(importTeam)).Methods("POST")
 	api.BaseRoutes.Team.Handle("/invite/email", api.ApiSessionRequired(inviteUsersToTeam)).Methods("POST")
+	api.BaseRoutes.Team.Handle("/invite-guests/email", api.ApiSessionRequired(inviteGuestsToChannels)).Methods("POST")
 	api.BaseRoutes.Teams.Handle("/invites/email", api.ApiSessionRequired(invalidateAllEmailInvites)).Methods("DELETE")
 	api.BaseRoutes.Teams.Handle("/invite/{invite_id:[A-Za-z0-9]+}", api.ApiHandler(getInviteInfo)).Methods("GET")
 }
@@ -894,20 +895,23 @@ func inviteGuestsToChannels(c *Context, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	c.RequireTeamId()
+	if c.Err != nil {
+		return
+	}
+
+	if !c.App.SessionHasPermissionToTeam(c.App.Session, c.Params.TeamId, model.PERMISSION_INVITE_GUEST) {
+		c.SetPermissionError(model.PERMISSION_INVITE_GUEST)
+		return
+	}
+
 	guestsInvite := model.GuestsInviteFromJson(r.Body)
 	if err := guestsInvite.IsValid(); err != nil {
 		c.Err = err
 		return
 	}
 
-	for _, channelId := range guestsInvite.Channels {
-		if !c.App.SessionHasPermissionToChannel(c.App.Session, channelId, model.PERMISSION_INVITE_GUEST) {
-			c.SetPermissionError(model.PERMISSION_INVITE_GUEST)
-			return
-		}
-	}
-
-	err := c.App.InviteGuestsToChannels(guestsInvite, c.App.Session.UserId)
+	err := c.App.InviteGuestsToChannels(c.Params.TeamId, guestsInvite, c.App.Session.UserId)
 	if err != nil {
 		c.Err = err
 		return

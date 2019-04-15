@@ -353,7 +353,7 @@ func (a *App) SendInviteEmails(team *model.Team, senderName string, senderUserId
 	}
 }
 
-func (a *App) SendGuestInviteEmails(team *model.Team, channels []*model.Channel, senderName string, senderUserId string, invites []string, siteURL string) {
+func (a *App) SendGuestInviteEmails(team *model.Team, channels []*model.Channel, senderName string, senderUserId string, invites []string, siteURL string, message string) {
 	if a.Srv.EmailRateLimiter == nil {
 		a.Log.Error("Email invite not sent, rate limiting could not be setup.", mlog.String("user_id", senderUserId), mlog.String("team_id", team.Id))
 		return
@@ -382,12 +382,16 @@ func (a *App) SendGuestInviteEmails(team *model.Team, channels []*model.Channel,
 					"TeamDisplayName": team.DisplayName,
 					"SiteName":        a.ClientConfig()["SiteName"]})
 
-			bodyPage := a.NewEmailTemplate("invite_guest_body", model.DEFAULT_LOCALE)
+			bodyPage := a.NewEmailTemplate("invite_body", model.DEFAULT_LOCALE)
 			bodyPage.Props["SiteURL"] = siteURL
 			bodyPage.Props["Title"] = utils.T("api.templates.invite_body.title")
 			bodyPage.Html["Info"] = utils.TranslateAsHtml(utils.T, "api.templates.invite_body.info",
 				map[string]interface{}{"SenderStatus": senderRole, "SenderName": senderName, "TeamDisplayName": team.DisplayName})
 			bodyPage.Props["Button"] = utils.T("api.templates.invite_body.button")
+			bodyPage.Props["Message"] = ""
+			if message != "" {
+				bodyPage.Props["Message"] = utils.T("api.templates.invite_body.message", map[string]interface{}{"Message": message})
+			}
 			bodyPage.Html["ExtraInfo"] = utils.TranslateAsHtml(utils.T, "api.templates.invite_body.extra_info",
 				map[string]interface{}{"TeamDisplayName": team.DisplayName})
 			bodyPage.Props["TeamURL"] = siteURL + "/" + team.Name
