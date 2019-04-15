@@ -907,7 +907,7 @@ func inviteGuestsToChannels(c *Context, w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	err := c.App.InviteGuestsToChannels(guestsInvite.Emails, guestsInvite.Channels, c.App.Session.UserId)
+	err := c.App.InviteGuestsToChannels(guestsInvite, c.App.Session.UserId)
 	if err != nil {
 		c.Err = err
 		return
