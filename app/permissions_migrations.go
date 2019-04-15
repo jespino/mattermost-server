@@ -281,13 +281,12 @@ func getViewMembersPermissionMigration() permissionsMap {
 func getAddManageGuestsPermissionsMigration() permissionsMap {
 	return permissionsMap{
 		permissionTransformation{
-			On:     isRole(model.SYSTEM_ADMIN_ROLE_ID),
-			Add:    []string{PERMISSION_PROMOTE_GUEST},
-			Remove: []string{},
+			On:  isRole(model.SYSTEM_ADMIN_ROLE_ID),
+			Add: []string{PERMISSION_PROMOTE_GUEST},
 		},
 		permissionTransformation{
-			On:     permissionExists(PERMISSION_INVITE_USER),
-			Remove: []string{PERMISSION_INVITE_GUEST, PERMISSION_REMOVE_GUEST},
+			On:  permissionExists(PERMISSION_INVITE_USER),
+			Add: []string{PERMISSION_INVITE_GUEST, PERMISSION_REMOVE_GUEST},
 		},
 	}
 }
