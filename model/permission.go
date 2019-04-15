@@ -89,6 +89,7 @@ var PERMISSION_VIEW_MEMBERS *Permission
 var PERMISSION_INVITE_GUEST *Permission
 var PERMISSION_REMOVE_GUEST *Permission
 var PERMISSION_PROMOTE_GUEST *Permission
+var PERMISSION_DEMOTE_TO_GUEST *Permission
 
 // General permission that encompasses all system admin functions
 // in the future this could be broken up to allow access to some
@@ -533,16 +534,23 @@ func initializePermissions() {
 		"invite_guest",
 		"authentication.permissions.invite_guest.name",
 		"authentication.permissions.invite_guest.description",
-		PERMISSION_SCOPE_CHANNEL,
+		PERMISSION_SCOPE_TEAM,
 	}
 	PERMISSION_REMOVE_GUEST = &Permission{
 		"remove_guest",
 		"authentication.permissions.remove_guest.name",
 		"authentication.permissions.remove_guest.description",
-		PERMISSION_SCOPE_CHANNEL,
+		PERMISSION_SCOPE_TEAM,
 	}
 	PERMISSION_PROMOTE_GUEST = &Permission{
 		"promote_guest",
+		"authentication.permissions.promote_guest.name",
+		"authentication.permissions.promote_guest.description",
+		PERMISSION_SCOPE_SYSTEM,
+	}
+
+	PERMISSION_DEMOTE_TO_GUEST = &Permission{
+		"demote_guest",
 		"authentication.permissions.promote_guest.name",
 		"authentication.permissions.promote_guest.description",
 		PERMISSION_SCOPE_SYSTEM,

@@ -56,6 +56,7 @@ const (
 	PERMISSION_INVITE_GUEST                      = "invite_guest"
 	PERMISSION_REMOVE_GUEST                      = "remove_guest"
 	PERMISSION_PROMOTE_GUEST                     = "promote_guest"
+	PERMISSION_DEMOTE_TO_GUEST                   = "demote_to_guest"
 )
 
 func isRole(role string) func(string, map[string]map[string]bool) bool {
@@ -282,7 +283,7 @@ func getAddManageGuestsPermissionsMigration() permissionsMap {
 	return permissionsMap{
 		permissionTransformation{
 			On:  isRole(model.SYSTEM_ADMIN_ROLE_ID),
-			Add: []string{PERMISSION_PROMOTE_GUEST},
+			Add: []string{PERMISSION_PROMOTE_GUEST, PERMISSION_DEMOTE_TO_GUEST},
 		},
 		permissionTransformation{
 			On:  permissionExists(PERMISSION_INVITE_USER),
