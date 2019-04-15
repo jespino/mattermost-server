@@ -1666,7 +1666,7 @@ func (us SqlUserStore) PromoteGuestToUser(userId string) store.StoreChannel {
 	return store.Do(func(result *store.StoreResult) {
 		transaction, err := us.GetMaster().Begin()
 		if err != nil {
-			result.Err = model.NewAppError("SqlUserStore.ClearAllCustomRoleAssignments", "store.sql_user.clear_all_custom_role_assignments.open_transaction.app_error", nil, err.Error(), http.StatusInternalServerError)
+			result.Err = model.NewAppError("SqlUserStore.PromoteGuestToUser", "store.sql_user.promote_guest.open_transaction.app_error", nil, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		defer finalizeTransaction(transaction)
@@ -1746,6 +1746,98 @@ func (us SqlUserStore) PromoteGuestToUser(userId string) store.StoreChannel {
 
 		if err := transaction.Commit(); err != nil {
 			result.Err = model.NewAppError("SqlUserStore.PromoteGuestToUser", "store.sql_user.promote_guest.commit_transaction.app_error", nil, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func (us SqlUserStore) DemoteUserToGuest(userId string) store.StoreChannel {
+	return store.Do(func(result *store.StoreResult) {
+		transaction, err := us.GetMaster().Begin()
+		if err != nil {
+			result.Err = model.NewAppError("SqlUserStore.DemoteUserToGuest", "store.sql_user.demote_user_to_guest.open_transaction.app_error", nil, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer finalizeTransaction(transaction)
+
+		uresult := <-us.Get(userId)
+		if uresult.Err != nil {
+			result.Err = uresult.Err
+			return
+		}
+		user := uresult.Data.(*model.User)
+		roles := user.GetRoles()
+
+		newRoles := []string{}
+		for _, role := range roles {
+			if role == "system_user" {
+				newRoles = append(newRoles, "system_guest")
+			} else if role != "system_admin" {
+				newRoles = append(newRoles, role)
+			}
+		}
+
+		query := sq.Update("Users").
+			Set("Roles", strings.Join(newRoles, " ")).
+			Where(sq.Eq{"Id": userId})
+
+		if us.DriverName() == model.DATABASE_DRIVER_POSTGRES {
+			query = query.PlaceholderFormat(sq.Dollar)
+		}
+
+		queryString, args, err := query.ToSql()
+		if err != nil {
+			result.Err = model.NewAppError("SqlUserStore.DemoteGuestToUser", "store.sql_user.app_error", nil, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if _, err := transaction.Exec(queryString, args...); err != nil {
+			result.Err = model.NewAppError("SqlUserStore.DemoteGuestToUser", "store.sql_user.demote_user_to_guest.user_update.app_error", nil, "user_id="+userId, http.StatusInternalServerError)
+			return
+		}
+
+		query = sq.Update("ChannelMembers").
+			Set("SchemeUser", false).
+			Set("SchemeGuest", true).
+			Where(sq.Eq{"UserId": userId})
+
+		if us.DriverName() == model.DATABASE_DRIVER_POSTGRES {
+			query = query.PlaceholderFormat(sq.Dollar)
+		}
+
+		queryString, args, err = query.ToSql()
+		if err != nil {
+			result.Err = model.NewAppError("SqlUserStore.DemoteGuestToUser", "store.sql_user.app_error", nil, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if _, err := transaction.Exec(queryString, args...); err != nil {
+			result.Err = model.NewAppError("SqlUserStore.DemoteGuestToUser", "store.sql_user.demote_user_to_guest.channel_members_update.app_error", nil, "user_id="+userId, http.StatusInternalServerError)
+			return
+		}
+
+		query = sq.Update("TeamMembers").
+			Set("SchemeUser", false).
+			Set("SchemeGuest", true).
+			Where(sq.Eq{"UserId": userId})
+
+		if us.DriverName() == model.DATABASE_DRIVER_POSTGRES {
+			query = query.PlaceholderFormat(sq.Dollar)
+		}
+
+		queryString, args, err = query.ToSql()
+		if err != nil {
+			result.Err = model.NewAppError("SqlUserStore.DemoteGuestToUser", "store.sql_user.app_error", nil, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if _, err := transaction.Exec(queryString, args...); err != nil {
+			result.Err = model.NewAppError("SqlUserStore.DemoteGuestToUser", "store.sql_user.demote_user_to_guest.team_members_update.app_error", nil, "user_id="+userId, http.StatusInternalServerError)
+			return
+		}
+
+		if err := transaction.Commit(); err != nil {
+			result.Err = model.NewAppError("SqlUserStore.DemoteGuestToUser", "store.sql_user.demote_user_to_guest.commit_transaction.app_error", nil, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	})

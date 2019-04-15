@@ -303,6 +303,7 @@ type UserStore interface {
 	GetTeamGroupUsers(teamID string) StoreChannel
 	GetChannelGroupUsers(channelID string) StoreChannel
 	PromoteGuestToUser(userID string) StoreChannel
+	DemoteUserToGuest(userID string) StoreChannel
 }
 
 type BotStore interface {
