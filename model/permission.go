@@ -87,7 +87,6 @@ var PERMISSION_MANAGE_BOTS *Permission
 var PERMISSION_MANAGE_OTHERS_BOTS *Permission
 var PERMISSION_VIEW_MEMBERS *Permission
 var PERMISSION_INVITE_GUEST *Permission
-var PERMISSION_REMOVE_GUEST *Permission
 var PERMISSION_PROMOTE_GUEST *Permission
 var PERMISSION_DEMOTE_TO_GUEST *Permission
 
@@ -536,12 +535,6 @@ func initializePermissions() {
 		"authentication.permissions.invite_guest.description",
 		PERMISSION_SCOPE_TEAM,
 	}
-	PERMISSION_REMOVE_GUEST = &Permission{
-		"remove_guest",
-		"authentication.permissions.remove_guest.name",
-		"authentication.permissions.remove_guest.description",
-		PERMISSION_SCOPE_TEAM,
-	}
 	PERMISSION_PROMOTE_GUEST = &Permission{
 		"promote_guest",
 		"authentication.permissions.promote_guest.name",
@@ -629,7 +622,6 @@ func initializePermissions() {
 		PERMISSION_MANAGE_SYSTEM,
 		PERMISSION_VIEW_MEMBERS,
 		PERMISSION_INVITE_GUEST,
-		PERMISSION_REMOVE_GUEST,
 		PERMISSION_PROMOTE_GUEST,
 	}
 }

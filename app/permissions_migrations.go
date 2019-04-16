@@ -54,7 +54,6 @@ const (
 	PERMISSION_VIEW_MEMBERS                      = "view_members"
 	PERMISSION_INVITE_USER                       = "invite_user"
 	PERMISSION_INVITE_GUEST                      = "invite_guest"
-	PERMISSION_REMOVE_GUEST                      = "remove_guest"
 	PERMISSION_PROMOTE_GUEST                     = "promote_guest"
 	PERMISSION_DEMOTE_TO_GUEST                   = "demote_to_guest"
 )
@@ -287,7 +286,7 @@ func getAddManageGuestsPermissionsMigration() permissionsMap {
 		},
 		permissionTransformation{
 			On:  permissionExists(PERMISSION_INVITE_USER),
-			Add: []string{PERMISSION_INVITE_GUEST, PERMISSION_REMOVE_GUEST},
+			Add: []string{PERMISSION_INVITE_GUEST},
 		},
 	}
 }
