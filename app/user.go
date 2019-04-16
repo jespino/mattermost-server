@@ -2160,19 +2160,11 @@ func (a *App) getListOfAllowedChannelsForTeam(teamId string, viewRestrictions *m
 // PromoteGuestToUser Convert user's roles and all his mermbership's roles from
 // guest roles to regular user roles.
 func (a *App) PromoteGuestToUser(user *model.User) *model.AppError {
-	result := <-a.Srv.Store.User().PromoteGuestToUser(user.Id)
-	if result.Err != nil {
-		return result.Err
-	}
-	return nil
+	return a.Srv.Store.User().PromoteGuestToUser(user.Id)
 }
 
 // DemoteUserToGuest Convert user's roles and all his mermbership's roles from
 // regular user roles to guest roles.
 func (a *App) DemoteUserToGuest(user *model.User) *model.AppError {
-	result := <-a.Srv.Store.User().DemoteUserToGuest(user.Id)
-	if result.Err != nil {
-		return result.Err
-	}
-	return nil
+	return a.Srv.Store.User().DemoteUserToGuest(user.Id)
 }
