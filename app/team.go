@@ -406,7 +406,7 @@ func (a *App) AddUserToTeamByToken(userId string, tokenId string) (*model.Team, 
 	}
 
 	token := result.Data.(*model.Token)
-	if token.Type != TOKEN_TYPE_TEAM_INVITATION {
+	if token.Type != TOKEN_TYPE_TEAM_INVITATION && token.Type != TOKEN_TYPE_GUEST_INVITATION {
 		return nil, model.NewAppError("AddUserToTeamByToken", "api.user.create_user.signup_link_invalid.app_error", nil, "", http.StatusBadRequest)
 	}
 
@@ -447,8 +447,30 @@ func (a *App) AddUserToTeamByToken(userId string, tokenId string) (*model.Team, 
 	}
 	user := result.Data.(*model.User)
 
+	if user.IsGuest() && token.Type == TOKEN_TYPE_TEAM_INVITATION {
+		return nil, model.NewAppError("AddUserToTeamByToken", "api.user.create_user.invalid_invitation_type.app_error", nil, "", http.StatusBadRequest)
+	}
+	if !user.IsGuest() && token.Type == TOKEN_TYPE_GUEST_INVITATION {
+		return nil, model.NewAppError("AddUserToTeamByToken", "api.user.create_user.invalid_invitation_type.app_error", nil, "", http.StatusBadRequest)
+	}
+
 	if err := a.JoinUserToTeam(team, user, ""); err != nil {
 		return nil, err
+	}
+
+	if token.Type == TOKEN_TYPE_GUEST_INVITATION {
+		result = <-a.Srv.Store.Channel().GetChannelsByIds(strings.Split(tokenData["channels"], " "))
+		if result.Err != nil {
+			return nil, result.Err
+		}
+		channels := result.Data.([]*model.Channel)
+
+		for _, channel := range channels {
+			_, err := a.AddUserToChannel(user, channel)
+			if err != nil {
+				mlog.Error(err.Error())
+			}
+		}
 	}
 
 	if err := a.DeleteToken(token); err != nil {
@@ -570,9 +592,11 @@ func (a *App) JoinUserToTeam(team *model.Team, user *model.User, userRequestorId
 
 	shouldBeAdmin := team.Email == user.Email
 
-	// Soft error if there is an issue joining the default channels
-	if err := a.JoinDefaultChannels(team.Id, user, shouldBeAdmin, userRequestorId); err != nil {
-		mlog.Error(fmt.Sprintf("Encountered an issue joining default channels err=%v", err), mlog.String("user_id", user.Id), mlog.String("team_id", team.Id))
+	if !user.IsGuest() {
+		// Soft error if there is an issue joining the default channels
+		if err := a.JoinDefaultChannels(team.Id, user, shouldBeAdmin, userRequestorId); err != nil {
+			mlog.Error(fmt.Sprintf("Encountered an issue joining default channels err=%v", err), mlog.String("user_id", user.Id), mlog.String("team_id", team.Id))
+		}
 	}
 
 	a.ClearSessionCacheForUser(user.Id)
