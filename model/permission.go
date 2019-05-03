@@ -543,9 +543,9 @@ func initializePermissions() {
 	}
 
 	PERMISSION_DEMOTE_TO_GUEST = &Permission{
-		"demote_guest",
-		"authentication.permissions.promote_guest.name",
-		"authentication.permissions.promote_guest.description",
+		"demote_to_guest",
+		"authentication.permissions.demote_to_guest.name",
+		"authentication.permissions.demote_to_guest.description",
 		PERMISSION_SCOPE_SYSTEM,
 	}
 
@@ -623,6 +623,7 @@ func initializePermissions() {
 		PERMISSION_VIEW_MEMBERS,
 		PERMISSION_INVITE_GUEST,
 		PERMISSION_PROMOTE_GUEST,
+		PERMISSION_DEMOTE_TO_GUEST,
 	}
 }
 
