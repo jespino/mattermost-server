@@ -63,6 +63,7 @@ require (
 	github.com/rwcarlsen/goexif v0.0.0-20190318171057-76e3344f7516
 	github.com/segmentio/analytics-go v2.0.1-0.20160426181448-2d840d861c32+incompatible
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
+	github.com/segmentio/kafka-go v0.2.3
 	github.com/sirupsen/logrus v1.4.0
 	github.com/smartystreets/assertions v0.0.0-20190401211740-f487f9de1cd3 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
