@@ -15,6 +15,13 @@ type GuestsInvite struct {
 	Message  string   `json:"message"`
 }
 
+type GuestInviteResult struct {
+	NotAllowed      []string `json:"not_allowed"`
+	NotGuest        []string `json:"not_guest"`
+	AddedToChannels []string `json:"added_to_channels"`
+	Sent            []string `json:"sent"`
+}
+
 // IsValid validates the user and returns an error if it isn't configured
 // correctly.
 func (i *GuestsInvite) IsValid() *AppError {
