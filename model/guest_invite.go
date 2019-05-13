@@ -15,7 +15,7 @@ type GuestsInvite struct {
 	Message  string   `json:"message"`
 }
 
-type GuestInviteResult struct {
+type GuestsInviteResult struct {
 	NotAllowed      []string `json:"not_allowed"`
 	NotGuest        []string `json:"not_guest"`
 	AddedToChannels []string `json:"added_to_channels"`
@@ -56,5 +56,10 @@ func GuestsInviteFromJson(data io.Reader) *GuestsInvite {
 
 func (invite *GuestsInvite) ToJson() string {
 	b, _ := json.Marshal(invite)
+	return string(b)
+}
+
+func (result *GuestsInviteResult) ToJson() string {
+	b, _ := json.Marshal(result)
 	return string(b)
 }

@@ -1072,7 +1072,7 @@ func (a *App) InviteNewUsersToTeam(emailList []string, teamId, senderId string) 
 	return nil
 }
 
-func (a *App) InviteGuestsToChannels(teamId string, guestsInvite *model.GuestsInvite, senderId string) (*model.GuestInviteResult, *model.AppError) {
+func (a *App) InviteGuestsToChannels(teamId string, guestsInvite *model.GuestsInvite, senderId string) (*model.GuestsInviteResult, *model.AppError) {
 	if !*a.Config().ServiceSettings.EnableEmailInvitations {
 		return nil, model.NewAppError("InviteNewUsersToTeam", "api.team.invite_members.disabled.app_error", nil, "", http.StatusNotImplemented)
 	}
@@ -1119,7 +1119,7 @@ func (a *App) InviteGuestsToChannels(teamId string, guestsInvite *model.GuestsIn
 		}
 	}
 
-	var resultEmails = model.GuestInviteResult{}
+	var resultEmails = model.GuestsInviteResult{}
 	for _, email := range guestsInvite.Emails {
 		if !a.isTeamEmailAddressAllowed(email, team.AllowedDomains) {
 			resultEmails.NotAllowed = append(resultEmails.NotAllowed, email)
