@@ -33,7 +33,6 @@ type LocalCacheStore struct {
 	reactionCache *utils.Cache
 	roleCache     *utils.Cache
 	schemeCache   *utils.Cache
-	groupCache    *utils.Cache
 }
 
 func NewLocalCacheSupplier(baseStore store.Store, metrics einterfaces.MetricsInterface, cluster einterfaces.ClusterInterface) LocalCacheStore {
@@ -45,7 +44,6 @@ func NewLocalCacheSupplier(baseStore store.Store, metrics einterfaces.MetricsInt
 	localCacheStore.reactionCache = utils.NewLruWithParams(REACTION_CACHE_SIZE, "Reaction", REACTION_CACHE_SEC, model.CLUSTER_EVENT_INVALIDATE_CACHE_FOR_REACTIONS)
 	localCacheStore.roleCache = utils.NewLruWithParams(ROLE_CACHE_SIZE, "Role", ROLE_CACHE_SEC, model.CLUSTER_EVENT_INVALIDATE_CACHE_FOR_ROLES)
 	localCacheStore.schemeCache = utils.NewLruWithParams(SCHEME_CACHE_SIZE, "Scheme", SCHEME_CACHE_SEC, model.CLUSTER_EVENT_INVALIDATE_CACHE_FOR_SCHEMES)
-	localCacheStore.groupCache = utils.NewLruWithParams(GROUP_CACHE_SIZE, "Group", GROUP_CACHE_SEC, model.CLUSTER_EVENT_INVALIDATE_CACHE_FOR_GROUPS)
 	localCacheStore.reaction = LocalCacheReactionStore{ReactionStore: baseStore.Reaction(), rootStore: &localCacheStore}
 	localCacheStore.role = LocalCacheRoleStore{RoleStore: baseStore.Role(), rootStore: &localCacheStore}
 	localCacheStore.scheme = LocalCacheSchemeStore{SchemeStore: baseStore.Scheme(), rootStore: &localCacheStore}
@@ -111,5 +109,4 @@ func (s *LocalCacheStore) Invalidate() {
 	s.doClearCacheCluster(s.reactionCache)
 	s.doClearCacheCluster(s.roleCache)
 	s.doClearCacheCluster(s.schemeCache)
-	s.doClearCacheCluster(s.groupCache)
 }
