@@ -35,7 +35,7 @@ type LocalCacheStore struct {
 	schemeCache   *utils.Cache
 }
 
-func NewLocalCacheSupplier(baseStore store.Store, metrics einterfaces.MetricsInterface, cluster einterfaces.ClusterInterface) LocalCacheStore {
+func NewLocalCacheLayer(baseStore store.Store, metrics einterfaces.MetricsInterface, cluster einterfaces.ClusterInterface) LocalCacheStore {
 	localCacheStore := LocalCacheStore{
 		Store:   baseStore,
 		cluster: cluster,

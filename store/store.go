@@ -78,6 +78,7 @@ type Store interface {
 	TotalMasterDbConnections() int
 	TotalReadDbConnections() int
 	TotalSearchDbConnections() int
+	GetCurrentSchemaVersion() string
 }
 
 type TeamStore interface {
