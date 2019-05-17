@@ -6,7 +6,7 @@ import (
 )
 
 type LocalCacheSchemeStore struct {
-	baseStore store.SchemeStore
+	store.SchemeStore
 	rootStore *LocalCacheStore
 }
 
@@ -14,7 +14,7 @@ func (s LocalCacheSchemeStore) Save(scheme *model.Scheme) store.StoreChannel {
 	if len(scheme.Id) != 0 {
 		defer s.rootStore.doInvalidateCacheCluster(s.rootStore.schemeCache, scheme.Id)
 	}
-	return s.baseStore.Save(scheme)
+	return s.SchemeStore.Save(scheme)
 }
 
 func (s LocalCacheSchemeStore) Get(schemeId string) store.StoreChannel {
@@ -24,7 +24,7 @@ func (s LocalCacheSchemeStore) Get(schemeId string) store.StoreChannel {
 			return
 		}
 
-		result := <-s.baseStore.Get(schemeId)
+		result := <-s.SchemeStore.Get(schemeId)
 		if result.Err != nil {
 			r.Err = result.Err
 			return
@@ -36,24 +36,16 @@ func (s LocalCacheSchemeStore) Get(schemeId string) store.StoreChannel {
 	})
 }
 
-func (s LocalCacheSchemeStore) GetByName(schemeName string) store.StoreChannel {
-	return s.baseStore.GetByName(schemeName)
-}
-
-func (s LocalCacheSchemeStore) GetAllPage(scope string, offset int, limit int) store.StoreChannel {
-	return s.baseStore.GetAllPage(scope, offset, limit)
-}
-
 func (s LocalCacheSchemeStore) Delete(schemeId string) store.StoreChannel {
 	defer s.rootStore.doInvalidateCacheCluster(s.rootStore.schemeCache, schemeId)
 	defer s.rootStore.doClearCacheCluster(s.rootStore.roleCache)
 
-	return s.baseStore.Delete(schemeId)
+	return s.SchemeStore.Delete(schemeId)
 }
 
 func (s LocalCacheSchemeStore) PermanentDeleteAll() store.StoreChannel {
 	defer s.rootStore.doClearCacheCluster(s.rootStore.schemeCache)
 	defer s.rootStore.doClearCacheCluster(s.rootStore.roleCache)
 
-	return s.baseStore.PermanentDeleteAll()
+	return s.SchemeStore.PermanentDeleteAll()
 }
