@@ -151,9 +151,9 @@ func NewSqlSupplier(settings model.SqlSettings, metrics einterfaces.MetricsInter
 	supplier.oldStores.TermsOfService = NewSqlTermsOfServiceStore(supplier, metrics)
 	supplier.oldStores.UserTermsOfService = NewSqlUserTermsOfServiceStore(supplier)
 	supplier.oldStores.linkMetadata = NewSqlLinkMetadataStore(supplier)
+	supplier.oldStores.role = NewSqlRoleStore(supplier)
+	supplier.oldStores.reaction = NewSqlReactionStore(supplier)
 
-	initSqlSupplierReactions(supplier)
-	initSqlSupplierRoles(supplier)
 	initSqlSupplierSchemes(supplier)
 	initSqlSupplierGroups(supplier)
 
@@ -196,6 +196,8 @@ func NewSqlSupplier(settings model.SqlSettings, metrics einterfaces.MetricsInter
 	supplier.oldStores.TermsOfService.(SqlTermsOfServiceStore).CreateIndexesIfNotExists()
 	supplier.oldStores.UserTermsOfService.(SqlUserTermsOfServiceStore).CreateIndexesIfNotExists()
 	supplier.oldStores.linkMetadata.(*SqlLinkMetadataStore).CreateIndexesIfNotExists()
+	supplier.oldStores.role.(*SqlRoleStore).CreateIndexesIfNotExists()
+	supplier.oldStores.reaction.(*SqlReactionStore).CreateIndexesIfNotExists()
 
 	supplier.CreateIndexesIfNotExistsGroups()
 
