@@ -106,7 +106,6 @@ type SqlSupplier struct {
 	// See https://github.com/mattermost/mattermost-server/pull/7281
 	rrCounter      int64
 	srCounter      int64
-	next           store.LayeredStoreSupplier
 	master         *gorp.DbMap
 	replicas       []*gorp.DbMap
 	searchReplicas []*gorp.DbMap
@@ -154,8 +153,7 @@ func NewSqlSupplier(settings model.SqlSettings, metrics einterfaces.MetricsInter
 	supplier.oldStores.role = NewSqlRoleStore(supplier)
 	supplier.oldStores.reaction = NewSqlReactionStore(supplier)
 	supplier.oldStores.scheme = NewSqlSchemeStore(supplier)
-
-	initSqlSupplierGroups(supplier)
+	supplier.oldStores.group = NewSqlGroupStore(supplier)
 
 	err := supplier.GetMaster().CreateTablesIfNotExists()
 	if err != nil {
@@ -199,20 +197,10 @@ func NewSqlSupplier(settings model.SqlSettings, metrics einterfaces.MetricsInter
 	supplier.oldStores.role.(*SqlRoleStore).CreateIndexesIfNotExists()
 	supplier.oldStores.reaction.(*SqlReactionStore).CreateIndexesIfNotExists()
 	supplier.oldStores.scheme.(*SqlSchemeStore).CreateIndexesIfNotExists()
-
-	supplier.CreateIndexesIfNotExistsGroups()
-
+	supplier.oldStores.group.(*SqlGroupStore).CreateIndexesIfNotExists()
 	supplier.oldStores.preference.(*SqlPreferenceStore).DeleteUnusedFeatures()
 
 	return supplier
-}
-
-func (s *SqlSupplier) SetChainNext(next store.LayeredStoreSupplier) {
-	s.next = next
-}
-
-func (s *SqlSupplier) Next() store.LayeredStoreSupplier {
-	return s.next
 }
 
 func setupConnection(con_type string, dataSource string, settings *model.SqlSettings) *gorp.DbMap {

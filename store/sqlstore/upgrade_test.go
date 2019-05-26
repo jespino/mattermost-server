@@ -13,7 +13,7 @@ import (
 
 func TestStoreUpgrade(t *testing.T) {
 	StoreTest(t, func(t *testing.T, ss store.Store) {
-		sqlStore := ss.(*store.LayeredStore).DatabaseLayer.(SqlStore)
+		sqlStore := ss.(SqlStore)
 
 		t.Run("invalid currentModelVersion", func(t *testing.T) {
 			err := UpgradeDatabase(sqlStore, "notaversion")
@@ -82,7 +82,7 @@ func TestStoreUpgrade(t *testing.T) {
 
 func TestSaveSchemaVersion(t *testing.T) {
 	StoreTest(t, func(t *testing.T, ss store.Store) {
-		sqlStore := ss.(*store.LayeredStore).DatabaseLayer.(SqlStore)
+		sqlStore := ss.(SqlStore)
 
 		t.Run("set earliest version", func(t *testing.T) {
 			saveSchemaVersion(sqlStore, VERSION_3_0_0)
