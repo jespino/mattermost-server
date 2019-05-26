@@ -10,40 +10,36 @@ type LocalCacheSchemeStore struct {
 	rootStore *LocalCacheStore
 }
 
-func (s LocalCacheSchemeStore) Save(scheme *model.Scheme) store.StoreChannel {
+func (s LocalCacheSchemeStore) Save(scheme *model.Scheme) (*model.Scheme, *model.AppError) {
 	if len(scheme.Id) != 0 {
 		defer s.rootStore.doInvalidateCacheCluster(s.rootStore.schemeCache, scheme.Id)
 	}
 	return s.SchemeStore.Save(scheme)
 }
 
-func (s LocalCacheSchemeStore) Get(schemeId string) store.StoreChannel {
-	return store.Do(func(r *store.StoreResult) {
-		if scheme := s.rootStore.doStandardReadCache(s.rootStore.schemeCache, schemeId); scheme != nil {
-			r.Data = scheme
-			return
-		}
+func (s LocalCacheSchemeStore) Get(schemeId string) (*model.Scheme, *model.AppError) {
+	if scheme := s.rootStore.doStandardReadCache(s.rootStore.schemeCache, schemeId); scheme != nil {
+		return scheme.(*model.Scheme), nil
+	}
 
-		result := <-s.SchemeStore.Get(schemeId)
-		if result.Err != nil {
-			r.Err = result.Err
-			return
-		}
+	scheme, err := s.SchemeStore.Get(schemeId)
+	if err != nil {
+		return nil, err
+	}
 
-		s.rootStore.doStandardAddToCache(s.rootStore.schemeCache, schemeId, result.Data)
+	s.rootStore.doStandardAddToCache(s.rootStore.schemeCache, schemeId, scheme)
 
-		r.Data = result.Data
-	})
+	return scheme, nil
 }
 
-func (s LocalCacheSchemeStore) Delete(schemeId string) store.StoreChannel {
+func (s LocalCacheSchemeStore) Delete(schemeId string) (*model.Scheme, *model.AppError) {
 	defer s.rootStore.doInvalidateCacheCluster(s.rootStore.schemeCache, schemeId)
 	defer s.rootStore.doClearCacheCluster(s.rootStore.roleCache)
 
 	return s.SchemeStore.Delete(schemeId)
 }
 
-func (s LocalCacheSchemeStore) PermanentDeleteAll() store.StoreChannel {
+func (s LocalCacheSchemeStore) PermanentDeleteAll() *model.AppError {
 	defer s.rootStore.doClearCacheCluster(s.rootStore.schemeCache)
 	defer s.rootStore.doClearCacheCluster(s.rootStore.roleCache)
 

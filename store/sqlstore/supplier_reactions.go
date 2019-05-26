@@ -30,6 +30,9 @@ func NewSqlReactionStore(sqlStore SqlStore) store.ReactionStore {
 	return s
 }
 
+func (s SqlReactionStore) CreateIndexesIfNotExists() {
+}
+
 func (s *SqlReactionStore) Save(reaction *model.Reaction) (*model.Reaction, *model.AppError) {
 	reaction.PreSave()
 	if err := reaction.IsValid(); err != nil {
@@ -75,7 +78,7 @@ func (s *SqlReactionStore) Delete(reaction *model.Reaction) (*model.Reaction, *m
 	return reaction, nil
 }
 
-func (s *SqlReactionStore) GetForPost(postId string) ([]*model.Reaction, *model.AppError) {
+func (s *SqlReactionStore) GetForPost(postId string, allowFromCache bool) ([]*model.Reaction, *model.AppError) {
 	var reactions []*model.Reaction
 
 	if _, err := s.GetReplica().Select(&reactions,

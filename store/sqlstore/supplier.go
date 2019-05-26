@@ -153,8 +153,8 @@ func NewSqlSupplier(settings model.SqlSettings, metrics einterfaces.MetricsInter
 	supplier.oldStores.linkMetadata = NewSqlLinkMetadataStore(supplier)
 	supplier.oldStores.role = NewSqlRoleStore(supplier)
 	supplier.oldStores.reaction = NewSqlReactionStore(supplier)
+	supplier.oldStores.scheme = NewSqlSchemeStore(supplier)
 
-	initSqlSupplierSchemes(supplier)
 	initSqlSupplierGroups(supplier)
 
 	err := supplier.GetMaster().CreateTablesIfNotExists()
@@ -198,6 +198,7 @@ func NewSqlSupplier(settings model.SqlSettings, metrics einterfaces.MetricsInter
 	supplier.oldStores.linkMetadata.(*SqlLinkMetadataStore).CreateIndexesIfNotExists()
 	supplier.oldStores.role.(*SqlRoleStore).CreateIndexesIfNotExists()
 	supplier.oldStores.reaction.(*SqlReactionStore).CreateIndexesIfNotExists()
+	supplier.oldStores.scheme.(*SqlSchemeStore).CreateIndexesIfNotExists()
 
 	supplier.CreateIndexesIfNotExistsGroups()
 

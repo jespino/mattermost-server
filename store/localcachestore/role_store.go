@@ -42,7 +42,7 @@ func (s LocalCacheRoleStore) GetByNames(names []string) ([]*model.Role, *model.A
 		}
 	}
 
-	roles, err := s.RoleStore.GetByNames(rolesToQuery)
+	roles, _ := s.RoleStore.GetByNames(rolesToQuery)
 
 	if roles != nil {
 		for _, role := range roles {

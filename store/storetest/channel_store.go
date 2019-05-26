@@ -2774,10 +2774,8 @@ func testChannelStoreGetChannelsByScheme(t *testing.T, ss store.Store) {
 		Scope:       model.SCHEME_SCOPE_CHANNEL,
 	}
 
-	result := <-ss.Scheme().Save(s1)
-	s1 = result.Data.(*model.Scheme)
-	s1 = (<-ss.Scheme().Save(s1)).Data.(*model.Scheme)
-	s2 = (<-ss.Scheme().Save(s2)).Data.(*model.Scheme)
+	s1, _ = ss.Scheme().Save(s1)
+	s2, _ = ss.Scheme().Save(s2)
 
 	// Create and save some teams.
 	c1 := &model.Channel{
@@ -2906,7 +2904,7 @@ func testResetAllChannelSchemes(t *testing.T, ss store.Store) {
 		Description: model.NewId(),
 		Scope:       model.SCHEME_SCOPE_CHANNEL,
 	}
-	s1 = (<-ss.Scheme().Save(s1)).Data.(*model.Scheme)
+	s1, _ = ss.Scheme().Save(s1)
 
 	c1 := &model.Channel{
 		TeamId:      model.NewId(),

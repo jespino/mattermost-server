@@ -1,6 +1,8 @@
 package rediscachestore
 
 import (
+	"bytes"
+	"encoding/gob"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -26,14 +28,13 @@ func NewRedisCacheLayer(baseStore store.Store, metrics einterfaces.MetricsInterf
 		cluster: cluster,
 		metrics: metrics,
 	}
-	redisCache.client = redis.NewClient(&redis.Options{
+	redisCacheStore.client = redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
 		DB:       0,
 	})
-	if _, err := supplier.client.Ping().Result(); err != nil {
+	if _, err := redisCacheStore.client.Ping().Result(); err != nil {
 		mlog.Error("Unable to ping redis server: " + err.Error())
-		return nil
 	}
 	redisCacheStore.reaction = RedisCacheReactionStore{ReactionStore: baseStore.Reaction(), client: redisCacheStore.client}
 	redisCacheStore.role = RedisCacheRoleStore{RoleStore: baseStore.Role(), client: redisCacheStore.client}
@@ -72,4 +73,19 @@ func (s *RedisCacheStore) load(key string, writeTo interface{}) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+func GetBytes(key interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(key)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func DecodeBytes(input []byte, thing interface{}) error {
+	dec := gob.NewDecoder(bytes.NewReader(input))
+	return dec.Decode(thing)
 }
