@@ -1738,11 +1738,19 @@ func (s SqlChannelStore) UpdateLastViewedAt(channelIds []string, userId string) 
 	for index, t := range lastPostAtTimes {
 		times[t.Id] = t.LastPostAt
 
-		props["msgCount"+strconv.Itoa(index)] = t.TotalMsgCount
-		msgCountQuery += fmt.Sprintf("WHEN :channelId%d THEN GREATEST(MsgCount, :msgCount%d) ", index, index)
+		if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+			props["msgCount"+strconv.Itoa(index)] = t.TotalMsgCount
+			msgCountQuery += fmt.Sprintf("WHEN :channelId%d THEN MAX(MsgCount, :msgCount%d) ", index, index)
 
-		props["lastViewed"+strconv.Itoa(index)] = t.LastPostAt
-		lastViewedQuery += fmt.Sprintf("WHEN :channelId%d THEN GREATEST(LastViewedAt, :lastViewed%d) ", index, index)
+			props["lastViewed"+strconv.Itoa(index)] = t.LastPostAt
+			lastViewedQuery += fmt.Sprintf("WHEN :channelId%d THEN MAX(LastViewedAt, :lastViewed%d) ", index, index)
+		} else {
+			props["msgCount"+strconv.Itoa(index)] = t.TotalMsgCount
+			msgCountQuery += fmt.Sprintf("WHEN :channelId%d THEN GREATEST(MsgCount, :msgCount%d) ", index, index)
+
+			props["lastViewed"+strconv.Itoa(index)] = t.LastPostAt
+			lastViewedQuery += fmt.Sprintf("WHEN :channelId%d THEN GREATEST(LastViewedAt, :lastViewed%d) ", index, index)
+		}
 
 		props["channelId"+strconv.Itoa(index)] = t.Id
 	}

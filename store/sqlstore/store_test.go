@@ -12,26 +12,6 @@ import (
 	"github.com/mattermost/mattermost-server/store/storetest"
 )
 
-var storeTypes = []*struct {
-	Name      string
-	Func      func() (*storetest.RunningContainer, *model.SqlSettings, error)
-	Container *storetest.RunningContainer
-	Store     store.Store
-}{
-	{
-		Name: "MySQL",
-		Func: storetest.NewMySQLContainer,
-	},
-	{
-		Name: "PostgreSQL",
-		Func: storetest.NewPostgreSQLContainer,
-	},
-	{
-		Name: "Sqlite",
-		Func: storetest.NewSQliteContainer,
-	},
-}
-
 type storeType struct {
 	Name        string
 	SqlSettings *model.SqlSettings
@@ -75,6 +55,10 @@ func initStores() {
 	storeTypes = append(storeTypes, &storeType{
 		Name:        "PostgreSQL",
 		SqlSettings: storetest.MakeSqlSettings(model.DATABASE_DRIVER_POSTGRES),
+	})
+	storeTypes = append(storeTypes, &storeType{
+		Name:        "Sqlite",
+		SqlSettings: storetest.MakeSqlSettings(model.DATABASE_DRIVER_SQLITE),
 	})
 
 	defer func() {

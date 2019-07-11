@@ -114,9 +114,16 @@ func (s *SqlPostStore) Save(post *model.Post) (*model.Post, *model.AppError) {
 		post.Type != model.POST_JOIN_TEAM && post.Type != model.POST_LEAVE_TEAM &&
 		post.Type != model.POST_ADD_TO_CHANNEL && post.Type != model.POST_REMOVE_FROM_CHANNEL &&
 		post.Type != model.POST_ADD_TO_TEAM && post.Type != model.POST_REMOVE_FROM_TEAM {
-		if _, err := s.GetMaster().Exec("UPDATE Channels SET LastPostAt = GREATEST(:LastPostAt, LastPostAt), TotalMsgCount = TotalMsgCount + 1 WHERE Id = :ChannelId", map[string]interface{}{"LastPostAt": time, "ChannelId": post.ChannelId}); err != nil {
-			mlog.Error(fmt.Sprintf("Error updating Channel LastPostAt: %v", err.Error()))
+		if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+			if _, err := s.GetMaster().Exec("UPDATE Channels SET LastPostAt = MAX(:LastPostAt, LastPostAt), TotalMsgCount = TotalMsgCount + 1 WHERE Id = :ChannelId", map[string]interface{}{"LastPostAt": time, "ChannelId": post.ChannelId}); err != nil {
+				mlog.Error(fmt.Sprintf("Error updating Channel LastPostAt: %v", err.Error()))
+			}
+		} else {
+			if _, err := s.GetMaster().Exec("UPDATE Channels SET LastPostAt = GREATEST(:LastPostAt, LastPostAt), TotalMsgCount = TotalMsgCount + 1 WHERE Id = :ChannelId", map[string]interface{}{"LastPostAt": time, "ChannelId": post.ChannelId}); err != nil {
+				mlog.Error(fmt.Sprintf("Error updating Channel LastPostAt: %v", err.Error()))
+			}
 		}
+
 	} else {
 		// don't update TotalMsgCount for unimportant messages so that the channel isn't marked as unread
 		if _, err := s.GetMaster().Exec("UPDATE Channels SET LastPostAt = :LastPostAt WHERE Id = :ChannelId AND LastPostAt < :LastPostAt", map[string]interface{}{"LastPostAt": time, "ChannelId": post.ChannelId}); err != nil {

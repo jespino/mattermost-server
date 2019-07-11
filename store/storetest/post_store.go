@@ -995,7 +995,9 @@ func testPostStoreGetPostsSince(t *testing.T, ss store.Store) {
 	o5, err = ss.Post().Save(o5)
 	require.Nil(t, err)
 
-	r1, _ := ss.Post().GetPostsSince(o1.ChannelId, o1.CreateAt, false)
+	r1, err := ss.Post().GetPostsSince(o1.ChannelId, o1.CreateAt, false)
+	require.Nil(t, err)
+	require.Len(t, r1.Order, 6)
 
 	if r1.Order[0] != o5.Id {
 		t.Fatal("invalid order")
