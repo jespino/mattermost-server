@@ -94,7 +94,7 @@ func (h *MainHelper) Main(m *testing.M) {
 func (h *MainHelper) setupStore() {
 	driverName := os.Getenv("MM_SQLSETTINGS_DRIVERNAME")
 	if driverName == "" {
-		driverName = model.DATABASE_DRIVER_MYSQL
+		driverName = model.DATABASE_DRIVER_SQLITE
 	}
 
 	h.Settings = storetest.MakeSqlSettings(driverName)

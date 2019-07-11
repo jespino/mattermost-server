@@ -248,7 +248,7 @@ func TestExportDMChannel(t *testing.T) {
 	// Ensure the Members of the imported DM channel is the same was from the exported
 	channels, err = th2.App.Srv.Store.Channel().GetAllDirectChannelsForExportAfter(1000, "00000000")
 	require.Nil(t, err)
-	assert.Equal(t, 1, len(channels))
+	require.Equal(t, 1, len(channels))
 	assert.ElementsMatch(t, []string{th1.BasicUser.Username, th1.BasicUser2.Username}, *channels[0].Members)
 }
 

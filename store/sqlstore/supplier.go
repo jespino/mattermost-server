@@ -388,7 +388,7 @@ func (ss *SqlSupplier) DoesTableExist(tableName string) bool {
 		)
 
 		if err != nil {
-			l4g.Critical(utils.T("store.sql.table_exists.critical"), err)
+			mlog.Critical(fmt.Sprintf("Failed to check if table exists %v", err))
 			time.Sleep(time.Second)
 			os.Exit(EXIT_TABLE_EXISTS_MYSQL)
 		}
@@ -477,7 +477,7 @@ func (ss *SqlSupplier) DoesColumnExist(tableName string, columnName string) bool
 		)
 
 		if err != nil {
-			l4g.Critical(utils.T("store.sql.column_exists.critical"), err)
+			mlog.Critical(fmt.Sprintf("Failed to check if column exists %v", err))
 			time.Sleep(time.Second)
 			os.Exit(EXIT_DOES_COLUMN_EXISTS_MYSQL)
 		}
@@ -637,9 +637,9 @@ func (ss *SqlSupplier) CreateColumnIfNotExistsNoDefault(tableName string, column
 		return true
 
 	} else if ss.DriverName() == model.DATABASE_DRIVER_SQLITE {
-		_, err := ss.GetMaster().ExecNoTimeout("ALTER TABLE " + tableName + " ADD " + columnName + " " + mySqlColType + " DEFAULT '" + defaultValue + "'")
+		_, err := ss.GetMaster().ExecNoTimeout("ALTER TABLE " + tableName + " ADD " + columnName + " " + mySqlColType)
 		if err != nil {
-			l4g.Critical(utils.T("store.sql.create_column.critical"), err)
+			mlog.Critical(fmt.Sprintf("Failed to create column %v", err))
 			time.Sleep(time.Second)
 			os.Exit(EXIT_CREATE_COLUMN_MYSQL)
 		}
