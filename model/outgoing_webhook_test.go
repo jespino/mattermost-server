@@ -102,14 +102,14 @@ func TestOutgoingWebhookIsValid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	o.Description = strings.Repeat("1", 129)
+	o.Description = strings.Repeat("1", 501)
 	if err := o.IsValid(); err == nil {
 		t.Fatal("should be invalid")
 	}
 
-	o.Description = strings.Repeat("1", 128)
+	o.Description = strings.Repeat("1", 500)
 	if err := o.IsValid(); err != nil {
-		t.Fatal("should be invalid")
+		t.Fatal(err)
 	}
 
 	o.ContentType = strings.Repeat("1", 129)
@@ -118,6 +118,26 @@ func TestOutgoingWebhookIsValid(t *testing.T) {
 	}
 
 	o.ContentType = strings.Repeat("1", 128)
+	if err := o.IsValid(); err != nil {
+		t.Fatal(err)
+	}
+
+	o.Username = strings.Repeat("1", 65)
+	if err := o.IsValid(); err == nil {
+		t.Fatal("should be invalid")
+	}
+
+	o.Username = strings.Repeat("1", 64)
+	if err := o.IsValid(); err != nil {
+		t.Fatal("should be invalid")
+	}
+
+	o.IconURL = strings.Repeat("1", 1025)
+	if err := o.IsValid(); err == nil {
+		t.Fatal(err)
+	}
+
+	o.IconURL = strings.Repeat("1", 1024)
 	if err := o.IsValid(); err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +202,7 @@ func TestOutgoingWebhookResponseJson(t *testing.T) {
 	o.Text = NewString("some text")
 
 	json := o.ToJson()
-	ro := OutgoingWebhookResponseFromJson(strings.NewReader(json))
+	ro, _ := OutgoingWebhookResponseFromJson(strings.NewReader(json))
 
 	if *o.Text != *ro.Text {
 		t.Fatal("Text does not match")

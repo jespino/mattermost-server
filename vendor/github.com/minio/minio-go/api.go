@@ -1,6 +1,6 @@
 /*
- * Minio Go Library for Amazon S3 Compatible Cloud Storage
- * Copyright 2015-2017 Minio, Inc.
+ * MinIO Go Library for Amazon S3 Compatible Cloud Storage
+ * Copyright 2015-2018 MinIO, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httputil"
 	"net/url"
 	"os"
@@ -37,6 +38,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/net/publicsuffix"
 
 	"github.com/minio/minio-go/pkg/credentials"
 	"github.com/minio/minio-go/pkg/s3signer"
@@ -99,15 +102,15 @@ type Options struct {
 // Global constants.
 const (
 	libraryName    = "minio-go"
-	libraryVersion = "4.0.7"
+	libraryVersion = "v6.0.23"
 )
 
 // User Agent should always following the below style.
 // Please open an issue to discuss any new changes here.
 //
-//       Minio (OS; ARCH) LIB/VER APP/VER
+//       MinIO (OS; ARCH) LIB/VER APP/VER
 const (
-	libraryUserAgentPrefix = "Minio (" + runtime.GOOS + "; " + runtime.GOARCH + ") "
+	libraryUserAgentPrefix = "MinIO (" + runtime.GOOS + "; " + runtime.GOARCH + ") "
 	libraryUserAgent       = libraryUserAgentPrefix + libraryName + "/" + libraryVersion
 )
 
@@ -258,8 +261,7 @@ func (c *Client) redirectHeaders(req *http.Request, via []*http.Request) error {
 		}
 		switch {
 		case signerType.IsV2():
-			// Add signature version '2' authorization header.
-			req = s3signer.SignV2(*req, accessKeyID, secretAccessKey)
+			return errors.New("signature V2 cannot support redirection")
 		case signerType.IsV4():
 			req = s3signer.SignV4(*req, accessKeyID, secretAccessKey, sessionToken, getDefaultLocation(*c.endpointURL, region))
 		}
@@ -270,6 +272,13 @@ func (c *Client) redirectHeaders(req *http.Request, via []*http.Request) error {
 func privateNew(endpoint string, creds *credentials.Credentials, secure bool, region string, lookup BucketLookupType) (*Client, error) {
 	// construct endpoint.
 	endpointURL, err := getEndpointURL(endpoint, secure)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize cookies to preserve server sent cookies if any and replay
+	// them upon each request.
+	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
 		return nil, err
 	}
@@ -286,9 +295,15 @@ func privateNew(endpoint string, creds *credentials.Credentials, secure bool, re
 	// Save endpoint URL, user agent for future uses.
 	clnt.endpointURL = endpointURL
 
+	transport, err := DefaultTransport(secure)
+	if err != nil {
+		return nil, err
+	}
+
 	// Instantiate http client and bucket location cache.
 	clnt.httpClient = &http.Client{
-		Transport:     defaultMinioTransport,
+		Jar:           jar,
+		Transport:     transport,
 		CheckRedirect: clnt.redirectHeaders,
 	}
 
@@ -338,7 +353,7 @@ func (c *Client) SetCustomTransport(customHTTPTransport http.RoundTripper) {
 	//           TLSClientConfig:    &tls.Config{RootCAs: pool},
 	//           DisableCompression: true,
 	//   }
-	//   api.SetTransport(tr)
+	//   api.SetCustomTransport(tr)
 	//
 	if c.httpClient != nil {
 		c.httpClient.Transport = customHTTPTransport
@@ -456,22 +471,9 @@ func (c Client) dumpHTTP(req *http.Request, resp *http.Response) error {
 			return err
 		}
 	} else {
-		// WORKAROUND for https://github.com/golang/go/issues/13942.
-		// httputil.DumpResponse does not print response headers for
-		// all successful calls which have response ContentLength set
-		// to zero. Keep this workaround until the above bug is fixed.
-		if resp.ContentLength == 0 {
-			var buffer bytes.Buffer
-			if err = resp.Header.Write(&buffer); err != nil {
-				return err
-			}
-			respTrace = buffer.Bytes()
-			respTrace = append(respTrace, []byte("\r\n")...)
-		} else {
-			respTrace, err = httputil.DumpResponse(resp, false)
-			if err != nil {
-				return err
-			}
+		respTrace, err = httputil.DumpResponse(resp, false)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -600,8 +602,8 @@ func (c Client) executeMethod(ctx context.Context, method string, metadata reque
 		// Initiate the request.
 		res, err = c.do(req)
 		if err != nil {
-			// For supported network errors verify.
-			if isNetErrorRetryable(err) {
+			// For supported http requests errors verify.
+			if isHTTPReqErrorRetryable(err) {
 				continue // Retry.
 			}
 			// For other errors, return here no need to retry.
@@ -694,8 +696,11 @@ func (c Client) newRequest(method string, metadata requestMetadata) (req *http.R
 		}
 	}
 
+	// Look if target url supports virtual host.
+	isVirtualHost := c.isVirtualHostStyleRequest(*c.endpointURL, metadata.bucketName)
+
 	// Construct a new target URL.
-	targetURL, err := c.makeTargetURL(metadata.bucketName, metadata.objectName, location, metadata.queryValues)
+	targetURL, err := c.makeTargetURL(metadata.bucketName, metadata.objectName, location, isVirtualHost, metadata.queryValues)
 	if err != nil {
 		return nil, err
 	}
@@ -737,7 +742,7 @@ func (c Client) newRequest(method string, metadata requestMetadata) (req *http.R
 		}
 		if signerType.IsV2() {
 			// Presign URL with signature v2.
-			req = s3signer.PreSignV2(*req, accessKeyID, secretAccessKey, metadata.expires)
+			req = s3signer.PreSignV2(*req, accessKeyID, secretAccessKey, metadata.expires, isVirtualHost)
 		} else if signerType.IsV4() {
 			// Presign URL with signature v4.
 			req = s3signer.PreSignV4(*req, accessKeyID, secretAccessKey, sessionToken, location, metadata.expires)
@@ -783,7 +788,7 @@ func (c Client) newRequest(method string, metadata requestMetadata) (req *http.R
 	switch {
 	case signerType.IsV2():
 		// Add signature version '2' authorization header.
-		req = s3signer.SignV2(*req, accessKeyID, secretAccessKey)
+		req = s3signer.SignV2(*req, accessKeyID, secretAccessKey, isVirtualHost)
 	case metadata.objectName != "" && method == "PUT" && metadata.customHeader.Get("X-Amz-Copy-Source") == "" && !c.secure:
 		// Streaming signature is used by default for a PUT object request. Additionally we also
 		// look if the initialized client is secure, if yes then we don't need to perform
@@ -815,7 +820,7 @@ func (c Client) setUserAgent(req *http.Request) {
 }
 
 // makeTargetURL make a new target url.
-func (c Client) makeTargetURL(bucketName, objectName, bucketLocation string, queryValues url.Values) (*url.URL, error) {
+func (c Client) makeTargetURL(bucketName, objectName, bucketLocation string, isVirtualHostStyle bool, queryValues url.Values) (*url.URL, error) {
 	host := c.endpointURL.Host
 	// For Amazon S3 endpoint, try to fetch location based endpoint.
 	if s3utils.IsAmazonEndpoint(*c.endpointURL) {
@@ -831,7 +836,7 @@ func (c Client) makeTargetURL(bucketName, objectName, bucketLocation string, que
 			host = c.s3AccelerateEndpoint
 		} else {
 			// Do not change the host if the endpoint URL is a FIPS S3 endpoint.
-			if !s3utils.IsAmazonFIPSGovCloudEndpoint(*c.endpointURL) {
+			if !s3utils.IsAmazonFIPSEndpoint(*c.endpointURL) {
 				// Fetch new host based on the bucket location.
 				host = getS3Endpoint(bucketLocation)
 			}
@@ -854,8 +859,6 @@ func (c Client) makeTargetURL(bucketName, objectName, bucketLocation string, que
 	// Make URL only if bucketName is available, otherwise use the
 	// endpoint URL.
 	if bucketName != "" {
-		// Save if target url will have buckets which suppport virtual host.
-		isVirtualHostStyle := c.isVirtualHostStyleRequest(*c.endpointURL, bucketName)
 		// If endpoint supports virtual host style use that always.
 		// Currently only S3 and Google Cloud Storage would support
 		// virtual host style.
@@ -883,12 +886,17 @@ func (c Client) makeTargetURL(bucketName, objectName, bucketLocation string, que
 
 // returns true if virtual hosted style requests are to be used.
 func (c *Client) isVirtualHostStyleRequest(url url.URL, bucketName string) bool {
+	if bucketName == "" {
+		return false
+	}
+
 	if c.lookup == BucketLookupDNS {
 		return true
 	}
 	if c.lookup == BucketLookupPath {
 		return false
 	}
+
 	// default to virtual only for Amazon/Google  storage. In all other cases use
 	// path style requests
 	return s3utils.IsVirtualHostSupported(url, bucketName)

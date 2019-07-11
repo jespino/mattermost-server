@@ -4,15 +4,19 @@
 package api4
 
 import (
-	"fmt"
-	"strings"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-server/model"
 )
 
 func TestCreateCommand(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
@@ -61,7 +65,7 @@ func TestCreateCommand(t *testing.T) {
 }
 
 func TestUpdateCommand(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.SystemAdminClient
 	user := th.SystemAdminUser
@@ -147,7 +151,7 @@ func TestUpdateCommand(t *testing.T) {
 }
 
 func TestDeleteCommand(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.SystemAdminClient
 	user := th.SystemAdminUser
@@ -210,20 +214,15 @@ func TestDeleteCommand(t *testing.T) {
 }
 
 func TestListCommands(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
 	enableCommands := *th.App.Config().ServiceSettings.EnableCommands
-	enableOnlyAdminIntegrations := *th.App.Config().ServiceSettings.EnableOnlyAdminIntegrations
 	defer func() {
 		th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableCommands = &enableCommands })
-		th.App.UpdateConfig(func(cfg *model.Config) {
-			cfg.ServiceSettings.EnableOnlyAdminIntegrations = &enableOnlyAdminIntegrations
-		})
 	}()
 	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableCommands = true })
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableOnlyAdminIntegrations = true })
 
 	newCmd := &model.Command{
 		CreatorId: th.BasicUser.Id,
@@ -295,10 +294,29 @@ func TestListCommands(t *testing.T) {
 			t.Fatal("Should not list the custom command")
 		}
 	})
+
+	t.Run("NoMember", func(t *testing.T) {
+		Client.Logout()
+		user := th.CreateUser()
+		th.SystemAdminClient.RemoveTeamMember(th.BasicTeam.Id, user.Id)
+		Client.Login(user.Email, user.Password)
+		_, resp := Client.ListCommands(th.BasicTeam.Id, false)
+		CheckForbiddenStatus(t, resp)
+		_, resp = Client.ListCommands(th.BasicTeam.Id, true)
+		CheckForbiddenStatus(t, resp)
+	})
+
+	t.Run("NotLoggedIn", func(t *testing.T) {
+		Client.Logout()
+		_, resp := Client.ListCommands(th.BasicTeam.Id, false)
+		CheckUnauthorizedStatus(t, resp)
+		_, resp = Client.ListCommands(th.BasicTeam.Id, true)
+		CheckUnauthorizedStatus(t, resp)
+	})
 }
 
 func TestListAutocompleteCommands(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
@@ -355,10 +373,25 @@ func TestListAutocompleteCommands(t *testing.T) {
 			t.Fatal("Should not list the custom command")
 		}
 	})
+
+	t.Run("NoMember", func(t *testing.T) {
+		Client.Logout()
+		user := th.CreateUser()
+		th.SystemAdminClient.RemoveTeamMember(th.BasicTeam.Id, user.Id)
+		Client.Login(user.Email, user.Password)
+		_, resp := Client.ListAutocompleteCommands(th.BasicTeam.Id)
+		CheckForbiddenStatus(t, resp)
+	})
+
+	t.Run("NotLoggedIn", func(t *testing.T) {
+		Client.Logout()
+		_, resp := Client.ListAutocompleteCommands(th.BasicTeam.Id)
+		CheckUnauthorizedStatus(t, resp)
+	})
 }
 
 func TestRegenToken(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
@@ -392,8 +425,8 @@ func TestRegenToken(t *testing.T) {
 	}
 }
 
-func TestExecuteCommand(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+func TestExecuteInvalidCommand(t *testing.T) {
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 	channel := th.BasicChannel
@@ -407,56 +440,19 @@ func TestExecuteCommand(t *testing.T) {
 		})
 	}()
 	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableCommands = true })
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.AllowedUntrustedInternalConnections = "localhost" })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.AllowedUntrustedInternalConnections = "127.0.0.0/8" })
 
-	postCmd := &model.Command{
-		CreatorId: th.BasicUser.Id,
-		TeamId:    th.BasicTeam.Id,
-		URL:       fmt.Sprintf("http://localhost:%v", th.App.Srv.ListenAddr.Port) + model.API_URL_SUFFIX_V4 + "/teams/command_test",
-		Method:    model.COMMAND_METHOD_POST,
-		Trigger:   "postcommand",
-	}
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rc := &model.CommandResponse{}
 
-	if _, err := th.App.CreateCommand(postCmd); err != nil {
-		t.Fatal("failed to create post command")
-	}
-
-	commandResponse, resp := Client.ExecuteCommand(channel.Id, "/postcommand")
-	CheckNoError(t, resp)
-
-	if commandResponse == nil {
-		t.Fatal("command response should have returned")
-	}
-
-	posts, err := th.App.GetPostsPage(channel.Id, 0, 10)
-	if err != nil || posts == nil || len(posts.Order) != 3 {
-		t.Fatal("Test command failed to send")
-	}
-
-	cmdPosted := false
-	for _, post := range posts.Posts {
-		if strings.Contains(post.Message, "test command response") {
-			if post.Type != "custom_test" {
-				t.Fatal("wrong type set in slash command post")
-			}
-
-			if post.Props["someprop"] != "somevalue" {
-				t.Fatal("wrong prop set in slash command post")
-			}
-
-			cmdPosted = true
-			break
-		}
-	}
-
-	if !cmdPosted {
-		t.Fatal("Test command response failed to post")
-	}
+		w.Write([]byte(rc.ToJson()))
+	}))
+	defer ts.Close()
 
 	getCmd := &model.Command{
 		CreatorId: th.BasicUser.Id,
 		TeamId:    th.BasicTeam.Id,
-		URL:       fmt.Sprintf("http://localhost:%v", th.App.Srv.ListenAddr.Port) + model.API_URL_SUFFIX_V4 + "/teams/command_test",
+		URL:       ts.URL,
 		Method:    model.COMMAND_METHOD_GET,
 		Trigger:   "getcommand",
 	}
@@ -465,19 +461,7 @@ func TestExecuteCommand(t *testing.T) {
 		t.Fatal("failed to create get command")
 	}
 
-	commandResponse, resp = Client.ExecuteCommand(channel.Id, "/getcommand")
-	CheckNoError(t, resp)
-
-	if commandResponse == nil {
-		t.Fatal("command response should have returned")
-	}
-
-	posts, err = th.App.GetPostsPage(channel.Id, 0, 10)
-	if err != nil || posts == nil || len(posts.Order) != 4 {
-		t.Fatal("Test command failed to send")
-	}
-
-	_, resp = Client.ExecuteCommand(channel.Id, "")
+	_, resp := Client.ExecuteCommand(channel.Id, "")
 	CheckBadRequestStatus(t, resp)
 
 	_, resp = Client.ExecuteCommand(channel.Id, "/")
@@ -504,6 +488,129 @@ func TestExecuteCommand(t *testing.T) {
 	CheckNoError(t, resp)
 }
 
+func TestExecuteGetCommand(t *testing.T) {
+	th := Setup().InitBasic()
+	defer th.TearDown()
+	Client := th.Client
+	channel := th.BasicChannel
+
+	enableCommands := *th.App.Config().ServiceSettings.EnableCommands
+	allowedInternalConnections := *th.App.Config().ServiceSettings.AllowedUntrustedInternalConnections
+	defer func() {
+		th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableCommands = &enableCommands })
+		th.App.UpdateConfig(func(cfg *model.Config) {
+			cfg.ServiceSettings.AllowedUntrustedInternalConnections = &allowedInternalConnections
+		})
+	}()
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableCommands = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.AllowedUntrustedInternalConnections = "127.0.0.0/8" })
+
+	token := model.NewId()
+	expectedCommandResponse := &model.CommandResponse{
+		Text:         "test get command response",
+		ResponseType: model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
+		Type:         "custom_test",
+		Props:        map[string]interface{}{"someprop": "somevalue"},
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method)
+
+		values, err := url.ParseQuery(r.URL.RawQuery)
+		require.NoError(t, err)
+
+		require.Equal(t, token, values.Get("token"))
+		require.Equal(t, th.BasicTeam.Name, values.Get("team_domain"))
+		require.Equal(t, "ourCommand", values.Get("cmd"))
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(expectedCommandResponse.ToJson()))
+	}))
+	defer ts.Close()
+
+	getCmd := &model.Command{
+		CreatorId: th.BasicUser.Id,
+		TeamId:    th.BasicTeam.Id,
+		URL:       ts.URL + "/?cmd=ourCommand",
+		Method:    model.COMMAND_METHOD_GET,
+		Trigger:   "getcommand",
+		Token:     token,
+	}
+
+	if _, err := th.App.CreateCommand(getCmd); err != nil {
+		t.Fatal("failed to create get command")
+	}
+
+	commandResponse, resp := Client.ExecuteCommand(channel.Id, "/getcommand")
+	CheckNoError(t, resp)
+	assert.True(t, len(commandResponse.TriggerId) == 26)
+
+	expectedCommandResponse.TriggerId = commandResponse.TriggerId
+	expectedCommandResponse.Props["from_webhook"] = "true"
+	require.Equal(t, expectedCommandResponse, commandResponse)
+}
+
+func TestExecutePostCommand(t *testing.T) {
+	th := Setup().InitBasic()
+	defer th.TearDown()
+	Client := th.Client
+	channel := th.BasicChannel
+
+	enableCommands := *th.App.Config().ServiceSettings.EnableCommands
+	allowedInternalConnections := *th.App.Config().ServiceSettings.AllowedUntrustedInternalConnections
+	defer func() {
+		th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableCommands = &enableCommands })
+		th.App.UpdateConfig(func(cfg *model.Config) {
+			cfg.ServiceSettings.AllowedUntrustedInternalConnections = &allowedInternalConnections
+		})
+	}()
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableCommands = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.AllowedUntrustedInternalConnections = "127.0.0.0/8" })
+
+	token := model.NewId()
+	expectedCommandResponse := &model.CommandResponse{
+		Text:         "test post command response",
+		ResponseType: model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
+		Type:         "custom_test",
+		Props:        map[string]interface{}{"someprop": "somevalue"},
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPost, r.Method)
+
+		r.ParseForm()
+
+		require.Equal(t, token, r.FormValue("token"))
+		require.Equal(t, th.BasicTeam.Name, r.FormValue("team_domain"))
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(expectedCommandResponse.ToJson()))
+	}))
+	defer ts.Close()
+
+	postCmd := &model.Command{
+		CreatorId: th.BasicUser.Id,
+		TeamId:    th.BasicTeam.Id,
+		URL:       ts.URL,
+		Method:    model.COMMAND_METHOD_POST,
+		Trigger:   "postcommand",
+		Token:     token,
+	}
+
+	if _, err := th.App.CreateCommand(postCmd); err != nil {
+		t.Fatal("failed to create get command")
+	}
+
+	commandResponse, resp := Client.ExecuteCommand(channel.Id, "/postcommand")
+	CheckNoError(t, resp)
+	assert.True(t, len(commandResponse.TriggerId) == 26)
+
+	expectedCommandResponse.TriggerId = commandResponse.TriggerId
+	expectedCommandResponse.Props["from_webhook"] = "true"
+	require.Equal(t, expectedCommandResponse, commandResponse)
+
+}
+
 func TestExecuteCommandAgainstChannelOnAnotherTeam(t *testing.T) {
 	th := Setup().InitBasic()
 	defer th.TearDown()
@@ -519,14 +626,29 @@ func TestExecuteCommandAgainstChannelOnAnotherTeam(t *testing.T) {
 		})
 	}()
 	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableCommands = true })
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.AllowedUntrustedInternalConnections = "localhost" })
+	th.App.UpdateConfig(func(cfg *model.Config) {
+		*cfg.ServiceSettings.AllowedUntrustedInternalConnections = "localhost 127.0.0.1"
+	})
+
+	expectedCommandResponse := &model.CommandResponse{
+		Text:         "test post command response",
+		ResponseType: model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
+		Type:         "custom_test",
+		Props:        map[string]interface{}{"someprop": "somevalue"},
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(expectedCommandResponse.ToJson()))
+	}))
+	defer ts.Close()
 
 	// create a slash command on some other team where we have permission to do so
 	team2 := th.CreateTeam()
 	postCmd := &model.Command{
 		CreatorId: th.BasicUser.Id,
 		TeamId:    team2.Id,
-		URL:       fmt.Sprintf("http://localhost:%v", th.App.Srv.ListenAddr.Port) + model.API_URL_SUFFIX_V4 + "/teams/command_test",
+		URL:       ts.URL,
 		Method:    model.COMMAND_METHOD_POST,
 		Trigger:   "postcommand",
 	}
@@ -554,14 +676,29 @@ func TestExecuteCommandAgainstChannelUserIsNotIn(t *testing.T) {
 		})
 	}()
 	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableCommands = true })
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.AllowedUntrustedInternalConnections = "localhost" })
+	th.App.UpdateConfig(func(cfg *model.Config) {
+		*cfg.ServiceSettings.AllowedUntrustedInternalConnections = "localhost 127.0.0.1"
+	})
+
+	expectedCommandResponse := &model.CommandResponse{
+		Text:         "test post command response",
+		ResponseType: model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
+		Type:         "custom_test",
+		Props:        map[string]interface{}{"someprop": "somevalue"},
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(expectedCommandResponse.ToJson()))
+	}))
+	defer ts.Close()
 
 	// create a slash command on some other team where we have permission to do so
 	team2 := th.CreateTeam()
 	postCmd := &model.Command{
 		CreatorId: th.BasicUser.Id,
 		TeamId:    team2.Id,
-		URL:       fmt.Sprintf("http://localhost:%v", th.App.Srv.ListenAddr.Port) + model.API_URL_SUFFIX_V4 + "/teams/command_test",
+		URL:       ts.URL,
 		Method:    model.COMMAND_METHOD_POST,
 		Trigger:   "postcommand",
 	}
@@ -594,14 +731,32 @@ func TestExecuteCommandInDirectMessageChannel(t *testing.T) {
 		})
 	}()
 	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableCommands = true })
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.AllowedUntrustedInternalConnections = "localhost" })
+	th.App.UpdateConfig(func(cfg *model.Config) {
+		*cfg.ServiceSettings.AllowedUntrustedInternalConnections = "localhost 127.0.0.1"
+	})
+
+	// create a team that the user isn't a part of
+	team2 := th.CreateTeam()
+
+	expectedCommandResponse := &model.CommandResponse{
+		Text:         "test post command response",
+		ResponseType: model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
+		Type:         "custom_test",
+		Props:        map[string]interface{}{"someprop": "somevalue"},
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPost, r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(expectedCommandResponse.ToJson()))
+	}))
+	defer ts.Close()
 
 	// create a slash command on some other team where we have permission to do so
-	team2 := th.CreateTeam()
 	postCmd := &model.Command{
 		CreatorId: th.BasicUser.Id,
 		TeamId:    team2.Id,
-		URL:       fmt.Sprintf("http://localhost:%v", th.App.Srv.ListenAddr.Port) + model.API_URL_SUFFIX_V4 + "/teams/command_test",
+		URL:       ts.URL,
 		Method:    model.COMMAND_METHOD_POST,
 		Trigger:   "postcommand",
 	}
@@ -636,16 +791,35 @@ func TestExecuteCommandInTeamUserIsNotOn(t *testing.T) {
 		})
 	}()
 	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableCommands = true })
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.AllowedUntrustedInternalConnections = "localhost" })
+	th.App.UpdateConfig(func(cfg *model.Config) {
+		*cfg.ServiceSettings.AllowedUntrustedInternalConnections = "localhost 127.0.0.1"
+	})
 
 	// create a team that the user isn't a part of
 	team2 := th.CreateTeam()
+
+	expectedCommandResponse := &model.CommandResponse{
+		Text:         "test post command response",
+		ResponseType: model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
+		Type:         "custom_test",
+		Props:        map[string]interface{}{"someprop": "somevalue"},
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPost, r.Method)
+		r.ParseForm()
+		require.Equal(t, team2.Name, r.FormValue("team_domain"))
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(expectedCommandResponse.ToJson()))
+	}))
+	defer ts.Close()
 
 	// create a slash command on that team
 	postCmd := &model.Command{
 		CreatorId: th.BasicUser.Id,
 		TeamId:    team2.Id,
-		URL:       fmt.Sprintf("http://localhost:%v", th.App.Srv.ListenAddr.Port) + model.API_URL_SUFFIX_V4 + "/teams/command_test",
+		URL:       ts.URL,
 		Method:    model.COMMAND_METHOD_POST,
 		Trigger:   "postcommand",
 	}

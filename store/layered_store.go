@@ -6,8 +6,8 @@ package store
 import (
 	"context"
 
-	l4g "github.com/alecthomas/log4go"
 	"github.com/mattermost/mattermost-server/einterfaces"
+	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
 )
 
@@ -24,6 +24,7 @@ type LayeredStore struct {
 	TmpContext      context.Context
 	ReactionStore   ReactionStore
 	RoleStore       RoleStore
+	SchemeStore     SchemeStore
 	DatabaseLayer   LayeredStoreDatabaseLayer
 	LocalCacheLayer *LocalCacheSupplier
 	RedisLayer      *RedisSupplier
@@ -39,10 +40,11 @@ func NewLayeredStore(db LayeredStoreDatabaseLayer, metrics einterfaces.MetricsIn
 
 	store.ReactionStore = &LayeredReactionStore{store}
 	store.RoleStore = &LayeredRoleStore{store}
+	store.SchemeStore = &LayeredSchemeStore{store}
 
 	// Setup the chain
 	if ENABLE_EXPERIMENTAL_REDIS {
-		l4g.Debug("Experimental redis enabled.")
+		mlog.Debug("Experimental redis enabled.")
 		store.RedisLayer = NewRedisSupplier()
 		store.RedisLayer.SetChainNext(store.DatabaseLayer)
 		store.LayerChainHead = store.RedisLayer
@@ -81,6 +83,10 @@ func (s *LayeredStore) Post() PostStore {
 
 func (s *LayeredStore) User() UserStore {
 	return s.DatabaseLayer.User()
+}
+
+func (s *LayeredStore) Bot() BotStore {
+	return s.DatabaseLayer.Bot()
 }
 
 func (s *LayeredStore) Audit() AuditStore {
@@ -167,6 +173,26 @@ func (s *LayeredStore) Role() RoleStore {
 	return s.RoleStore
 }
 
+func (s *LayeredStore) TermsOfService() TermsOfServiceStore {
+	return s.DatabaseLayer.TermsOfService()
+}
+
+func (s *LayeredStore) UserTermsOfService() UserTermsOfServiceStore {
+	return s.DatabaseLayer.UserTermsOfService()
+}
+
+func (s *LayeredStore) Scheme() SchemeStore {
+	return s.SchemeStore
+}
+
+func (s *LayeredStore) Group() GroupStore {
+	return s.DatabaseLayer.Group()
+}
+
+func (s *LayeredStore) LinkMetadata() LinkMetadataStore {
+	return s.DatabaseLayer.LinkMetadata()
+}
+
 func (s *LayeredStore) MarkSystemRanUnitTests() {
 	s.DatabaseLayer.MarkSystemRanUnitTests()
 }
@@ -175,7 +201,16 @@ func (s *LayeredStore) Close() {
 	s.DatabaseLayer.Close()
 }
 
+func (s *LayeredStore) LockToMaster() {
+	s.DatabaseLayer.LockToMaster()
+}
+
+func (s *LayeredStore) UnlockFromMaster() {
+	s.DatabaseLayer.UnlockFromMaster()
+}
+
 func (s *LayeredStore) DropAllTables() {
+	defer s.LocalCacheLayer.Invalidate()
 	s.DatabaseLayer.DropAllTables()
 }
 
@@ -195,66 +230,86 @@ type LayeredReactionStore struct {
 	*LayeredStore
 }
 
-func (s *LayeredReactionStore) Save(reaction *model.Reaction) StoreChannel {
-	return s.RunQuery(func(supplier LayeredStoreSupplier) *LayeredStoreSupplierResult {
-		return supplier.ReactionSave(s.TmpContext, reaction)
-	})
+func (s *LayeredReactionStore) Save(reaction *model.Reaction) (*model.Reaction, *model.AppError) {
+	return s.LayerChainHead.ReactionSave(s.TmpContext, reaction)
 }
 
-func (s *LayeredReactionStore) Delete(reaction *model.Reaction) StoreChannel {
-	return s.RunQuery(func(supplier LayeredStoreSupplier) *LayeredStoreSupplierResult {
-		return supplier.ReactionDelete(s.TmpContext, reaction)
-	})
+func (s *LayeredReactionStore) Delete(reaction *model.Reaction) (*model.Reaction, *model.AppError) {
+	return s.LayerChainHead.ReactionDelete(s.TmpContext, reaction)
 }
 
-func (s *LayeredReactionStore) GetForPost(postId string, allowFromCache bool) StoreChannel {
-	return s.RunQuery(func(supplier LayeredStoreSupplier) *LayeredStoreSupplierResult {
-		return supplier.ReactionGetForPost(s.TmpContext, postId)
-	})
+func (s *LayeredReactionStore) GetForPost(postId string, allowFromCache bool) ([]*model.Reaction, *model.AppError) {
+	return s.LayerChainHead.ReactionGetForPost(s.TmpContext, postId)
 }
 
-func (s *LayeredReactionStore) DeleteAllWithEmojiName(emojiName string) StoreChannel {
-	return s.RunQuery(func(supplier LayeredStoreSupplier) *LayeredStoreSupplierResult {
-		return supplier.ReactionDeleteAllWithEmojiName(s.TmpContext, emojiName)
-	})
+func (s *LayeredReactionStore) BulkGetForPosts(postIds []string) ([]*model.Reaction, *model.AppError) {
+	return s.LayerChainHead.ReactionsBulkGetForPosts(s.TmpContext, postIds)
 }
 
-func (s *LayeredReactionStore) PermanentDeleteBatch(endTime int64, limit int64) StoreChannel {
-	return s.RunQuery(func(supplier LayeredStoreSupplier) *LayeredStoreSupplierResult {
-		return supplier.ReactionPermanentDeleteBatch(s.TmpContext, endTime, limit)
-	})
+func (s *LayeredReactionStore) DeleteAllWithEmojiName(emojiName string) *model.AppError {
+	return s.LayerChainHead.ReactionDeleteAllWithEmojiName(s.TmpContext, emojiName)
+}
+
+func (s *LayeredReactionStore) PermanentDeleteBatch(endTime int64, limit int64) (int64, *model.AppError) {
+	return s.LayerChainHead.ReactionPermanentDeleteBatch(s.TmpContext, endTime, limit)
 }
 
 type LayeredRoleStore struct {
 	*LayeredStore
 }
 
-func (s *LayeredRoleStore) Save(role *model.Role) StoreChannel {
-	return s.RunQuery(func(supplier LayeredStoreSupplier) *LayeredStoreSupplierResult {
-		return supplier.RoleSave(s.TmpContext, role)
-	})
+func (s *LayeredRoleStore) Save(role *model.Role) (*model.Role, *model.AppError) {
+	return s.LayerChainHead.RoleSave(s.TmpContext, role)
 }
 
-func (s *LayeredRoleStore) Get(roleId string) StoreChannel {
-	return s.RunQuery(func(supplier LayeredStoreSupplier) *LayeredStoreSupplierResult {
-		return supplier.RoleGet(s.TmpContext, roleId)
-	})
+func (s *LayeredRoleStore) Get(roleId string) (*model.Role, *model.AppError) {
+	return s.LayerChainHead.RoleGet(s.TmpContext, roleId)
 }
 
-func (s *LayeredRoleStore) GetByName(name string) StoreChannel {
-	return s.RunQuery(func(supplier LayeredStoreSupplier) *LayeredStoreSupplierResult {
-		return supplier.RoleGetByName(s.TmpContext, name)
-	})
+func (s *LayeredRoleStore) GetAll() ([]*model.Role, *model.AppError) {
+	return s.LayerChainHead.RoleGetAll(s.TmpContext)
 }
 
-func (s *LayeredRoleStore) GetByNames(names []string) StoreChannel {
-	return s.RunQuery(func(supplier LayeredStoreSupplier) *LayeredStoreSupplierResult {
-		return supplier.RoleGetByNames(s.TmpContext, names)
-	})
+func (s *LayeredRoleStore) GetByName(name string) (*model.Role, *model.AppError) {
+	return s.LayerChainHead.RoleGetByName(s.TmpContext, name)
 }
 
-func (s *LayeredRoleStore) PermanentDeleteAll() StoreChannel {
-	return s.RunQuery(func(supplier LayeredStoreSupplier) *LayeredStoreSupplierResult {
-		return supplier.RolePermanentDeleteAll(s.TmpContext)
-	})
+func (s *LayeredRoleStore) GetByNames(names []string) ([]*model.Role, *model.AppError) {
+	return s.LayerChainHead.RoleGetByNames(s.TmpContext, names)
+}
+
+func (s *LayeredRoleStore) Delete(roldId string) (*model.Role, *model.AppError) {
+	return s.LayerChainHead.RoleDelete(s.TmpContext, roldId)
+}
+
+func (s *LayeredRoleStore) PermanentDeleteAll() *model.AppError {
+	return s.LayerChainHead.RolePermanentDeleteAll(s.TmpContext)
+}
+
+type LayeredSchemeStore struct {
+	*LayeredStore
+}
+
+func (s *LayeredSchemeStore) Save(scheme *model.Scheme) (*model.Scheme, *model.AppError) {
+	return s.LayerChainHead.SchemeSave(s.TmpContext, scheme)
+}
+
+func (s *LayeredSchemeStore) Get(schemeId string) (*model.Scheme, *model.AppError) {
+	return s.LayerChainHead.SchemeGet(s.TmpContext, schemeId)
+}
+
+func (s *LayeredSchemeStore) GetByName(schemeName string) (*model.Scheme, *model.AppError) {
+	return s.LayerChainHead.SchemeGetByName(s.TmpContext, schemeName)
+}
+
+func (s *LayeredSchemeStore) Delete(schemeId string) (*model.Scheme, *model.AppError) {
+	return s.LayerChainHead.SchemeDelete(s.TmpContext, schemeId)
+}
+
+func (s *LayeredSchemeStore) GetAllPage(scope string, offset int, limit int) ([]*model.Scheme, *model.AppError) {
+	return s.LayerChainHead.SchemeGetAllPage(s.TmpContext, scope, offset, limit)
+}
+
+func (s *LayeredSchemeStore) PermanentDeleteAll() *model.AppError {
+	return s.LayerChainHead.SchemePermanentDeleteAll(s.TmpContext)
 }

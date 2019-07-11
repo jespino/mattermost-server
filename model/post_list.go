@@ -10,15 +10,27 @@ import (
 )
 
 type PostList struct {
-	Order []string         `json:"order"`
-	Posts map[string]*Post `json:"posts"`
+	Order      []string         `json:"order"`
+	Posts      map[string]*Post `json:"posts"`
+	NextPostId string           `json:"next_post_id"`
+	PrevPostId string           `json:"prev_post_id"`
 }
 
 func NewPostList() *PostList {
 	return &PostList{
-		Order: make([]string, 0),
-		Posts: make(map[string]*Post),
+		Order:      make([]string, 0),
+		Posts:      make(map[string]*Post),
+		NextPostId: "",
+		PrevPostId: "",
 	}
+}
+
+func (o *PostList) ToSlice() []*Post {
+	var posts []*Post
+	for _, id := range o.Order {
+		posts = append(posts, o.Posts[id])
+	}
+	return posts
 }
 
 func (o *PostList) WithRewrittenImageURLs(f func(string) string) *PostList {

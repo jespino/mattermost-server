@@ -4,17 +4,23 @@
 package app
 
 import (
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"time"
 
 	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/services/httpservice"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateIncomingWebhookForChannel(t *testing.T) {
-	th := Setup().InitBasic()
+	th := Setup(t).InitBasic()
 	defer th.TearDown()
 
 	type TestCase struct {
@@ -116,11 +122,11 @@ func TestCreateIncomingWebhookForChannel(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = tc.EnableIncomingHooks })
+			th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = tc.EnableIncomingHooks })
 			th.App.UpdateConfig(func(cfg *model.Config) {
-				cfg.ServiceSettings.EnablePostUsernameOverride = tc.EnablePostUsernameOverride
+				*cfg.ServiceSettings.EnablePostUsernameOverride = tc.EnablePostUsernameOverride
 			})
-			th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnablePostIconOverride = tc.EnablePostIconOverride })
+			th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostIconOverride = tc.EnablePostIconOverride })
 
 			createdHook, err := th.App.CreateIncomingWebhookForChannel(th.BasicUser.Id, th.BasicChannel, &tc.IncomingWebhook)
 			if tc.ExpectedError && err == nil {
@@ -145,7 +151,7 @@ func TestCreateIncomingWebhookForChannel(t *testing.T) {
 }
 
 func TestUpdateIncomingWebhook(t *testing.T) {
-	th := Setup().InitBasic()
+	th := Setup(t).InitBasic()
 	defer th.TearDown()
 
 	type TestCase struct {
@@ -247,7 +253,7 @@ func TestUpdateIncomingWebhook(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = true })
+			th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = true })
 
 			hook, err := th.App.CreateIncomingWebhookForChannel(th.BasicUser.Id, th.BasicChannel, &model.IncomingWebhook{
 				ChannelId: th.BasicChannel.Id,
@@ -257,11 +263,11 @@ func TestUpdateIncomingWebhook(t *testing.T) {
 			}
 			defer th.App.DeleteIncomingWebhook(hook.Id)
 
-			th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = tc.EnableIncomingHooks })
+			th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = tc.EnableIncomingHooks })
 			th.App.UpdateConfig(func(cfg *model.Config) {
-				cfg.ServiceSettings.EnablePostUsernameOverride = tc.EnablePostUsernameOverride
+				*cfg.ServiceSettings.EnablePostUsernameOverride = tc.EnablePostUsernameOverride
 			})
-			th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnablePostIconOverride = tc.EnablePostIconOverride })
+			th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostIconOverride = tc.EnablePostIconOverride })
 
 			updatedHook, err := th.App.UpdateIncomingWebhook(hook, &tc.IncomingWebhook)
 			if tc.ExpectedError && err == nil {
@@ -283,10 +289,10 @@ func TestUpdateIncomingWebhook(t *testing.T) {
 }
 
 func TestCreateWebhookPost(t *testing.T) {
-	th := Setup().InitBasic()
+	th := Setup(t).InitBasic()
 	defer th.TearDown()
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = true })
 
 	hook, err := th.App.CreateIncomingWebhookForChannel(th.BasicUser.Id, th.BasicChannel, &model.IncomingWebhook{ChannelId: th.BasicChannel.Id})
 	if err != nil {
@@ -469,4 +475,270 @@ func TestSplitWebhookPost(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateOutGoingWebhookWithUsernameAndIconURL(t *testing.T) {
+	th := Setup(t).InitBasic()
+	defer th.TearDown()
+
+	outgoingWebhook := model.OutgoingWebhook{
+		ChannelId:    th.BasicChannel.Id,
+		TeamId:       th.BasicChannel.TeamId,
+		CallbackURLs: []string{"http://nowhere.com"},
+		Username:     "some-user-name",
+		IconURL:      "http://some-icon/",
+		DisplayName:  "some-display-name",
+		Description:  "some-description",
+		CreatorId:    th.BasicUser.Id,
+	}
+
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableOutgoingWebhooks = true })
+
+	createdHook, err := th.App.CreateOutgoingWebhook(&outgoingWebhook)
+
+	if err != nil {
+		t.Fatalf("should not have failed: %v", err.Error())
+	}
+
+	assert.NotNil(t, createdHook, "should not be null")
+
+	assert.Equal(t, createdHook.ChannelId, outgoingWebhook.ChannelId)
+	assert.Equal(t, createdHook.TeamId, outgoingWebhook.TeamId)
+	assert.Equal(t, createdHook.CallbackURLs, outgoingWebhook.CallbackURLs)
+	assert.Equal(t, createdHook.Username, outgoingWebhook.Username)
+	assert.Equal(t, createdHook.IconURL, outgoingWebhook.IconURL)
+	assert.Equal(t, createdHook.DisplayName, outgoingWebhook.DisplayName)
+	assert.Equal(t, createdHook.Description, outgoingWebhook.Description)
+
+}
+
+func TestTriggerOutGoingWebhookWithUsernameAndIconURL(t *testing.T) {
+
+	getPayload := func(hook *model.OutgoingWebhook, th *TestHelper, channel *model.Channel) *model.OutgoingWebhookPayload {
+		return &model.OutgoingWebhookPayload{
+			Token:       hook.Token,
+			TeamId:      hook.TeamId,
+			TeamDomain:  th.BasicTeam.Name,
+			ChannelId:   channel.Id,
+			ChannelName: channel.Name,
+			Timestamp:   th.BasicPost.CreateAt,
+			UserId:      th.BasicPost.UserId,
+			UserName:    th.BasicUser.Username,
+			PostId:      th.BasicPost.Id,
+			Text:        th.BasicPost.Message,
+			TriggerWord: "Abracadabra",
+			FileIds:     strings.Join(th.BasicPost.FileIds, ","),
+		}
+	}
+
+	waitUntilWebhookResposeIsCreatedAsPost := func(channel *model.Channel, th *TestHelper, t *testing.T, createdPost chan *model.Post) {
+		go func() {
+			for i := 0; i < 5; i++ {
+				time.Sleep(time.Second)
+				posts, _ := th.App.GetPosts(channel.Id, 0, 5)
+				if len(posts.Posts) > 0 {
+					for _, post := range posts.Posts {
+						createdPost <- post
+						return
+					}
+				}
+			}
+		}()
+	}
+
+	type TestCaseOutgoing struct {
+		EnablePostUsernameOverride bool
+		EnablePostIconOverride     bool
+		ExpectedUsername           string
+		ExpectedIconUrl            string
+		WebhookResponse            *model.OutgoingWebhookResponse
+	}
+
+	createOutgoingWebhook := func(channel *model.Channel, testCallBackUrl string, th *TestHelper) (*model.OutgoingWebhook, *model.AppError) {
+		outgoingWebhook := model.OutgoingWebhook{
+			ChannelId:    channel.Id,
+			TeamId:       channel.TeamId,
+			CallbackURLs: []string{testCallBackUrl},
+			Username:     "some-user-name",
+			IconURL:      "http://some-icon/",
+			DisplayName:  "some-display-name",
+			Description:  "some-description",
+			CreatorId:    th.BasicUser.Id,
+			TriggerWords: []string{"Abracadabra"},
+			ContentType:  "application/json",
+		}
+
+		return th.App.CreateOutgoingWebhook(&outgoingWebhook)
+	}
+
+	getTestCases := func() map[string]TestCaseOutgoing {
+
+		webHookResponse := "sample response text from test server"
+		testCasesOutgoing := map[string]TestCaseOutgoing{
+
+			"Should override username and Icon": {
+				EnablePostUsernameOverride: true,
+				EnablePostIconOverride:     true,
+				ExpectedUsername:           "some-user-name",
+				ExpectedIconUrl:            "http://some-icon/",
+			},
+			"Should not override username and Icon": {
+				EnablePostUsernameOverride: false,
+				EnablePostIconOverride:     false,
+			},
+			"Should not override username and Icon if the webhook response already has it": {
+				EnablePostUsernameOverride: true,
+				EnablePostIconOverride:     true,
+				ExpectedUsername:           "webhookuser",
+				ExpectedIconUrl:            "http://webhok/icon",
+				WebhookResponse:            &model.OutgoingWebhookResponse{Text: &webHookResponse, Username: "webhookuser", IconURL: "http://webhok/icon"},
+			},
+		}
+		return testCasesOutgoing
+	}
+
+	th := Setup(t).InitBasic()
+	defer th.TearDown()
+
+	th.App.UpdateConfig(func(cfg *model.Config) {
+		*cfg.ServiceSettings.AllowedUntrustedInternalConnections = "localhost 127.0.0.1"
+	})
+	createdPost := make(chan *model.Post)
+
+	for name, testCase := range getTestCases() {
+		t.Run(name, func(t *testing.T) {
+
+			th.App.UpdateConfig(func(cfg *model.Config) {
+				*cfg.ServiceSettings.EnableOutgoingWebhooks = true
+				*cfg.ServiceSettings.EnablePostUsernameOverride = testCase.EnablePostUsernameOverride
+				*cfg.ServiceSettings.EnablePostIconOverride = testCase.EnablePostIconOverride
+			})
+
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if testCase.WebhookResponse != nil {
+					w.Write([]byte(testCase.WebhookResponse.ToJson()))
+				} else {
+					w.Write([]byte(`{"text": "sample response text from test server"}`))
+				}
+			}))
+			defer ts.Close()
+
+			channel := th.CreateChannel(th.BasicTeam)
+			hook, _ := createOutgoingWebhook(channel, ts.URL, th)
+			payload := getPayload(hook, th, channel)
+
+			th.App.TriggerWebhook(payload, hook, th.BasicPost, channel)
+
+			waitUntilWebhookResposeIsCreatedAsPost(channel, th, t, createdPost)
+
+			select {
+			case webhookPost := <-createdPost:
+				assert.Equal(t, webhookPost.Message, "sample response text from test server")
+				assert.Equal(t, webhookPost.Props["from_webhook"], "true")
+				if testCase.ExpectedIconUrl != "" {
+					assert.Equal(t, webhookPost.Props["override_icon_url"], testCase.ExpectedIconUrl)
+				} else {
+					assert.Nil(t, webhookPost.Props["override_icon_url"])
+				}
+
+				if testCase.ExpectedUsername != "" {
+					assert.Equal(t, webhookPost.Props["override_username"], testCase.ExpectedUsername)
+				} else {
+					assert.Nil(t, webhookPost.Props["override_username"])
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("Timeout, webhook response not created as post")
+			}
+
+		})
+	}
+
+}
+
+type InfiniteReader struct {
+	Prefix string
+}
+
+func (r InfiniteReader) Read(p []byte) (n int, err error) {
+	for i := range p {
+		p[i] = 'a'
+	}
+
+	return len(p), nil
+}
+
+func TestDoOutgoingWebhookRequest(t *testing.T) {
+	th := Setup(t).InitBasic()
+	defer th.TearDown()
+
+	th.App.UpdateConfig(func(cfg *model.Config) {
+		cfg.ServiceSettings.AllowedUntrustedInternalConnections = model.NewString("127.0.0.1")
+		*cfg.ServiceSettings.EnableOutgoingWebhooks = true
+	})
+
+	t.Run("with a valid response", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			io.Copy(w, strings.NewReader(`{"text": "Hello, World!"}`))
+		}))
+		defer server.Close()
+
+		resp, err := th.App.doOutgoingWebhookRequest(server.URL, strings.NewReader(""), "application/json")
+		require.Nil(t, err)
+
+		assert.NotNil(t, resp)
+		assert.NotNil(t, resp.Text)
+		assert.Equal(t, "Hello, World!", *resp.Text)
+	})
+
+	t.Run("with an invalid response", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			io.Copy(w, strings.NewReader("aaaaaaaa"))
+		}))
+		defer server.Close()
+
+		_, err := th.App.doOutgoingWebhookRequest(server.URL, strings.NewReader(""), "application/json")
+		require.NotNil(t, err)
+		require.IsType(t, &json.SyntaxError{}, err)
+	})
+
+	t.Run("with a large, valid response", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			io.Copy(w, io.MultiReader(strings.NewReader(`{"text": "`), InfiniteReader{}, strings.NewReader(`"}`)))
+		}))
+		defer server.Close()
+
+		_, err := th.App.doOutgoingWebhookRequest(server.URL, strings.NewReader(""), "application/json")
+		require.NotNil(t, err)
+		require.Equal(t, io.ErrUnexpectedEOF, err)
+	})
+
+	t.Run("with a large, invalid response", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			io.Copy(w, InfiniteReader{})
+		}))
+		defer server.Close()
+
+		_, err := th.App.doOutgoingWebhookRequest(server.URL, strings.NewReader(""), "application/json")
+		require.NotNil(t, err)
+		require.IsType(t, &json.SyntaxError{}, err)
+	})
+
+	t.Run("with a slow response", func(t *testing.T) {
+		timeout := 100 * time.Millisecond
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			time.Sleep(timeout + time.Millisecond)
+			io.Copy(w, strings.NewReader(`{"text": "Hello, World!"}`))
+		}))
+		defer server.Close()
+
+		th.App.HTTPService.(*httpservice.HTTPServiceImpl).RequestTimeout = timeout
+		defer func() {
+			th.App.HTTPService.(*httpservice.HTTPServiceImpl).RequestTimeout = httpservice.RequestTimeout
+		}()
+
+		_, err := th.App.doOutgoingWebhookRequest(server.URL, strings.NewReader(""), "application/json")
+		require.NotNil(t, err)
+		require.IsType(t, &url.Error{}, err)
+	})
 }

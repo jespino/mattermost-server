@@ -7,61 +7,83 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/mattermost/mattermost-server/model"
-	"github.com/mattermost/mattermost-server/utils"
+	"github.com/mattermost/mattermost-server/utils/fileutils"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPlugin(t *testing.T) {
-	pluginDir, err := ioutil.TempDir("", "mm-plugin-test")
-	require.NoError(t, err)
-	defer os.RemoveAll(pluginDir)
-
-	webappDir, err := ioutil.TempDir("", "mm-webapp-test")
-	require.NoError(t, err)
-	defer os.RemoveAll(webappDir)
-
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 
-	enablePlugins := *th.App.Config().PluginSettings.Enable
-	enableUploadPlugins := *th.App.Config().PluginSettings.EnableUploads
 	statesJson, _ := json.Marshal(th.App.Config().PluginSettings.PluginStates)
 	states := map[string]*model.PluginState{}
 	json.Unmarshal(statesJson, &states)
-	defer func() {
-		th.App.UpdateConfig(func(cfg *model.Config) {
-			*cfg.PluginSettings.Enable = enablePlugins
-			*cfg.PluginSettings.EnableUploads = enableUploadPlugins
-			cfg.PluginSettings.PluginStates = states
-		})
-		th.App.SaveConfig(th.App.Config(), false)
-	}()
 	th.App.UpdateConfig(func(cfg *model.Config) {
 		*cfg.PluginSettings.Enable = true
 		*cfg.PluginSettings.EnableUploads = true
+		*cfg.PluginSettings.AllowInsecureDownloadUrl = true
 	})
 
-	th.App.InitPlugins(pluginDir, webappDir, nil)
-	defer func() {
-		th.App.ShutDownPlugins()
-		th.App.PluginEnv = nil
-	}()
-
-	path, _ := utils.FindDir("tests")
-	file, err := os.Open(filepath.Join(path, "testplugin.tar.gz"))
+	path, _ := fileutils.FindDir("tests")
+	tarData, err := ioutil.ReadFile(filepath.Join(path, "testplugin.tar.gz"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer file.Close()
+
+	// Install from URL
+	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(http.StatusOK)
+		res.Write(tarData)
+	}))
+	defer func() { testServer.Close() }()
+
+	url := testServer.URL
+
+	manifest, resp := th.SystemAdminClient.InstallPluginFromUrl(url, false)
+	CheckNoError(t, resp)
+	assert.Equal(t, "testplugin", manifest.Id)
+
+	_, resp = th.SystemAdminClient.InstallPluginFromUrl(url, false)
+	CheckBadRequestStatus(t, resp)
+
+	manifest, resp = th.SystemAdminClient.InstallPluginFromUrl(url, true)
+	CheckNoError(t, resp)
+	assert.Equal(t, "testplugin", manifest.Id)
+
+	th.App.RemovePlugin(manifest.Id)
+
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.PluginSettings.Enable = false })
+
+	_, resp = th.SystemAdminClient.InstallPluginFromUrl(url, false)
+	CheckNotImplementedStatus(t, resp)
+
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.PluginSettings.Enable = true })
+
+	_, resp = th.Client.InstallPluginFromUrl(url, false)
+	CheckForbiddenStatus(t, resp)
+
+	_, resp = th.SystemAdminClient.InstallPluginFromUrl("http://nodata", false)
+	CheckBadRequestStatus(t, resp)
+
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.PluginSettings.AllowInsecureDownloadUrl = false })
+
+	_, resp = th.SystemAdminClient.InstallPluginFromUrl(url, false)
+	CheckBadRequestStatus(t, resp)
 
 	// Successful upload
-	manifest, resp := th.SystemAdminClient.UploadPlugin(file)
+	manifest, resp = th.SystemAdminClient.UploadPlugin(bytes.NewReader(tarData))
+	CheckNoError(t, resp)
+
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.PluginSettings.EnableUploads = true })
+
+	manifest, resp = th.SystemAdminClient.UploadPluginForced(bytes.NewReader(tarData))
 	defer os.RemoveAll("plugins/testplugin")
 	CheckNoError(t, resp)
 
@@ -72,18 +94,18 @@ func TestPlugin(t *testing.T) {
 	CheckBadRequestStatus(t, resp)
 
 	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.PluginSettings.Enable = false })
-	_, resp = th.SystemAdminClient.UploadPlugin(file)
+	_, resp = th.SystemAdminClient.UploadPlugin(bytes.NewReader(tarData))
 	CheckNotImplementedStatus(t, resp)
 
 	th.App.UpdateConfig(func(cfg *model.Config) {
 		*cfg.PluginSettings.Enable = true
 		*cfg.PluginSettings.EnableUploads = false
 	})
-	_, resp = th.SystemAdminClient.UploadPlugin(file)
+	_, resp = th.SystemAdminClient.UploadPlugin(bytes.NewReader(tarData))
 	CheckNotImplementedStatus(t, resp)
 
 	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.PluginSettings.EnableUploads = true })
-	_, resp = th.Client.UploadPlugin(file)
+	_, resp = th.Client.UploadPlugin(bytes.NewReader(tarData))
 	CheckForbiddenStatus(t, resp)
 
 	// Successful gets
@@ -109,7 +131,7 @@ func TestPlugin(t *testing.T) {
 	assert.False(t, found)
 
 	// Successful activate
-	ok, resp := th.SystemAdminClient.ActivatePlugin(manifest.Id)
+	ok, resp := th.SystemAdminClient.EnablePlugin(manifest.Id)
 	CheckNoError(t, resp)
 	assert.True(t, ok)
 
@@ -126,12 +148,16 @@ func TestPlugin(t *testing.T) {
 	assert.True(t, found)
 
 	// Activate error case
-	ok, resp = th.SystemAdminClient.ActivatePlugin("junk")
+	ok, resp = th.SystemAdminClient.EnablePlugin("junk")
+	CheckBadRequestStatus(t, resp)
+	assert.False(t, ok)
+
+	ok, resp = th.SystemAdminClient.EnablePlugin("JUNK")
 	CheckBadRequestStatus(t, resp)
 	assert.False(t, ok)
 
 	// Successful deactivate
-	ok, resp = th.SystemAdminClient.DeactivatePlugin(manifest.Id)
+	ok, resp = th.SystemAdminClient.DisablePlugin(manifest.Id)
 	CheckNoError(t, resp)
 	assert.True(t, ok)
 
@@ -148,7 +174,7 @@ func TestPlugin(t *testing.T) {
 	assert.True(t, found)
 
 	// Deactivate error case
-	ok, resp = th.SystemAdminClient.DeactivatePlugin("junk")
+	ok, resp = th.SystemAdminClient.DisablePlugin("junk")
 	CheckBadRequestStatus(t, resp)
 	assert.False(t, ok)
 
@@ -162,7 +188,7 @@ func TestPlugin(t *testing.T) {
 	CheckForbiddenStatus(t, resp)
 
 	// Successful webapp get
-	_, resp = th.SystemAdminClient.ActivatePlugin(manifest.Id)
+	_, resp = th.SystemAdminClient.EnablePlugin(manifest.Id)
 	CheckNoError(t, resp)
 
 	manifests, resp := th.Client.GetWebappPlugins()

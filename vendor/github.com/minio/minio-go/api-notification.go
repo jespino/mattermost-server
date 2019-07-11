@@ -1,6 +1,6 @@
 /*
- * Minio Go Library for Amazon S3 Compatible Cloud Storage
- * Copyright 2017 Minio, Inc.
+ * MinIO Go Library for Amazon S3 Compatible Cloud Storage
+ * Copyright 2017 MinIO, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -205,13 +205,11 @@ func (c Client) ListenBucketNotification(bucketName, prefix, suffix string, even
 				if err = json.Unmarshal(bio.Bytes(), &notificationInfo); err != nil {
 					continue
 				}
-				// Send notifications on channel only if there are events received.
-				if len(notificationInfo.Records) > 0 {
-					select {
-					case notificationInfoCh <- notificationInfo:
-					case <-doneCh:
-						return
-					}
+				// Send notificationInfo
+				select {
+				case notificationInfoCh <- notificationInfo:
+				case <-doneCh:
+					return
 				}
 			}
 			// Look for any underlying errors.

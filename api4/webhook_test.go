@@ -4,30 +4,29 @@
 package api4
 
 import (
-	"bytes"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-server/model"
 )
 
 func TestCreateIncomingWebhook(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = true })
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnablePostUsernameOverride = true })
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnablePostIconOverride = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostUsernameOverride = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostIconOverride = true })
 
 	defaultRolePermissions := th.SaveDefaultRolePermissions()
 	defer func() {
 		th.RestoreDefaultRolePermissions(defaultRolePermissions)
 	}()
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
-	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
 
 	hook := &model.IncomingWebhook{ChannelId: th.BasicChannel.Id}
 
@@ -59,35 +58,70 @@ func TestCreateIncomingWebhook(t *testing.T) {
 	_, resp = Client.CreateIncomingWebhook(hook)
 	CheckForbiddenStatus(t, resp)
 
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
 
 	_, resp = Client.CreateIncomingWebhook(hook)
 	CheckNoError(t, resp)
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnablePostUsernameOverride = false })
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnablePostIconOverride = false })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostUsernameOverride = false })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostIconOverride = false })
 
 	_, resp = Client.CreateIncomingWebhook(hook)
 	CheckNoError(t, resp)
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = false })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = false })
 	_, resp = Client.CreateIncomingWebhook(hook)
 	CheckNotImplementedStatus(t, resp)
 }
 
+
+func TestCreateIncomingWebhook_BypassTeamPermissions(t *testing.T) {
+	th := Setup().InitBasic()
+	defer th.TearDown()
+
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostUsernameOverride = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostIconOverride = true })
+
+	defaultRolePermissions := th.SaveDefaultRolePermissions()
+	defer th.RestoreDefaultRolePermissions(defaultRolePermissions)
+	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.SYSTEM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+
+	hook := &model.IncomingWebhook{ChannelId: th.BasicChannel.Id}
+
+	rhook, resp := th.Client.CreateIncomingWebhook(hook)
+	CheckNoError(t, resp)
+
+	require.Equal(t, rhook.ChannelId, hook.ChannelId)
+	require.Equal(t, rhook.UserId, th.BasicUser.Id)
+	require.Equal(t, rhook.TeamId,th.BasicTeam.Id)
+
+	team := th.CreateTeam()
+	team.AllowOpenInvite = false
+	th.Client.UpdateTeam(team)
+	th.SystemAdminClient.RemoveTeamMember(team.Id, th.BasicUser.Id)
+	channel := th.CreateChannelWithClientAndTeam(th.SystemAdminClient, model.CHANNEL_OPEN, team.Id)
+
+	hook = &model.IncomingWebhook{ChannelId: channel.Id}
+	rhook, resp = th.Client.CreateIncomingWebhook(hook)
+	CheckForbiddenStatus(t, resp)
+}
+
 func TestGetIncomingWebhooks(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = true })
 
 	defaultRolePermissions := th.SaveDefaultRolePermissions()
 	defer func() {
 		th.RestoreDefaultRolePermissions(defaultRolePermissions)
 	}()
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
-	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
 
 	hook := &model.IncomingWebhook{ChannelId: th.BasicChannel.Id}
 	rhook, resp := th.SystemAdminClient.CreateIncomingWebhook(hook)
@@ -138,7 +172,7 @@ func TestGetIncomingWebhooks(t *testing.T) {
 	_, resp = Client.GetIncomingWebhooks(0, 1000, "")
 	CheckForbiddenStatus(t, resp)
 
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
 
 	_, resp = Client.GetIncomingWebhooksForTeam(th.BasicTeam.Id, 0, 1000, "")
 	CheckNoError(t, resp)
@@ -155,11 +189,11 @@ func TestGetIncomingWebhooks(t *testing.T) {
 }
 
 func TestGetIncomingWebhook(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.SystemAdminClient
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = true })
 
 	var resp *model.Response
 	var rhook *model.IncomingWebhook
@@ -194,11 +228,11 @@ func TestGetIncomingWebhook(t *testing.T) {
 }
 
 func TestDeleteIncomingWebhook(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.SystemAdminClient
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = true })
 
 	var resp *model.Response
 	var rhook *model.IncomingWebhook
@@ -245,20 +279,20 @@ func TestDeleteIncomingWebhook(t *testing.T) {
 }
 
 func TestCreateOutgoingWebhook(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableOutgoingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableOutgoingWebhooks = true })
 
 	defaultRolePermissions := th.SaveDefaultRolePermissions()
 	defer func() {
 		th.RestoreDefaultRolePermissions(defaultRolePermissions)
 	}()
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
-	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
 
-	hook := &model.OutgoingWebhook{ChannelId: th.BasicChannel.Id, TeamId: th.BasicChannel.TeamId, CallbackURLs: []string{"http://nowhere.com"}}
+	hook := &model.OutgoingWebhook{ChannelId: th.BasicChannel.Id, TeamId: th.BasicChannel.TeamId, CallbackURLs: []string{"http://nowhere.com"}, Username: "some-user-name", IconURL: "http://some-icon-url/"}
 
 	rhook, resp := th.SystemAdminClient.CreateOutgoingWebhook(hook)
 	CheckNoError(t, resp)
@@ -284,28 +318,28 @@ func TestCreateOutgoingWebhook(t *testing.T) {
 	_, resp = Client.CreateOutgoingWebhook(hook)
 	CheckForbiddenStatus(t, resp)
 
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
 
 	_, resp = Client.CreateOutgoingWebhook(hook)
 	CheckNoError(t, resp)
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableOutgoingWebhooks = false })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableOutgoingWebhooks = false })
 	_, resp = Client.CreateOutgoingWebhook(hook)
 	CheckNotImplementedStatus(t, resp)
 }
 
 func TestGetOutgoingWebhooks(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableOutgoingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableOutgoingWebhooks = true })
 	defaultRolePermissions := th.SaveDefaultRolePermissions()
 	defer func() {
 		th.RestoreDefaultRolePermissions(defaultRolePermissions)
 	}()
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
-	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
 
 	hook := &model.OutgoingWebhook{ChannelId: th.BasicChannel.Id, TeamId: th.BasicChannel.TeamId, CallbackURLs: []string{"http://nowhere.com"}}
 	rhook, resp := th.SystemAdminClient.CreateOutgoingWebhook(hook)
@@ -367,13 +401,13 @@ func TestGetOutgoingWebhooks(t *testing.T) {
 		t.Fatal("missing hook")
 	}
 
-	hooks, resp = th.SystemAdminClient.GetOutgoingWebhooksForChannel(model.NewId(), 0, 1000, "")
+	_, resp = th.SystemAdminClient.GetOutgoingWebhooksForChannel(model.NewId(), 0, 1000, "")
 	CheckForbiddenStatus(t, resp)
 
 	_, resp = Client.GetOutgoingWebhooks(0, 1000, "")
 	CheckForbiddenStatus(t, resp)
 
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
 
 	_, resp = Client.GetOutgoingWebhooksForTeam(th.BasicTeam.Id, 0, 1000, "")
 	CheckNoError(t, resp)
@@ -396,11 +430,11 @@ func TestGetOutgoingWebhooks(t *testing.T) {
 }
 
 func TestGetOutgoingWebhook(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableOutgoingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableOutgoingWebhooks = true })
 
 	hook := &model.OutgoingWebhook{ChannelId: th.BasicChannel.Id, TeamId: th.BasicChannel.TeamId, CallbackURLs: []string{"http://nowhere.com"}}
 
@@ -426,26 +460,26 @@ func TestGetOutgoingWebhook(t *testing.T) {
 }
 
 func TestUpdateIncomingHook(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = true })
 
 	defaultRolePermissions := th.SaveDefaultRolePermissions()
 	defer func() {
 		th.RestoreDefaultRolePermissions(defaultRolePermissions)
 	}()
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
-	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
 
 	hook1 := &model.IncomingWebhook{ChannelId: th.BasicChannel.Id}
 
 	createdHook, resp := th.SystemAdminClient.CreateIncomingWebhook(hook1)
 	CheckNoError(t, resp)
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnablePostUsernameOverride = false })
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnablePostIconOverride = false })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostUsernameOverride = false })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostIconOverride = false })
 
 	t.Run("UpdateIncomingHook, overrides disabled", func(t *testing.T) {
 		createdHook.DisplayName = "hook2"
@@ -484,8 +518,8 @@ func TestUpdateIncomingHook(t *testing.T) {
 		assert.Equal(t, updatedHook.ChannelId, createdHook.ChannelId)
 	})
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnablePostUsernameOverride = true })
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnablePostIconOverride = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostUsernameOverride = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostIconOverride = true })
 
 	t.Run("UpdateIncomingHook", func(t *testing.T) {
 		createdHook.DisplayName = "hook2"
@@ -527,20 +561,15 @@ func TestUpdateIncomingHook(t *testing.T) {
 	t.Run("RetainCreateAt", func(t *testing.T) {
 		hook2 := &model.IncomingWebhook{ChannelId: th.BasicChannel.Id, CreateAt: 100}
 
-		createdHook, resp := th.SystemAdminClient.CreateIncomingWebhook(hook2)
+		createdHook2, resp := th.SystemAdminClient.CreateIncomingWebhook(hook2)
 		CheckNoError(t, resp)
 
-		createdHook.DisplayName = "Name2"
+		createdHook2.DisplayName = "Name2"
 
-		updatedHook, resp := th.SystemAdminClient.UpdateIncomingWebhook(createdHook)
+		updatedHook, resp := th.SystemAdminClient.UpdateIncomingWebhook(createdHook2)
 		CheckNoError(t, resp)
-		if updatedHook != nil {
-			if updatedHook.CreateAt != createdHook.CreateAt {
-				t.Fatal("failed - hook create at should not be changed")
-			}
-		} else {
-			t.Fatal("should not be nil")
-		}
+		require.NotNil(t, updatedHook)
+		assert.Equal(t, createdHook2.CreateAt, updatedHook.CreateAt)
 	})
 
 	t.Run("ModifyUpdateAt", func(t *testing.T) {
@@ -573,11 +602,11 @@ func TestUpdateIncomingHook(t *testing.T) {
 		CheckForbiddenStatus(t, resp)
 	})
 
-	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
 
 	t.Run("OnlyAdminIntegrationsDisabled", func(t *testing.T) {
-		th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+		th.AddPermissionToRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
 
 		t.Run("UpdateHookOfSameUser", func(t *testing.T) {
 			sameUserHook := &model.IncomingWebhook{ChannelId: th.BasicChannel.Id, UserId: th.BasicUser2.Id}
@@ -595,8 +624,8 @@ func TestUpdateIncomingHook(t *testing.T) {
 		})
 	})
 
-	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
 
 	Client.Logout()
 	th.UpdateUserToTeamAdmin(th.BasicUser2, th.BasicTeam)
@@ -610,13 +639,13 @@ func TestUpdateIncomingHook(t *testing.T) {
 	})
 
 	t.Run("IncomingHooksDisabled", func(t *testing.T) {
-		th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = false })
+		th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = false })
 		_, resp := Client.UpdateIncomingWebhook(createdHook)
 		CheckNotImplementedStatus(t, resp)
 		CheckErrorMessage(t, resp, "api.incoming_webhook.disabled.app_error")
 	})
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = true })
 
 	t.Run("PrivateChannel", func(t *testing.T) {
 		privateChannel := th.CreatePrivateChannel()
@@ -645,12 +674,46 @@ func TestUpdateIncomingHook(t *testing.T) {
 	})
 }
 
+func TestUpdateIncomingWebhook_BypassTeamPermissions(t *testing.T) {
+	th := Setup().InitBasic()
+	defer th.TearDown()
+
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostUsernameOverride = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnablePostIconOverride = true })
+
+	defaultRolePermissions := th.SaveDefaultRolePermissions()
+	defer th.RestoreDefaultRolePermissions(defaultRolePermissions)
+	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.SYSTEM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_INCOMING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+
+	hook := &model.IncomingWebhook{ChannelId: th.BasicChannel.Id}
+
+	rhook, resp := th.Client.CreateIncomingWebhook(hook)
+	CheckNoError(t, resp)
+
+	require.Equal(t, rhook.ChannelId, hook.ChannelId)
+	require.Equal(t, rhook.UserId, th.BasicUser.Id)
+	require.Equal(t, rhook.TeamId,th.BasicTeam.Id)
+
+	team := th.CreateTeam()
+	team.AllowOpenInvite = false
+	th.Client.UpdateTeam(team)
+	th.SystemAdminClient.RemoveTeamMember(team.Id, th.BasicUser.Id)
+	channel := th.CreateChannelWithClientAndTeam(th.SystemAdminClient, model.CHANNEL_OPEN, team.Id)
+
+	hook2 := &model.IncomingWebhook{Id: rhook.Id, ChannelId: channel.Id}
+	rhook, resp = th.Client.UpdateIncomingWebhook(hook2)
+	CheckBadRequestStatus(t, resp)
+}
+
 func TestRegenOutgoingHookToken(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableOutgoingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableOutgoingWebhooks = true })
 
 	hook := &model.OutgoingWebhook{ChannelId: th.BasicChannel.Id, TeamId: th.BasicChannel.TeamId, CallbackURLs: []string{"http://nowhere.com"}}
 	rhook, resp := th.SystemAdminClient.CreateOutgoingWebhook(hook)
@@ -672,29 +735,29 @@ func TestRegenOutgoingHookToken(t *testing.T) {
 	_, resp = Client.RegenOutgoingHookToken(rhook.Id)
 	CheckForbiddenStatus(t, resp)
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableOutgoingWebhooks = false })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableOutgoingWebhooks = false })
 	_, resp = th.SystemAdminClient.RegenOutgoingHookToken(rhook.Id)
 	CheckNotImplementedStatus(t, resp)
 }
 
 func TestUpdateOutgoingHook(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableOutgoingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableOutgoingWebhooks = true })
 	defaultRolePermissions := th.SaveDefaultRolePermissions()
 	defer func() {
 		th.RestoreDefaultRolePermissions(defaultRolePermissions)
 	}()
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
-	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
 
 	createdHook := &model.OutgoingWebhook{ChannelId: th.BasicChannel.Id, TeamId: th.BasicChannel.TeamId,
 		CallbackURLs: []string{"http://nowhere.com"}, TriggerWords: []string{"cats"}}
 
-	createdHook, resp := th.SystemAdminClient.CreateOutgoingWebhook(createdHook)
-	CheckNoError(t, resp)
+	createdHook, webookResp := th.SystemAdminClient.CreateOutgoingWebhook(createdHook)
+	CheckNoError(t, webookResp)
 
 	t.Run("UpdateOutgoingWebhook", func(t *testing.T) {
 		createdHook.DisplayName = "Cats"
@@ -711,12 +774,12 @@ func TestUpdateOutgoingHook(t *testing.T) {
 	})
 
 	t.Run("OutgoingHooksDisabled", func(t *testing.T) {
-		th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableOutgoingWebhooks = false })
+		th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableOutgoingWebhooks = false })
 		_, resp := th.SystemAdminClient.UpdateOutgoingWebhook(createdHook)
 		CheckNotImplementedStatus(t, resp)
 	})
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableOutgoingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableOutgoingWebhooks = true })
 	t.Run("RetainCreateAt", func(t *testing.T) {
 		hook2 := &model.OutgoingWebhook{ChannelId: th.BasicChannel.Id, TeamId: th.BasicChannel.TeamId,
 			CallbackURLs: []string{"http://nowhere.com"}, TriggerWords: []string{"rats"}}
@@ -761,7 +824,7 @@ func TestUpdateOutgoingHook(t *testing.T) {
 		CheckForbiddenStatus(t, resp)
 	})
 
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
 	hook2 := &model.OutgoingWebhook{ChannelId: th.BasicChannel.Id, TeamId: th.BasicChannel.TeamId,
 		CallbackURLs: []string{"http://nowhere.com"}, TriggerWords: []string{"rats2"}}
 
@@ -771,8 +834,8 @@ func TestUpdateOutgoingHook(t *testing.T) {
 	_, resp = Client.UpdateOutgoingWebhook(createdHook2)
 	CheckForbiddenStatus(t, resp)
 
-	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
-	th.AddPermissionToRole(model.PERMISSION_MANAGE_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
 
 	Client.Logout()
 	th.UpdateUserToTeamAdmin(th.BasicUser2, th.BasicTeam)
@@ -840,12 +903,44 @@ func TestUpdateOutgoingHook(t *testing.T) {
 	})
 }
 
+func TestUpdateOutgoingWebhook_BypassTeamPermissions(t *testing.T) {
+	th := Setup().InitBasic()
+	defer th.TearDown()
+
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableOutgoingWebhooks = true })
+
+	defaultRolePermissions := th.SaveDefaultRolePermissions()
+	defer th.RestoreDefaultRolePermissions(defaultRolePermissions)
+	th.RemovePermissionFromRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.SYSTEM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id, model.TEAM_USER_ROLE_ID)
+
+	hook := &model.OutgoingWebhook{ChannelId: th.BasicChannel.Id, TeamId: th.BasicChannel.TeamId,
+		CallbackURLs: []string{"http://nowhere.com"}, TriggerWords: []string{"rats2"}}
+
+	rhook, resp := th.Client.CreateOutgoingWebhook(hook)
+	CheckNoError(t, resp)
+
+	require.Equal(t, rhook.ChannelId, hook.ChannelId)
+	require.Equal(t, rhook.TeamId,th.BasicTeam.Id)
+
+	team := th.CreateTeam()
+	team.AllowOpenInvite = false
+	th.Client.UpdateTeam(team)
+	th.SystemAdminClient.RemoveTeamMember(team.Id, th.BasicUser.Id)
+	channel := th.CreateChannelWithClientAndTeam(th.SystemAdminClient, model.CHANNEL_OPEN, team.Id)
+
+	hook2 := &model.OutgoingWebhook{Id: rhook.Id, ChannelId: channel.Id}
+	rhook, resp = th.Client.UpdateOutgoingWebhook(hook2)
+	CheckForbiddenStatus(t, resp)
+}
+
 func TestDeleteOutgoingHook(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.SystemAdminClient
 
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.ServiceSettings.EnableIncomingWebhooks = true })
+	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.EnableIncomingWebhooks = true })
 
 	var resp *model.Response
 	var rhook *model.OutgoingWebhook
@@ -891,43 +986,4 @@ func TestDeleteOutgoingHook(t *testing.T) {
 		_, resp = Client.DeleteOutgoingWebhook(rhook.Id)
 		CheckForbiddenStatus(t, resp)
 	})
-}
-
-func TestCommandWebhooks(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
-	defer th.TearDown()
-
-	Client := th.SystemAdminClient
-
-	cmd := &model.Command{
-		CreatorId: th.BasicUser.Id,
-		TeamId:    th.BasicTeam.Id,
-		URL:       "http://nowhere.com",
-		Method:    model.COMMAND_METHOD_POST,
-		Trigger:   "delayed"}
-
-	cmd, _ = Client.CreateCommand(cmd)
-	args := &model.CommandArgs{
-		TeamId:    th.BasicTeam.Id,
-		UserId:    th.BasicUser.Id,
-		ChannelId: th.BasicChannel.Id,
-	}
-	hook, err := th.App.CreateCommandWebhook(cmd.Id, args)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if resp, _ := http.Post(Client.Url+"/hooks/commands/123123123123", "application/json", bytes.NewBufferString("{\"text\":\"this is a test\"}")); resp.StatusCode != http.StatusNotFound {
-		t.Fatal("expected not-found for non-existent hook")
-	}
-
-	for i := 0; i < 5; i++ {
-		if resp, err := http.Post(Client.Url+"/hooks/commands/"+hook.Id, "application/json", bytes.NewBufferString("{\"text\":\"this is a test\"}")); err != nil || resp.StatusCode != http.StatusOK {
-			t.Fatal(err)
-		}
-	}
-
-	if resp, _ := http.Post(Client.Url+"/hooks/commands/"+hook.Id, "application/json", bytes.NewBufferString("{\"text\":\"this is a test\"}")); resp.StatusCode != http.StatusBadRequest {
-		t.Fatal("expected error for sixth usage")
-	}
 }

@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPasswordHash(t *testing.T) {
@@ -20,6 +23,36 @@ func TestPasswordHash(t *testing.T) {
 	if ComparePassword(hash, "Test2") {
 		t.Fatal("Passwords should not have matched")
 	}
+}
+
+func TestUserDeepCopy(t *testing.T) {
+	id := NewId()
+	authData := "authdata"
+	mapKey := "key"
+	mapValue := "key"
+
+	user := &User{Id: id, AuthData: NewString(authData), Props: map[string]string{}, NotifyProps: map[string]string{}, Timezone: map[string]string{}}
+	user.Props[mapKey] = mapValue
+	user.NotifyProps[mapKey] = mapValue
+	user.Timezone[mapKey] = mapValue
+
+	copyUser := user.DeepCopy()
+	copyUser.Id = "someid"
+	*copyUser.AuthData = "changed"
+	copyUser.Props[mapKey] = "changed"
+	copyUser.NotifyProps[mapKey] = "changed"
+	copyUser.Timezone[mapKey] = "changed"
+
+	assert.Equal(t, id, user.Id)
+	assert.Equal(t, authData, *user.AuthData)
+	assert.Equal(t, mapValue, user.Props[mapKey])
+	assert.Equal(t, mapValue, user.NotifyProps[mapKey])
+	assert.Equal(t, mapValue, user.Timezone[mapKey])
+
+	user = &User{Id: id}
+	copyUser = user.DeepCopy()
+
+	assert.Equal(t, id, copyUser.Id)
 }
 
 func TestUserJson(t *testing.T) {
@@ -85,36 +118,34 @@ func TestUserIsValid(t *testing.T) {
 	}
 
 	user.Id = NewId()
-	if err := user.IsValid(); !HasExpectedUserIsValidError(err, "create_at", user.Id) {
-		t.Fatal()
-	}
+	err := user.IsValid()
+	require.True(t, HasExpectedUserIsValidError(err, "create_at", user.Id), "expected user is valid error: %s", err.Error())
 
 	user.CreateAt = GetMillis()
-	if err := user.IsValid(); !HasExpectedUserIsValidError(err, "update_at", user.Id) {
-		t.Fatal()
-	}
+	err = user.IsValid()
+	require.True(t, HasExpectedUserIsValidError(err, "update_at", user.Id), "expected user is valid error: %s", err.Error())
 
 	user.UpdateAt = GetMillis()
-	if err := user.IsValid(); !HasExpectedUserIsValidError(err, "username", user.Id) {
-		t.Fatal()
-	}
+	err = user.IsValid()
+	require.True(t, HasExpectedUserIsValidError(err, "username", user.Id), "expected user is valid error: %s", err.Error())
 
 	user.Username = NewId() + "^hello#"
-	if err := user.IsValid(); !HasExpectedUserIsValidError(err, "username", user.Id) {
-		t.Fatal()
-	}
+	err = user.IsValid()
+	require.True(t, HasExpectedUserIsValidError(err, "username", user.Id), "expected user is valid error: %s", err.Error())
 
 	user.Username = NewId()
-	user.Email = strings.Repeat("01234567890", 20)
-	if err := user.IsValid(); err == nil {
-		t.Fatal()
-	}
+	err = user.IsValid()
+	require.True(t, HasExpectedUserIsValidError(err, "email", user.Id), "expected user is valid error: %s", err.Error())
 
-	user.Email = strings.Repeat("a", 128)
+	user.Email = strings.Repeat("01234567890", 20)
+	err = user.IsValid()
+	require.True(t, HasExpectedUserIsValidError(err, "email", user.Id), "expected user is valid error: %s", err.Error())
+
+	user.Email = "user@example.com"
+
 	user.Nickname = strings.Repeat("a", 65)
-	if err := user.IsValid(); !HasExpectedUserIsValidError(err, "nickname", user.Id) {
-		t.Fatal()
-	}
+	err = user.IsValid()
+	require.True(t, HasExpectedUserIsValidError(err, "nickname", user.Id), "expected user is valid error: %s", err.Error())
 
 	user.Nickname = strings.Repeat("a", 64)
 	if err := user.IsValid(); err != nil {
@@ -240,6 +271,7 @@ var usernames = []struct {
 	{"spin'punch", false},
 	{"spin*punch", false},
 	{"all", false},
+	{"system", false},
 }
 
 func TestValidUsername(t *testing.T) {
@@ -293,28 +325,88 @@ func TestCleanUsername(t *testing.T) {
 }
 
 func TestRoles(t *testing.T) {
+	require.True(t, IsValidUserRoles("team_user"))
+	require.False(t, IsValidUserRoles("system_admin"))
+	require.True(t, IsValidUserRoles("system_user system_admin"))
+	require.False(t, IsInRole("system_admin junk", "admin"))
+	require.True(t, IsInRole("system_admin junk", "system_admin"))
+	require.False(t, IsInRole("admin", "system_admin"))
+}
 
-	if !IsValidUserRoles("team_user") {
-		t.Fatal()
-	}
+func TestIsValidLocale(t *testing.T) {
+	for _, test := range []struct {
+		Name     string
+		Locale   string
+		Expected bool
+	}{
+		{
+			Name:     "empty locale",
+			Locale:   "",
+			Expected: true,
+		},
+		{
+			Name:     "locale with only language",
+			Locale:   "fr",
+			Expected: true,
+		},
+		{
+			Name:     "locale with region",
+			Locale:   "en-DE", // English, as used in Germany
+			Expected: true,
+		},
+		{
+			Name:     "invalid locale",
+			Locale:   "'",
+			Expected: false,
+		},
 
-	if IsValidUserRoles("system_admin") {
-		t.Fatal()
+		// Note that the following cases are all valid language tags, but they're considered invalid here because of
+		// the max length of the User.Locale field.
+		{
+			Name:     "locale with extended language subtag",
+			Locale:   "zh-yue-HK", // Chinese, Cantonese, as used in Hong Kong
+			Expected: false,
+		},
+		{
+			Name:     "locale with script",
+			Locale:   "hy-Latn-IT-arevela", // Eastern Armenian written in Latin script, as used in Italy
+			Expected: false,
+		},
+		{
+			Name:     "locale with variant",
+			Locale:   "sl-rozaj-biske", // San Giorgio dialect of Resian dialect of Slovenian
+			Expected: false,
+		},
+		{
+			Name:     "locale with extension",
+			Locale:   "de-DE-u-co-phonebk", // German, as used in Germany, using German phonebook sort order
+			Expected: false,
+		},
+	} {
+		t.Run(test.Name, func(t *testing.T) {
+			assert.Equal(t, test.Expected, IsValidLocale(test.Locale))
+		})
 	}
+}
 
-	if !IsValidUserRoles("system_user system_admin") {
-		t.Fatal()
-	}
+func TestUserSlice(t *testing.T) {
+	t.Run("FilterByActive", func(t *testing.T) {
+		user0 := &User{Id: "user0", DeleteAt: 0}
+		user1 := &User{Id: "user1", DeleteAt: 0}
+		user2 := &User{Id: "user2", DeleteAt: 1}
 
-	if IsInRole("system_admin junk", "admin") {
-		t.Fatal()
-	}
+		slice := UserSlice([]*User{user0, user1, user2})
 
-	if !IsInRole("system_admin junk", "system_admin") {
-		t.Fatal()
-	}
+		activeUsers := slice.FilterByActive(true)
+		assert.Equal(t, 2, len(activeUsers))
+		for _, user := range activeUsers {
+			assert.True(t, user.DeleteAt == 0)
+		}
 
-	if IsInRole("admin", "system_admin") {
-		t.Fatal()
-	}
+		inactiveUsers := slice.FilterByActive(false)
+		assert.Equal(t, 1, len(inactiveUsers))
+		for _, user := range inactiveUsers {
+			assert.True(t, user.DeleteAt != 0)
+		}
+	})
 }

@@ -17,7 +17,7 @@ func TestGetUserStatus(t *testing.T) {
 		t.Fatal("Should return offline status")
 	}
 
-	th.App.SetStatusOnline(th.BasicUser.Id, "", true)
+	th.App.SetStatusOnline(th.BasicUser.Id, true)
 	userStatus, resp = Client.GetUserStatus(th.BasicUser.Id, "")
 	CheckNoError(t, resp)
 	if userStatus.Status != "online" {
@@ -80,8 +80,8 @@ func TestGetUsersStatusesByIds(t *testing.T) {
 		}
 	}
 
-	th.App.SetStatusOnline(th.BasicUser.Id, "", true)
-	th.App.SetStatusOnline(th.BasicUser2.Id, "", true)
+	th.App.SetStatusOnline(th.BasicUser.Id, true)
+	th.App.SetStatusOnline(th.BasicUser2.Id, true)
 	usersStatuses, resp = Client.GetUsersStatusesByIds(usersIds)
 	CheckNoError(t, resp)
 	for _, userStatus := range usersStatuses {
@@ -117,11 +117,11 @@ func TestGetUsersStatusesByIds(t *testing.T) {
 }
 
 func TestUpdateUserStatus(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 	Client := th.Client
 
-	toUpdateUserStatus := &model.Status{Status: "online"}
+	toUpdateUserStatus := &model.Status{Status: "online", UserId: th.BasicUser.Id}
 	updateUserStatus, resp := Client.UpdateUserStatus(th.BasicUser.Id, toUpdateUserStatus)
 	CheckNoError(t, resp)
 	if updateUserStatus.Status != "online" {
@@ -150,14 +150,18 @@ func TestUpdateUserStatus(t *testing.T) {
 	}
 
 	toUpdateUserStatus.Status = "online"
-	updateUserStatus, resp = Client.UpdateUserStatus(th.BasicUser2.Id, toUpdateUserStatus)
+	toUpdateUserStatus.UserId = th.BasicUser2.Id
+	_, resp = Client.UpdateUserStatus(th.BasicUser2.Id, toUpdateUserStatus)
 	CheckForbiddenStatus(t, resp)
 
 	toUpdateUserStatus.Status = "online"
-	updateUserStatus, resp = th.SystemAdminClient.UpdateUserStatus(th.BasicUser2.Id, toUpdateUserStatus)
+	updateUserStatus, _ = th.SystemAdminClient.UpdateUserStatus(th.BasicUser2.Id, toUpdateUserStatus)
 	if updateUserStatus.Status != "online" {
 		t.Fatal("Should return online status")
 	}
+
+	_, resp = Client.UpdateUserStatus(th.BasicUser.Id, toUpdateUserStatus)
+	CheckBadRequestStatus(t, resp)
 
 	Client.Logout()
 

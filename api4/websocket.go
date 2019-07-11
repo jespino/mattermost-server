@@ -4,12 +4,12 @@
 package api4
 
 import (
+	"fmt"
 	"net/http"
 
-	l4g "github.com/alecthomas/log4go"
 	"github.com/gorilla/websocket"
+	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
-	"github.com/mattermost/mattermost-server/utils"
 )
 
 func (api *API) InitWebSocket() {
@@ -25,14 +25,14 @@ func connectWebSocket(c *Context, w http.ResponseWriter, r *http.Request) {
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		l4g.Error(utils.T("api.web_socket.connect.error"), err)
+		mlog.Error(fmt.Sprintf("websocket connect err: %v", err))
 		c.Err = model.NewAppError("connect", "api.web_socket.connect.upgrade.app_error", nil, "", http.StatusInternalServerError)
 		return
 	}
 
-	wc := c.App.NewWebConn(ws, c.Session, c.T, "")
+	wc := c.App.NewWebConn(ws, c.App.Session, c.App.T, "")
 
-	if len(c.Session.UserId) > 0 {
+	if len(c.App.Session.UserId) > 0 {
 		c.App.HubRegister(wc)
 	}
 

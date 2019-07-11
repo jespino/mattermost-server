@@ -4,36 +4,22 @@
 package app
 
 import (
-	"bytes"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-server/model"
 )
 
-func newTestServer() (chan string, *httptest.Server) {
-	result := make(chan string, 100)
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		buf := bytes.NewBuffer(nil)
-		io.Copy(buf, r.Body)
-
-		result <- buf.String()
-	}))
-
-	return result, server
-}
-
 func TestPluginSetting(t *testing.T) {
 	settings := &model.PluginSettings{
-		Plugins: map[string]interface{}{
-			"test": map[string]string{
+		Plugins: map[string]map[string]interface{}{
+			"test": map[string]interface{}{
 				"foo": "bar",
 			},
 		},
@@ -57,65 +43,59 @@ func TestPluginActivated(t *testing.T) {
 }
 
 func TestDiagnostics(t *testing.T) {
-	th := Setup().InitBasic()
-	defer th.TearDown()
-
 	if testing.Short() {
 		t.SkipNow()
 	}
 
-	data, server := newTestServer()
+	th := Setup(t).InitBasic()
+	defer th.TearDown()
+
+	data := make(chan string, 100)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := ioutil.ReadAll(r.Body)
+		require.NoError(t, err)
+
+		data <- string(body)
+	}))
 	defer server.Close()
 
-	diagnosticId := "i am not real"
-	th.App.SetDiagnosticId(diagnosticId)
-	th.App.initDiagnostics(server.URL)
+	diagnosticID := "test-diagnostic-id-12345"
+	th.App.SetDiagnosticId(diagnosticID)
+	th.Server.initDiagnostics(server.URL)
 
 	// Should send a client identify message
 	select {
 	case identifyMessage := <-data:
-		t.Log("Got idmessage:\n" + identifyMessage)
-		if !strings.Contains(identifyMessage, diagnosticId) {
-			t.Fail()
-		}
+		require.Contains(t, identifyMessage, diagnosticID)
 	case <-time.After(time.Second * 1):
 		t.Fatal("Did not receive ID message")
 	}
 
 	t.Run("Send", func(t *testing.T) {
-		const TEST_VALUE = "stuff548959847"
+		testValue := "test-send-value-6789"
 		th.App.SendDiagnostic("Testing Diagnostic", map[string]interface{}{
-			"hey": TEST_VALUE,
+			"hey": testValue,
 		})
 		select {
 		case result := <-data:
-			t.Log("Got diagnostic:\n" + result)
-			if !strings.Contains(result, TEST_VALUE) {
-				t.Fail()
-			}
+			require.Contains(t, result, testValue)
 		case <-time.After(time.Second * 1):
 			t.Fatal("Did not receive diagnostic")
 		}
 	})
 
 	t.Run("SendDailyDiagnostics", func(t *testing.T) {
-		th.App.SendDailyDiagnostics()
+		th.App.sendDailyDiagnostics(true)
 
-		info := ""
+		var info string
 		// Collect the info sent.
+	Loop:
 		for {
-			done := false
 			select {
 			case result := <-data:
 				info += result
 			case <-time.After(time.Second * 1):
-				// Done recieving
-				done = true
-				break
-			}
-
-			if done {
-				break
+				break Loop
 			}
 		}
 
@@ -126,6 +106,7 @@ func TestDiagnostics(t *testing.T) {
 			TRACK_CONFIG_TEAM,
 			TRACK_CONFIG_SQL,
 			TRACK_CONFIG_LOG,
+			TRACK_CONFIG_NOTIFICATION_LOG,
 			TRACK_CONFIG_FILE,
 			TRACK_CONFIG_RATE,
 			TRACK_CONFIG_EMAIL,
@@ -138,7 +119,6 @@ func TestDiagnostics(t *testing.T) {
 			TRACK_CONFIG_PASSWORD,
 			TRACK_CONFIG_CLUSTER,
 			TRACK_CONFIG_METRICS,
-			TRACK_CONFIG_WEBRTC,
 			TRACK_CONFIG_SUPPORT,
 			TRACK_CONFIG_NATIVEAPP,
 			TRACK_CONFIG_ANALYTICS,
@@ -148,16 +128,25 @@ func TestDiagnostics(t *testing.T) {
 			TRACK_CONFIG_MESSAGE_EXPORT,
 			TRACK_PLUGINS,
 		} {
-			if !strings.Contains(info, item) {
-				t.Fatal("Sent diagnostics missing item: " + item)
-			}
+			require.Contains(t, info, item)
+		}
+	})
+
+	t.Run("SendDailyDiagnosticsNoSegmentKey", func(t *testing.T) {
+		th.App.SendDailyDiagnostics()
+
+		select {
+		case <-data:
+			t.Fatal("Should not send diagnostics when the segment key is not set")
+		case <-time.After(time.Second * 1):
+			// Did not receive diagnostics
 		}
 	})
 
 	t.Run("SendDailyDiagnosticsDisabled", func(t *testing.T) {
 		th.App.UpdateConfig(func(cfg *model.Config) { *cfg.LogSettings.EnableDiagnostics = false })
 
-		th.App.SendDailyDiagnostics()
+		th.App.sendDailyDiagnostics(true)
 
 		select {
 		case <-data:

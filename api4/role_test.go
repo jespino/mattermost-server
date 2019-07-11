@@ -13,7 +13,7 @@ import (
 )
 
 func TestGetRole(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 
 	role := &model.Role{
@@ -24,9 +24,8 @@ func TestGetRole(t *testing.T) {
 		SchemeManaged: true,
 	}
 
-	res1 := <-th.App.Srv.Store.Role().Save(role)
-	assert.Nil(t, res1.Err)
-	role = res1.Data.(*model.Role)
+	role, err := th.App.Srv.Store.Role().Save(role)
+	assert.Nil(t, err)
 	defer th.App.Srv.Store.Job().Delete(role.Id)
 
 	received, resp := th.Client.GetRole(role.Id)
@@ -47,7 +46,7 @@ func TestGetRole(t *testing.T) {
 }
 
 func TestGetRoleByName(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 
 	role := &model.Role{
@@ -58,9 +57,8 @@ func TestGetRoleByName(t *testing.T) {
 		SchemeManaged: true,
 	}
 
-	res1 := <-th.App.Srv.Store.Role().Save(role)
-	assert.Nil(t, res1.Err)
-	role = res1.Data.(*model.Role)
+	role, err := th.App.Srv.Store.Role().Save(role)
+	assert.Nil(t, err)
 	defer th.App.Srv.Store.Job().Delete(role.Id)
 
 	received, resp := th.Client.GetRoleByName(role.Name)
@@ -81,7 +79,7 @@ func TestGetRoleByName(t *testing.T) {
 }
 
 func TestGetRolesByNames(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 
 	role1 := &model.Role{
@@ -106,19 +104,16 @@ func TestGetRolesByNames(t *testing.T) {
 		SchemeManaged: true,
 	}
 
-	res1 := <-th.App.Srv.Store.Role().Save(role1)
-	assert.Nil(t, res1.Err)
-	role1 = res1.Data.(*model.Role)
+	role1, err := th.App.Srv.Store.Role().Save(role1)
+	assert.Nil(t, err)
 	defer th.App.Srv.Store.Job().Delete(role1.Id)
 
-	res2 := <-th.App.Srv.Store.Role().Save(role2)
-	assert.Nil(t, res2.Err)
-	role2 = res2.Data.(*model.Role)
+	role2, err = th.App.Srv.Store.Role().Save(role2)
+	assert.Nil(t, err)
 	defer th.App.Srv.Store.Job().Delete(role2.Id)
 
-	res3 := <-th.App.Srv.Store.Role().Save(role3)
-	assert.Nil(t, res3.Err)
-	role3 = res3.Data.(*model.Role)
+	role3, err = th.App.Srv.Store.Role().Save(role3)
+	assert.Nil(t, err)
 	defer th.App.Srv.Store.Job().Delete(role3.Id)
 
 	// Check all three roles can be found.
@@ -130,7 +125,7 @@ func TestGetRolesByNames(t *testing.T) {
 	assert.Contains(t, received, role3)
 
 	// Check a list of non-existent roles.
-	received, resp = th.Client.GetRolesByNames([]string{model.NewId(), model.NewId()})
+	_, resp = th.Client.GetRolesByNames([]string{model.NewId(), model.NewId()})
 	CheckNoError(t, resp)
 
 	// Empty list should error.
@@ -138,16 +133,16 @@ func TestGetRolesByNames(t *testing.T) {
 	CheckBadRequestStatus(t, resp)
 
 	// Invalid role name should error.
-	received, resp = th.Client.GetRolesByNames([]string{model.NewId(), model.NewId(), "!!!!!!"})
+	_, resp = th.Client.GetRolesByNames([]string{model.NewId(), model.NewId(), "!!!!!!"})
 	CheckBadRequestStatus(t, resp)
 
 	// Empty/whitespace rolenames should be ignored.
-	received, resp = th.Client.GetRolesByNames([]string{model.NewId(), model.NewId(), "", "    "})
+	_, resp = th.Client.GetRolesByNames([]string{model.NewId(), model.NewId(), "", "    "})
 	CheckNoError(t, resp)
 }
 
 func TestPatchRole(t *testing.T) {
-	th := Setup().InitBasic().InitSystemAdmin()
+	th := Setup().InitBasic()
 	defer th.TearDown()
 
 	role := &model.Role{
@@ -158,13 +153,12 @@ func TestPatchRole(t *testing.T) {
 		SchemeManaged: true,
 	}
 
-	res1 := <-th.App.Srv.Store.Role().Save(role)
-	assert.Nil(t, res1.Err)
-	role = res1.Data.(*model.Role)
+	role, err := th.App.Srv.Store.Role().Save(role)
+	assert.Nil(t, err)
 	defer th.App.Srv.Store.Job().Delete(role.Id)
 
 	patch := &model.RolePatch{
-		Permissions: &[]string{"manage_system", "create_public_channel", "manage_webhooks"},
+		Permissions: &[]string{"manage_system", "create_public_channel", "manage_incoming_webhooks", "manage_outgoing_webhooks"},
 	}
 
 	received, resp := th.SystemAdminClient.PatchRole(role.Id, patch)
@@ -174,28 +168,28 @@ func TestPatchRole(t *testing.T) {
 	assert.Equal(t, received.Name, role.Name)
 	assert.Equal(t, received.DisplayName, role.DisplayName)
 	assert.Equal(t, received.Description, role.Description)
-	assert.EqualValues(t, received.Permissions, []string{"manage_system", "create_public_channel", "manage_webhooks"})
+	assert.EqualValues(t, received.Permissions, []string{"manage_system", "create_public_channel", "manage_incoming_webhooks", "manage_outgoing_webhooks"})
 	assert.Equal(t, received.SchemeManaged, role.SchemeManaged)
 
 	// Check a no-op patch succeeds.
-	received, resp = th.SystemAdminClient.PatchRole(role.Id, patch)
+	_, resp = th.SystemAdminClient.PatchRole(role.Id, patch)
 	CheckNoError(t, resp)
 
-	received, resp = th.SystemAdminClient.PatchRole("junk", patch)
+	_, resp = th.SystemAdminClient.PatchRole("junk", patch)
 	CheckBadRequestStatus(t, resp)
 
-	received, resp = th.Client.PatchRole(model.NewId(), patch)
+	_, resp = th.Client.PatchRole(model.NewId(), patch)
 	CheckNotFoundStatus(t, resp)
 
-	received, resp = th.Client.PatchRole(role.Id, patch)
+	_, resp = th.Client.PatchRole(role.Id, patch)
 	CheckForbiddenStatus(t, resp)
 
 	// Check a change that the license would not allow.
 	patch = &model.RolePatch{
-		Permissions: &[]string{"manage_system", "manage_webhooks"},
+		Permissions: &[]string{"manage_system", "manage_incoming_webhooks", "manage_outgoing_webhooks"},
 	}
 
-	received, resp = th.SystemAdminClient.PatchRole(role.Id, patch)
+	_, resp = th.SystemAdminClient.PatchRole(role.Id, patch)
 	CheckNotImplementedStatus(t, resp)
 
 	// Add a license.
@@ -209,6 +203,6 @@ func TestPatchRole(t *testing.T) {
 	assert.Equal(t, received.Name, role.Name)
 	assert.Equal(t, received.DisplayName, role.DisplayName)
 	assert.Equal(t, received.Description, role.Description)
-	assert.EqualValues(t, received.Permissions, []string{"manage_system", "manage_webhooks"})
+	assert.EqualValues(t, received.Permissions, []string{"manage_system", "manage_incoming_webhooks", "manage_outgoing_webhooks"})
 	assert.Equal(t, received.SchemeManaged, role.SchemeManaged)
 }

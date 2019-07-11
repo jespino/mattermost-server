@@ -6,15 +6,18 @@ package utils
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync/atomic"
 
-	l4g "github.com/alecthomas/log4go"
 	"github.com/fsnotify/fsnotify"
-	"github.com/nicksnyder/go-i18n/i18n"
+	"github.com/mattermost/go-i18n/i18n"
+	"github.com/mattermost/mattermost-server/mlog"
+	"github.com/mattermost/mattermost-server/utils/fileutils"
 )
 
 type HTMLTemplateWatcher struct {
@@ -24,8 +27,8 @@ type HTMLTemplateWatcher struct {
 }
 
 func NewHTMLTemplateWatcher(directory string) (*HTMLTemplateWatcher, error) {
-	templatesDir, _ := FindDir(directory)
-	l4g.Debug("Parsing server templates at %v", templatesDir)
+	templatesDir, _ := fileutils.FindDir(directory)
+	mlog.Debug(fmt.Sprintf("Parsing server templates at %v", templatesDir))
 
 	ret := &HTMLTemplateWatcher{
 		stop:    make(chan struct{}),
@@ -57,15 +60,15 @@ func NewHTMLTemplateWatcher(directory string) (*HTMLTemplateWatcher, error) {
 				return
 			case event := <-watcher.Events:
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					l4g.Info("Re-parsing templates because of modified file %v", event.Name)
+					mlog.Info(fmt.Sprintf("Re-parsing templates because of modified file %v", event.Name))
 					if htmlTemplates, err := template.ParseGlob(filepath.Join(templatesDir, "*.html")); err != nil {
-						l4g.Error("Failed to parse templates %v", err)
+						mlog.Error(fmt.Sprintf("Failed to parse templates %v", err))
 					} else {
 						ret.templates.Store(htmlTemplates)
 					}
 				}
 			case err := <-watcher.Errors:
-				l4g.Error("Failed in directory watcher %s", err)
+				mlog.Error(fmt.Sprintf("Failed in directory watcher %s", err))
 			}
 		}
 	}()
@@ -110,7 +113,7 @@ func (t *HTMLTemplate) RenderToWriter(w io.Writer) error {
 	}
 
 	if err := t.Templates.ExecuteTemplate(w, t.TemplateName, t); err != nil {
-		l4g.Error(T("api.api.render.error"), t.TemplateName, err)
+		mlog.Error(fmt.Sprintf("Error rendering template %v err=%v", t.TemplateName, err))
 		return err
 	}
 
@@ -118,7 +121,10 @@ func (t *HTMLTemplate) RenderToWriter(w io.Writer) error {
 }
 
 func TranslateAsHtml(t i18n.TranslateFunc, translationID string, args map[string]interface{}) template.HTML {
-	return template.HTML(t(translationID, escapeForHtml(args)))
+	message := t(translationID, escapeForHtml(args))
+	message = strings.Replace(message, "[[", "<strong>", -1)
+	message = strings.Replace(message, "]]", "</strong>", -1)
+	return template.HTML(message)
 }
 
 func escapeForHtml(arg interface{}) interface{} {
@@ -134,7 +140,7 @@ func escapeForHtml(arg interface{}) interface{} {
 		}
 		return safeArg
 	default:
-		l4g.Warn("Unable to escape value for HTML template %v of type %v", arg, reflect.ValueOf(arg).Type())
+		mlog.Warn(fmt.Sprintf("Unable to escape value for HTML template %v of type %v", arg, reflect.ValueOf(arg).Type()))
 		return ""
 	}
 }

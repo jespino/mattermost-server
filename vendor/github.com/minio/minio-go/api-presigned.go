@@ -1,6 +1,6 @@
 /*
- * Minio Go Library for Amazon S3 Compatible Cloud Storage
- * Copyright 2015-2017 Minio, Inc.
+ * MinIO Go Library for Amazon S3 Compatible Cloud Storage
+ * Copyright 2015-2017 MinIO, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,7 +119,9 @@ func (c Client) PresignedPostPolicy(p *PostPolicy) (u *url.URL, formData map[str
 		return nil, nil, err
 	}
 
-	u, err = c.makeTargetURL(bucketName, "", location, nil)
+	isVirtualHost := c.isVirtualHostStyleRequest(*c.endpointURL, bucketName)
+
+	u, err = c.makeTargetURL(bucketName, "", location, isVirtualHost, nil)
 	if err != nil {
 		return nil, nil, err
 	}
