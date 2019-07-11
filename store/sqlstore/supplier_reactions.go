@@ -140,8 +140,10 @@ func (s *SqlSupplier) ReactionDeleteAllWithEmojiName(ctx context.Context, emojiN
 
 func (s *SqlSupplier) ReactionPermanentDeleteBatch(ctx context.Context, endTime int64, limit int64, hints ...store.LayeredStoreHint) (int64, *model.AppError) {
 	var query string
-	if s.DriverName() == "postgres" {
+	if s.DriverName() == model.DATABASE_DRIVER_POSTGRES {
 		query = "DELETE from Reactions WHERE CreateAt = any (array (SELECT CreateAt FROM Reactions WHERE CreateAt < :EndTime LIMIT :Limit))"
+	} else if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		query = "DELETE from Reactions WHERE CreateAt IN (SELECT CreateAt FROM Reactions WHERE CreateAt < :EndTime LIMIT :Limit)"
 	} else {
 		query = "DELETE from Reactions WHERE CreateAt < :EndTime LIMIT :Limit"
 	}
