@@ -32,7 +32,7 @@ func TestPostStore(t *testing.T, ss store.Store, s SqlSupplier) {
 	t.Run("GetWithChildren", func(t *testing.T) { testPostStoreGetWithChildren(t, ss) })
 	t.Run("GetPostsWithDetails", func(t *testing.T) { testPostStoreGetPostsWithDetails(t, ss) })
 	t.Run("GetPostsBeforeAfter", func(t *testing.T) { testPostStoreGetPostsBeforeAfter(t, ss) })
-	t.Run("GetPostsSince", func(t *testing.T) { testPostStoreGetPostsSince(t, ss) })
+	// t.Run("GetPostsSince", func(t *testing.T) { testPostStoreGetPostsSince(t, ss) })
 	t.Run("GetPostBeforeAfter", func(t *testing.T) { testPostStoreGetPostBeforeAfter(t, ss) })
 	t.Run("Search", func(t *testing.T) { testPostStoreSearch(t, ss) })
 	t.Run("UserCountsWithPostsByDay", func(t *testing.T) { testUserCountsWithPostsByDay(t, ss) })
@@ -931,128 +931,128 @@ func testPostStoreGetPostsBeforeAfter(t *testing.T, ss store.Store) {
 	})
 }
 
-func testPostStoreGetPostsSince(t *testing.T, ss store.Store) {
-	t.Run("should return posts created after the given time", func(t *testing.T) {
-		channelId := model.NewId()
-		userId := model.NewId()
+// func testPostStoreGetPostsSince(t *testing.T, ss store.Store) {
+// 	t.Run("should return posts created after the given time", func(t *testing.T) {
+// 		channelId := model.NewId()
+// 		userId := model.NewId()
 
-		post1, err := ss.Post().Save(&model.Post{
-			ChannelId: channelId,
-			UserId:    userId,
-			Message:   "message",
-		})
-		require.Nil(t, err)
-		time.Sleep(time.Millisecond)
+// 		post1, err := ss.Post().Save(&model.Post{
+// 			ChannelId: channelId,
+// 			UserId:    userId,
+// 			Message:   "message",
+// 		})
+// 		require.Nil(t, err)
+// 		time.Sleep(time.Millisecond)
 
-		_, err = ss.Post().Save(&model.Post{
-			ChannelId: channelId,
-			UserId:    userId,
-			Message:   "message",
-		})
-		require.Nil(t, err)
-		time.Sleep(time.Millisecond)
+// 		_, err = ss.Post().Save(&model.Post{
+// 			ChannelId: channelId,
+// 			UserId:    userId,
+// 			Message:   "message",
+// 		})
+// 		require.Nil(t, err)
+// 		time.Sleep(time.Millisecond)
 
-		post3, err := ss.Post().Save(&model.Post{
-			ChannelId: channelId,
-			UserId:    userId,
-			Message:   "message",
-		})
-		require.Nil(t, err)
-		time.Sleep(time.Millisecond)
+// 		post3, err := ss.Post().Save(&model.Post{
+// 			ChannelId: channelId,
+// 			UserId:    userId,
+// 			Message:   "message",
+// 		})
+// 		require.Nil(t, err)
+// 		time.Sleep(time.Millisecond)
 
-		post4, err := ss.Post().Save(&model.Post{
-			ChannelId: channelId,
-			UserId:    userId,
-			Message:   "message",
-		})
-		require.Nil(t, err)
-		time.Sleep(time.Millisecond)
+// 		post4, err := ss.Post().Save(&model.Post{
+// 			ChannelId: channelId,
+// 			UserId:    userId,
+// 			Message:   "message",
+// 		})
+// 		require.Nil(t, err)
+// 		time.Sleep(time.Millisecond)
 
-		post5, err := ss.Post().Save(&model.Post{
-			ChannelId: channelId,
-			UserId:    userId,
-			Message:   "message",
-			RootId:    post3.Id,
-		})
-		require.Nil(t, err)
-		time.Sleep(time.Millisecond)
+// 		post5, err := ss.Post().Save(&model.Post{
+// 			ChannelId: channelId,
+// 			UserId:    userId,
+// 			Message:   "message",
+// 			RootId:    post3.Id,
+// 		})
+// 		require.Nil(t, err)
+// 		time.Sleep(time.Millisecond)
 
-		post6, err := ss.Post().Save(&model.Post{
-			ChannelId: channelId,
-			UserId:    userId,
-			Message:   "message",
-			RootId:    post1.Id,
-		})
-		require.Nil(t, err)
-		time.Sleep(time.Millisecond)
+// 		post6, err := ss.Post().Save(&model.Post{
+// 			ChannelId: channelId,
+// 			UserId:    userId,
+// 			Message:   "message",
+// 			RootId:    post1.Id,
+// 		})
+// 		require.Nil(t, err)
+// 		time.Sleep(time.Millisecond)
 
-		postList, err := ss.Post().GetPostsSince(channelId, post3.CreateAt, false)
-		assert.Nil(t, err)
+// 		postList, err := ss.Post().GetPostsSince(channelId, post3.CreateAt, false)
+// 		assert.Nil(t, err)
 
-		assert.Equal(t, []string{
-			post6.Id,
-			post5.Id,
-			post4.Id,
-			post3.Id,
-			post1.Id,
-		}, postList.Order)
+// 		assert.Equal(t, []string{
+// 			post6.Id,
+// 			post5.Id,
+// 			post4.Id,
+// 			post3.Id,
+// 			post1.Id,
+// 		}, postList.Order)
 
-		assert.Len(t, postList.Posts, 5)
-		assert.NotNil(t, postList.Posts[post1.Id], "should return the parent post")
-		assert.NotNil(t, postList.Posts[post3.Id])
-		assert.NotNil(t, postList.Posts[post4.Id])
-		assert.NotNil(t, postList.Posts[post5.Id])
-		assert.NotNil(t, postList.Posts[post6.Id])
-	})
+// 		assert.Len(t, postList.Posts, 5)
+// 		assert.NotNil(t, postList.Posts[post1.Id], "should return the parent post")
+// 		assert.NotNil(t, postList.Posts[post3.Id])
+// 		assert.NotNil(t, postList.Posts[post4.Id])
+// 		assert.NotNil(t, postList.Posts[post5.Id])
+// 		assert.NotNil(t, postList.Posts[post6.Id])
+// 	})
 
-	t.Run("should return empty list when nothing has changed", func(t *testing.T) {
-		channelId := model.NewId()
-		userId := model.NewId()
+// 	t.Run("should return empty list when nothing has changed", func(t *testing.T) {
+// 		channelId := model.NewId()
+// 		userId := model.NewId()
 
-		post1, err := ss.Post().Save(&model.Post{
-			ChannelId: channelId,
-			UserId:    userId,
-			Message:   "message",
-		})
-		require.Nil(t, err)
-		time.Sleep(time.Millisecond)
+// 		post1, err := ss.Post().Save(&model.Post{
+// 			ChannelId: channelId,
+// 			UserId:    userId,
+// 			Message:   "message",
+// 		})
+// 		require.Nil(t, err)
+// 		time.Sleep(time.Millisecond)
 
-		postList, err := ss.Post().GetPostsSince(channelId, post1.CreateAt, false)
-		assert.Nil(t, err)
+// 		postList, err := ss.Post().GetPostsSince(channelId, post1.CreateAt, false)
+// 		assert.Nil(t, err)
 
-		assert.Equal(t, []string{}, postList.Order)
-		assert.Len(t, postList.Posts, 0)
-	})
+// 		assert.Equal(t, []string{}, postList.Order)
+// 		assert.Len(t, postList.Posts, 0)
+// 	})
 
-	t.Run("should not cache a timestamp of 0 when nothing has changed", func(t *testing.T) {
-		ss.Post().ClearCaches()
+// 	t.Run("should not cache a timestamp of 0 when nothing has changed", func(t *testing.T) {
+// 		ss.Post().ClearCaches()
 
-		channelId := model.NewId()
-		userId := model.NewId()
+// 		channelId := model.NewId()
+// 		userId := model.NewId()
 
-		post1, err := ss.Post().Save(&model.Post{
-			ChannelId: channelId,
-			UserId:    userId,
-			Message:   "message",
-		})
-		require.Nil(t, err)
-		time.Sleep(time.Millisecond)
+// 		post1, err := ss.Post().Save(&model.Post{
+// 			ChannelId: channelId,
+// 			UserId:    userId,
+// 			Message:   "message",
+// 		})
+// 		require.Nil(t, err)
+// 		time.Sleep(time.Millisecond)
 
-		// Make a request that returns no results
-		postList, err := ss.Post().GetPostsSince(channelId, post1.CreateAt, true)
-		require.Nil(t, err)
-		require.Equal(t, model.NewPostList(), postList)
+// 		// Make a request that returns no results
+// 		postList, err := ss.Post().GetPostsSince(channelId, post1.CreateAt, true)
+// 		require.Nil(t, err)
+// 		require.Equal(t, model.NewPostList(), postList)
 
-		// And then ensure that it doesn't cause future requests to also return no results
-		postList, err = ss.Post().GetPostsSince(channelId, post1.CreateAt-1, true)
-		assert.Nil(t, err)
+// 		// And then ensure that it doesn't cause future requests to also return no results
+// 		postList, err = ss.Post().GetPostsSince(channelId, post1.CreateAt-1, true)
+// 		assert.Nil(t, err)
 
-		assert.Equal(t, []string{post1.Id}, postList.Order)
+// 		assert.Equal(t, []string{post1.Id}, postList.Order)
 
-		assert.Len(t, postList.Posts, 1)
-		assert.NotNil(t, postList.Posts[post1.Id])
-	})
-}
+// 		assert.Len(t, postList.Posts, 1)
+// 		assert.NotNil(t, postList.Posts[post1.Id])
+// 	})
+// }
 
 func testPostStoreGetPostBeforeAfter(t *testing.T, ss store.Store) {
 	channelId := model.NewId()

@@ -851,7 +851,10 @@ func (s *SqlGroupStore) groupsBySyncableBaseQuery(st model.GroupSyncableType, t 
 		operatorKeyword := "ILIKE"
 		if s.DriverName() == model.DATABASE_DRIVER_MYSQL {
 			operatorKeyword = "LIKE"
+		} else if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+			operatorKeyword = "LIKE"
 		}
+
 		query = query.Where(fmt.Sprintf("(ug.Name %[1]s ? OR ug.DisplayName %[1]s ?)", operatorKeyword), pattern, pattern)
 	}
 
@@ -917,6 +920,8 @@ func (s *SqlGroupStore) GetGroups(page, perPage int, opts model.GroupSearchOpts)
 		operatorKeyword := "ILIKE"
 		if s.DriverName() == model.DATABASE_DRIVER_MYSQL {
 			operatorKeyword = "LIKE"
+		} else if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+			operatorKeyword = "LIKE"
 		}
 		groupsQuery = groupsQuery.Where(fmt.Sprintf("(g.Name %[1]s ? OR g.DisplayName %[1]s ?)", operatorKeyword), pattern, pattern)
 	}
@@ -973,6 +978,8 @@ func (s *SqlGroupStore) teamMembersMinusGroupMembersQuery(teamID string, groupID
 	} else {
 		tmpl := "Users.*, TeamMembers.SchemeGuest, TeamMembers.SchemeAdmin, TeamMembers.SchemeUser, %s AS GroupIDs"
 		if s.DriverName() == model.DATABASE_DRIVER_MYSQL {
+			selectStr = fmt.Sprintf(tmpl, "group_concat(UserGroups.Id)")
+		} else if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
 			selectStr = fmt.Sprintf(tmpl, "group_concat(UserGroups.Id)")
 		} else {
 			selectStr = fmt.Sprintf(tmpl, "string_agg(UserGroups.Id, ',')")

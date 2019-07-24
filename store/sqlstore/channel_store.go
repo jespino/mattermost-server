@@ -1844,6 +1844,17 @@ func (s SqlChannelStore) UpdateLastViewedAt(channelIds []string, userId string) 
 		WHERE
 				UserId = :UserId
 				AND (` + updateIdQuery + `)`
+	} else if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		updateQuery = `UPDATE
+			ChannelMembers
+		SET
+			MentionCount = 0,
+			MsgCount = CASE ChannelId ` + msgCountQuery + ` END,
+			LastViewedAt = CASE ChannelId ` + lastViewedQuery + ` END,
+			LastUpdateAt = CASE ChannelId ` + lastViewedQuery + ` END
+		WHERE
+				UserId = :UserId
+				AND (` + updateIdQuery + `)`
 	}
 
 	props["UserId"] = userId
@@ -2270,6 +2281,15 @@ func (s SqlChannelStore) buildFulltextClause(term string, searchColumns string) 
 		fulltextTerm = strings.Join(splitTerm, " ")
 
 		fulltextClause = fmt.Sprintf("MATCH(%s) AGAINST (:FulltextTerm IN BOOLEAN MODE)", searchColumns)
+	} else if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		splitTerm := strings.Fields(fulltextTerm)
+		for i, t := range strings.Fields(fulltextTerm) {
+			splitTerm[i] = "+" + t + "*"
+		}
+
+		fulltextTerm = strings.Join(splitTerm, " ")
+
+		fulltextClause = ""
 	}
 
 	return
@@ -2282,9 +2302,13 @@ func (s SqlChannelStore) performSearch(searchQuery string, term string, paramete
 		searchQuery = strings.Replace(searchQuery, "SEARCH_CLAUSE", "", 1)
 	} else {
 		parameters["LikeTerm"] = likeTerm
-		fulltextClause, fulltextTerm := s.buildFulltextClause(term, "c.Name, c.DisplayName, c.Purpose")
-		parameters["FulltextTerm"] = fulltextTerm
-		searchQuery = strings.Replace(searchQuery, "SEARCH_CLAUSE", "AND ("+likeClause+" OR "+fulltextClause+")", 1)
+		if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+			searchQuery = strings.Replace(searchQuery, "SEARCH_CLAUSE", "AND "+likeClause, 1)
+		} else {
+			fulltextClause, fulltextTerm := s.buildFulltextClause(term, "c.Name, c.DisplayName, c.Purpose")
+			parameters["FulltextTerm"] = fulltextTerm
+			searchQuery = strings.Replace(searchQuery, "SEARCH_CLAUSE", "AND ("+likeClause+" OR "+fulltextClause+")", 1)
+		}
 	}
 
 	var channels model.ChannelList
