@@ -11,10 +11,10 @@ import (
 )
 
 type SqlCommandStore struct {
-	SqlStore
+	*SqlStore
 }
 
-func NewSqlCommandStore(sqlStore SqlStore) store.CommandStore {
+func NewSqlCommandStore(sqlStore *SqlStore) store.CommandStore {
 	s := &SqlCommandStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

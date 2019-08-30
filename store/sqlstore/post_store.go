@@ -21,7 +21,7 @@ import (
 )
 
 type SqlPostStore struct {
-	SqlStore
+	*SqlStore
 	metrics           einterfaces.MetricsInterface
 	lastPostTimeCache *utils.Cache
 	lastPostsCache    *utils.Cache
@@ -47,7 +47,7 @@ func (s *SqlPostStore) ClearCaches() {
 	}
 }
 
-func NewSqlPostStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) store.PostStore {
+func NewSqlPostStore(sqlStore *SqlStore, metrics einterfaces.MetricsInterface) store.PostStore {
 	s := &SqlPostStore{
 		SqlStore:          sqlStore,
 		metrics:           metrics,

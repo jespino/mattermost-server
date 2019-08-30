@@ -15,7 +15,7 @@ import (
 )
 
 type SqlRoleStore struct {
-	SqlStore
+	*SqlStore
 }
 
 type Role struct {
@@ -71,7 +71,7 @@ func (role Role) ToModel() *model.Role {
 	}
 }
 
-func NewSqlRoleStore(sqlStore SqlStore) store.RoleStore {
+func NewSqlRoleStore(sqlStore *SqlStore) store.RoleStore {
 	s := &SqlRoleStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

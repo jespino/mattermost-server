@@ -11,10 +11,10 @@ import (
 )
 
 type SqlAuditStore struct {
-	SqlStore
+	*SqlStore
 }
 
-func NewSqlAuditStore(sqlStore SqlStore) store.AuditStore {
+func NewSqlAuditStore(sqlStore *SqlStore) store.AuditStore {
 	s := &SqlAuditStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

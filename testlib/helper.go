@@ -21,7 +21,7 @@ import (
 type MainHelper struct {
 	Settings         *model.SqlSettings
 	Store            store.Store
-	SqlSupplier      *sqlstore.SqlSupplier
+	SqlStore         *sqlstore.SqlStore
 	ClusterInterface *FakeClusterInterface
 
 	status           int
@@ -101,10 +101,8 @@ func (h *MainHelper) setupStore() {
 	h.Settings = storetest.MakeSqlSettings(driverName)
 
 	h.ClusterInterface = &FakeClusterInterface{}
-	h.SqlSupplier = sqlstore.NewSqlSupplier(*h.Settings, nil)
-	h.Store = &TestStore{
-		store.NewLayeredStore(h.SqlSupplier, nil, h.ClusterInterface),
-	}
+	h.SqlStore = sqlstore.NewSqlStore(*h.Settings, nil)
+	h.Store = &TestStore{h.SqlStore}
 }
 
 func (h *MainHelper) setupResources() {
@@ -148,12 +146,12 @@ func (h *MainHelper) GetStore() store.Store {
 	return h.Store
 }
 
-func (h *MainHelper) GetSqlSupplier() *sqlstore.SqlSupplier {
-	if h.SqlSupplier == nil {
+func (h *MainHelper) GetSqlStore() *sqlstore.SqlStore {
+	if h.SqlStore == nil {
 		panic("MainHelper not initialized with sql supplier.")
 	}
 
-	return h.SqlSupplier
+	return h.SqlStore
 }
 
 func (h *MainHelper) GetClusterInterface() *FakeClusterInterface {

@@ -13,10 +13,10 @@ import (
 )
 
 type SqlTokenStore struct {
-	SqlStore
+	*SqlStore
 }
 
-func NewSqlTokenStore(sqlStore SqlStore) store.TokenStore {
+func NewSqlTokenStore(sqlStore *SqlStore) store.TokenStore {
 	s := &SqlTokenStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

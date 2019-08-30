@@ -24,7 +24,7 @@ const (
 )
 
 type SqlTeamStore struct {
-	SqlStore
+	*SqlStore
 	metrics einterfaces.MetricsInterface
 }
 
@@ -155,7 +155,7 @@ func (db teamMemberWithSchemeRolesList) ToModel() []*model.TeamMember {
 	return tms
 }
 
-func NewSqlTeamStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) store.TeamStore {
+func NewSqlTeamStore(sqlStore *SqlStore, metrics einterfaces.MetricsInterface) store.TeamStore {
 	s := &SqlTeamStore{
 		sqlStore,
 		metrics,

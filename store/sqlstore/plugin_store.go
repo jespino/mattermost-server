@@ -17,10 +17,10 @@ const (
 )
 
 type SqlPluginStore struct {
-	SqlStore
+	*SqlStore
 }
 
-func NewSqlPluginStore(sqlStore SqlStore) store.PluginStore {
+func NewSqlPluginStore(sqlStore *SqlStore) store.PluginStore {
 	s := &SqlPluginStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

@@ -23,11 +23,11 @@ var emojiCacheById = utils.NewLru(EMOJI_CACHE_SIZE)
 var emojiIdCacheByName = utils.NewLru(EMOJI_CACHE_SIZE)
 
 type SqlEmojiStore struct {
-	SqlStore
+	*SqlStore
 	metrics einterfaces.MetricsInterface
 }
 
-func NewSqlEmojiStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) store.EmojiStore {
+func NewSqlEmojiStore(sqlStore *SqlStore, metrics einterfaces.MetricsInterface) store.EmojiStore {
 	s := &SqlEmojiStore{
 		SqlStore: sqlStore,
 		metrics:  metrics,

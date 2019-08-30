@@ -36,7 +36,7 @@ var (
 )
 
 type SqlUserStore struct {
-	SqlStore
+	*SqlStore
 	metrics einterfaces.MetricsInterface
 
 	// usersQuery is a starting point for all queries that return one or more Users.
@@ -64,7 +64,7 @@ func (us SqlUserStore) InvalidatProfileCacheForUser(userId string) {
 	}
 }
 
-func NewSqlUserStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) store.UserStore {
+func NewSqlUserStore(sqlStore *SqlStore, metrics einterfaces.MetricsInterface) store.UserStore {
 	us := &SqlUserStore{
 		SqlStore: sqlStore,
 		metrics:  metrics,

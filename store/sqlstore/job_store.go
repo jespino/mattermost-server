@@ -13,10 +13,10 @@ import (
 )
 
 type SqlJobStore struct {
-	SqlStore
+	*SqlStore
 }
 
-func NewSqlJobStore(sqlStore SqlStore) store.JobStore {
+func NewSqlJobStore(sqlStore *SqlStore) store.JobStore {
 	s := &SqlJobStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

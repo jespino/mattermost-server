@@ -18,10 +18,10 @@ const (
 )
 
 type SqlStatusStore struct {
-	SqlStore
+	*SqlStore
 }
 
-func NewSqlStatusStore(sqlStore SqlStore) store.StatusStore {
+func NewSqlStatusStore(sqlStore *SqlStore) store.StatusStore {
 	s := &SqlStatusStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

@@ -14,10 +14,10 @@ import (
 )
 
 type SqlPreferenceStore struct {
-	SqlStore
+	*SqlStore
 }
 
-func NewSqlPreferenceStore(sqlStore SqlStore) store.PreferenceStore {
+func NewSqlPreferenceStore(sqlStore *SqlStore) store.PreferenceStore {
 	s := &SqlPreferenceStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

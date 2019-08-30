@@ -38,12 +38,12 @@ func botFromModel(b *model.Bot) *bot {
 // Bots are otherwise normal users with extra metadata record in the Bots table. The primary key
 // for a bot matches the primary key value for corresponding User record.
 type SqlBotStore struct {
-	SqlStore
+	*SqlStore
 	metrics einterfaces.MetricsInterface
 }
 
 // NewSqlBotStore creates an instance of SqlBotStore, registering the table schema in question.
-func NewSqlBotStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) store.BotStore {
+func NewSqlBotStore(sqlStore *SqlStore, metrics einterfaces.MetricsInterface) store.BotStore {
 	us := &SqlBotStore{
 		SqlStore: sqlStore,
 		metrics:  metrics,
