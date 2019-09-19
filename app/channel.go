@@ -104,6 +104,11 @@ func (a *App) JoinDefaultChannels(teamId string, user *model.User, shouldBeAdmin
 
 		a.InvalidateCacheForChannelMembers(channel.Id)
 
+		message := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_USER_ADDED, "", channel.Id, "", nil)
+		message.Add("user_id", user.Id)
+		message.Add("team_id", channel.TeamId)
+		a.Publish(message)
+
 	}
 
 	if a.IsESIndexingEnabled() {
@@ -155,7 +160,7 @@ func (a *App) CreateChannelWithUser(channel *model.Channel, userId string) (*mod
 	}
 
 	// Get total number of channels on current team
-	count, err := a.GetNumberOfChannelsOnTeam(channel.TeamId)
+	count, err := a.GetNumberOfChannelsOnTeam(channel.TeamId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -340,15 +345,19 @@ func (a *App) createDirectChannel(userId string, otherUserId string) (*model.Cha
 		close(uc2)
 	}()
 
-	if result := <-uc1; result.Err != nil {
+	result := <-uc1
+	if result.Err != nil {
 		return nil, model.NewAppError("CreateDirectChannel", "api.channel.create_direct_channel.invalid_user.app_error", nil, userId, http.StatusBadRequest)
 	}
+	user := result.Data.(*model.User)
 
-	if result := <-uc2; result.Err != nil {
+	result = <-uc2
+	if result.Err != nil {
 		return nil, model.NewAppError("CreateDirectChannel", "api.channel.create_direct_channel.invalid_user.app_error", nil, otherUserId, http.StatusBadRequest)
 	}
+	otherUser := result.Data.(*model.User)
 
-	channel, err := a.Srv.Store.Channel().CreateDirectChannel(userId, otherUserId)
+	channel, err := a.Srv.Store.Channel().CreateDirectChannel(user, otherUser)
 	if err != nil {
 		if err.Id == store.CHANNEL_EXISTS_ERROR {
 			return channel, err
@@ -1321,6 +1330,10 @@ func (a *App) GetChannelGuestCount(channelId string) (int64, *model.AppError) {
 	return a.Srv.Store.Channel().GetGuestCount(channelId, true)
 }
 
+func (a *App) GetChannelPinnedPostCount(channelId string) (int64, *model.AppError) {
+	return a.Srv.Store.Channel().GetPinnedPostCount(channelId, true)
+}
+
 func (a *App) GetChannelCounts(teamId string, userId string) (*model.ChannelCounts, *model.AppError) {
 	return a.Srv.Store.Channel().GetChannelCounts(teamId, userId)
 }
@@ -1400,10 +1413,18 @@ func (a *App) JoinChannel(channel *model.Channel, userId string) *model.AppError
 }
 
 func (a *App) postJoinChannelMessage(user *model.User, channel *model.Channel) *model.AppError {
+	message := fmt.Sprintf(utils.T("api.channel.join_channel.post_and_forget"), user.Username)
+	postType := model.POST_JOIN_CHANNEL
+
+	if user.IsGuest() {
+		message = fmt.Sprintf(utils.T("api.channel.guest_join_channel.post_and_forget"), user.Username)
+		postType = model.POST_GUEST_JOIN_CHANNEL
+	}
+
 	post := &model.Post{
 		ChannelId: channel.Id,
-		Message:   fmt.Sprintf(utils.T("api.channel.join_channel.post_and_forget"), user.Username),
-		Type:      model.POST_JOIN_CHANNEL,
+		Message:   message,
+		Type:      postType,
 		UserId:    user.Id,
 		Props: model.StringInterface{
 			"username": user.Username,
@@ -1518,10 +1539,18 @@ func (a *App) postLeaveChannelMessage(user *model.User, channel *model.Channel) 
 }
 
 func (a *App) PostAddToChannelMessage(user *model.User, addedUser *model.User, channel *model.Channel, postRootId string) *model.AppError {
+	message := fmt.Sprintf(utils.T("api.channel.add_member.added"), addedUser.Username, user.Username)
+	postType := model.POST_ADD_TO_CHANNEL
+
+	if addedUser.IsGuest() {
+		message = fmt.Sprintf(utils.T("api.channel.add_guest.added"), addedUser.Username, user.Username)
+		postType = model.POST_ADD_GUEST_TO_CHANNEL
+	}
+
 	post := &model.Post{
 		ChannelId: channel.Id,
-		Message:   fmt.Sprintf(utils.T("api.channel.add_member.added"), addedUser.Username, user.Username),
-		Type:      model.POST_ADD_TO_CHANNEL,
+		Message:   message,
+		Type:      postType,
 		UserId:    user.Id,
 		RootId:    postRootId,
 		Props: model.StringInterface{
@@ -1695,12 +1724,23 @@ func (a *App) RemoveUserFromChannel(userIdToRemove string, removerUserId string,
 	return nil
 }
 
-func (a *App) GetNumberOfChannelsOnTeam(teamId string) (int, *model.AppError) {
+func (a *App) GetNumberOfChannelsOnTeam(teamId string, includeDeleted bool) (int, *model.AppError) {
 	// Get total number of channels on current team
 	list, err := a.Srv.Store.Channel().GetTeamChannels(teamId)
 	if err != nil {
 		return 0, err
 	}
+
+	if !includeDeleted {
+		count := 0
+		for _, channel := range *list {
+			if channel.DeleteAt == 0 {
+				count++
+			}
+		}
+		return count, nil
+	}
+
 	return len(*list), nil
 }
 
@@ -1821,6 +1861,14 @@ func (a *App) SearchChannels(teamId string, term string) (*model.ChannelList, *m
 	term = strings.TrimSpace(term)
 
 	return a.Srv.Store.Channel().SearchInTeam(teamId, term, includeDeleted)
+}
+
+func (a *App) SearchChannelsForUser(userId, teamId, term string) (*model.ChannelList, *model.AppError) {
+	includeDeleted := *a.Config().TeamSettings.ExperimentalViewArchivedChannels
+
+	term = strings.TrimSpace(term)
+
+	return a.Srv.Store.Channel().SearchForUserInTeam(userId, teamId, term, includeDeleted)
 }
 
 func (a *App) SearchGroupChannels(userId, term string) (*model.ChannelList, *model.AppError) {

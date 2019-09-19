@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -25,8 +24,8 @@ import (
 	"github.com/mattermost/mattermost-server/web"
 	"github.com/mattermost/mattermost-server/wsapi"
 
-	s3 "github.com/minio/minio-go"
-	"github.com/minio/minio-go/pkg/credentials"
+	s3 "github.com/minio/minio-go/v6"
+	"github.com/minio/minio-go/v6/pkg/credentials"
 )
 
 type TestHelper struct {
@@ -64,7 +63,7 @@ func UseTestStore(store store.Store) {
 func setupTestHelper(enterprise bool, updateConfig func(*model.Config)) *TestHelper {
 	testStore.DropAllTables()
 
-	memoryStore, err := config.NewMemoryStore()
+	memoryStore, err := config.NewMemoryStoreWithOptions(&config.MemoryStoreOptions{IgnoreEnvironmentOverrides: true})
 	if err != nil {
 		panic("failed to initialize memory store: " + err.Error())
 	}
@@ -88,6 +87,10 @@ func setupTestHelper(enterprise bool, updateConfig func(*model.Config)) *TestHel
 		*cfg.TeamSettings.MaxUsersPerTeam = 50
 		*cfg.RateLimitSettings.Enable = false
 		*cfg.EmailSettings.SendEmailNotifications = true
+
+		// Disable sniffing, otherwise elastic client fails to connect to docker node
+		// More details: https://github.com/olivere/elastic/wiki/Sniffing
+		*cfg.ElasticsearchSettings.Sniff = false
 	})
 	prevListenAddress := *th.App.Config().ServiceSettings.ListenAddress
 	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.ServiceSettings.ListenAddress = ":0" })
@@ -133,16 +136,6 @@ func setupTestHelper(enterprise bool, updateConfig func(*model.Config)) *TestHel
 		}
 		th.tempWorkspace = dir
 	}
-
-	pluginDir := filepath.Join(th.tempWorkspace, "plugins")
-	webappDir := filepath.Join(th.tempWorkspace, "webapp")
-
-	th.App.UpdateConfig(func(cfg *model.Config) {
-		*cfg.PluginSettings.Directory = pluginDir
-		*cfg.PluginSettings.ClientDirectory = webappDir
-	})
-
-	th.App.InitPlugins(pluginDir, webappDir)
 
 	return th
 }
@@ -520,10 +513,10 @@ func (me *TestHelper) AddUserToChannel(user *model.User, channel *model.Channel)
 }
 
 func (me *TestHelper) GenerateTestEmail() string {
-	if *me.App.Config().EmailSettings.SMTPServer != "dockerhost" && os.Getenv("CI_INBUCKET_PORT") == "" {
+	if *me.App.Config().EmailSettings.SMTPServer != "localhost" && os.Getenv("CI_INBUCKET_PORT") == "" {
 		return strings.ToLower("success+" + model.NewId() + "@simulator.amazonses.com")
 	}
-	return strings.ToLower(model.NewId() + "@dockerhost")
+	return strings.ToLower(model.NewId() + "@localhost")
 }
 
 func (me *TestHelper) CreateGroup() *model.Group {
