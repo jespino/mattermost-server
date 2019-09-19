@@ -956,15 +956,9 @@ func IsUniqueConstraintError(err error, indexName []string) bool {
 	}
 
 	if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
-		fmt.Println("SQLITE ERROR")
 		unique = true
-	} else {
-		fmt.Println(ok)
-		fmt.Println(sqliteErr)
-		fmt.Println("NO SQLITE ERROR")
 	}
 
-	fmt.Println(err.Error())
 	field := false
 	for _, contain := range indexName {
 		if strings.Contains(err.Error(), contain) {
