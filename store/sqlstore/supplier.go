@@ -25,7 +25,7 @@ import (
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/store"
 	"github.com/mattermost/mattermost-server/utils"
-	_ "github.com/mattn/go-sqlite3"
+	sqlite3 "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -955,6 +955,16 @@ func IsUniqueConstraintError(err error, indexName []string) bool {
 		unique = true
 	}
 
+	if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
+		fmt.Println("SQLITE ERROR")
+		unique = true
+	} else {
+		fmt.Println(ok)
+		fmt.Println(sqliteErr)
+		fmt.Println("NO SQLITE ERROR")
+	}
+
+	fmt.Println(err.Error())
 	field := false
 	for _, contain := range indexName {
 		if strings.Contains(err.Error(), contain) {

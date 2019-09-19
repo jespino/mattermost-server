@@ -102,7 +102,7 @@ func (s *SqlGroupStore) Create(group *model.Group) (*model.Group, *model.AppErro
 	group.UpdateAt = group.CreateAt
 
 	if err := s.GetMaster().Insert(group); err != nil {
-		if IsUniqueConstraintError(err, []string{"Name", "groups_name_key"}) {
+		if IsUniqueConstraintError(err, []string{"UserGroups.Name", "Name", "groups_name_key"}) {
 			return nil, model.NewAppError("SqlGroupStore.GroupCreate", "store.sql_group.unique_constraint", nil, err.Error(), http.StatusInternalServerError)
 		}
 		return nil, model.NewAppError("SqlGroupStore.GroupCreate", "store.insert_error", nil, err.Error(), http.StatusInternalServerError)
@@ -1064,6 +1064,8 @@ func (s *SqlGroupStore) channelMembersMinusGroupMembersQuery(channelID string, g
 	} else {
 		tmpl := "Users.*, ChannelMembers.SchemeGuest, ChannelMembers.SchemeAdmin, ChannelMembers.SchemeUser, %s AS GroupIDs"
 		if s.DriverName() == model.DATABASE_DRIVER_MYSQL {
+			selectStr = fmt.Sprintf(tmpl, "group_concat(UserGroups.Id)")
+		} else if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
 			selectStr = fmt.Sprintf(tmpl, "group_concat(UserGroups.Id)")
 		} else {
 			selectStr = fmt.Sprintf(tmpl, "string_agg(UserGroups.Id, ',')")
