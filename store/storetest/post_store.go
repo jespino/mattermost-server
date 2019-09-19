@@ -1275,6 +1275,9 @@ func testPostStoreGetPostBeforeAfter(t *testing.T, ss store.Store) {
 }
 
 func testPostStoreSearch(t *testing.T, ss store.Store) {
+	if ss.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		t.Skip("Skipping for sqlite")
+	}
 	teamId := model.NewId()
 	userId := model.NewId()
 
@@ -1807,6 +1810,7 @@ func testPostStoreGetFlaggedPostsForTeam(t *testing.T, ss store.Store, s SqlSupp
 	c1.Name = "zz" + model.NewId() + "b"
 	c1.Type = model.CHANNEL_OPEN
 	c1, err := ss.Channel().Save(c1, -1)
+	defer ss.Channel().PermanentDelete(c1.Id)
 	require.Nil(t, err)
 
 	o1 := &model.Post{}
@@ -1858,6 +1862,7 @@ func testPostStoreGetFlaggedPostsForTeam(t *testing.T, ss store.Store, s SqlSupp
 	m2.NotifyProps = model.GetDefaultChannelNotifyProps()
 
 	c2, err = ss.Channel().SaveDirectChannel(c2, m1, m2)
+	defer ss.Channel().PermanentDelete(c2.Id)
 	require.Nil(t, err)
 
 	o5 := &model.Post{}
@@ -1995,9 +2000,6 @@ func testPostStoreGetFlaggedPostsForTeam(t *testing.T, ss store.Store, s SqlSupp
 	if len(r4.Order) != 3 {
 		t.Fatal("should have 3 posts")
 	}
-
-	// Manually truncate Channels table until testlib can handle cleanups
-	s.GetMaster().Exec("TRUNCATE Channels")
 }
 
 func testPostStoreGetFlaggedPosts(t *testing.T, ss store.Store) {
@@ -2754,6 +2756,7 @@ func testPostStoreGetDirectPostParentsForExportAfter(t *testing.T, ss store.Stor
 	m2.NotifyProps = model.GetDefaultChannelNotifyProps()
 
 	ss.Channel().SaveDirectChannel(&o1, &m1, &m2)
+	defer ss.Channel().PermanentDelete(o1.Id)
 
 	p1 := &model.Post{}
 	p1.ChannelId = o1.Id
@@ -2767,9 +2770,6 @@ func testPostStoreGetDirectPostParentsForExportAfter(t *testing.T, ss store.Stor
 	assert.Nil(t, err)
 
 	assert.Equal(t, p1.Message, r1[0].Message)
-
-	// Manually truncate Channels table until testlib can handle cleanups
-	s.GetMaster().Exec("TRUNCATE Channels")
 }
 
 func testPostStoreGetDirectPostParentsForExportAfterDeleted(t *testing.T, ss store.Store, s SqlSupplier) {
@@ -2810,6 +2810,7 @@ func testPostStoreGetDirectPostParentsForExportAfterDeleted(t *testing.T, ss sto
 	m2.NotifyProps = model.GetDefaultChannelNotifyProps()
 
 	ss.Channel().SaveDirectChannel(&o1, &m1, &m2)
+	defer ss.Channel().PermanentDelete(o1.Id)
 
 	o1.DeleteAt = 1
 	err = ss.Channel().SetDeleteAt(o1.Id, 1, 1)
@@ -2835,9 +2836,6 @@ func testPostStoreGetDirectPostParentsForExportAfterDeleted(t *testing.T, ss sto
 	assert.Nil(t, err)
 
 	assert.Equal(t, 0, len(r1))
-
-	// Manually truncate Channels table until testlib can handle cleanups
-	s.GetMaster().Exec("TRUNCATE Channels")
 }
 
 func testPostStoreGetDirectPostParentsForExportAfterBatched(t *testing.T, ss store.Store, s SqlSupplier) {
@@ -2878,6 +2876,7 @@ func testPostStoreGetDirectPostParentsForExportAfterBatched(t *testing.T, ss sto
 		m2.NotifyProps = model.GetDefaultChannelNotifyProps()
 
 		ss.Channel().SaveDirectChannel(&o1, &m1, &m2)
+		defer ss.Channel().PermanentDelete(o1.Id)
 
 		p1 := &model.Post{}
 		p1.ChannelId = o1.Id
@@ -2911,7 +2910,4 @@ func testPostStoreGetDirectPostParentsForExportAfterBatched(t *testing.T, ss sto
 	}
 	sort.Slice(exportedPostIds, func(i, j int) bool { return exportedPostIds[i] < exportedPostIds[j] })
 	assert.ElementsMatch(t, postIds[:100], exportedPostIds)
-
-	// Manually truncate Channels table until testlib can handle cleanups
-	s.GetMaster().Exec("TRUNCATE Channels")
 }

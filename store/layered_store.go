@@ -199,6 +199,10 @@ func (s *LayeredStore) DropAllTables() {
 	s.DatabaseLayer.DropAllTables()
 }
 
+func (s *LayeredStore) DriverName() string {
+	return s.DatabaseLayer.DriverName()
+}
+
 func (s *LayeredStore) TotalMasterDbConnections() int {
 	return s.DatabaseLayer.TotalMasterDbConnections()
 }

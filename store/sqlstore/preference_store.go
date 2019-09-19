@@ -111,8 +111,7 @@ func (s SqlPreferenceStore) save(transaction *gorp.Transaction, preference *mode
 				AND Category = :Category
 				AND Name = :Name`, params)
 		if err != nil {
-			result.Err = model.NewAppError("SqlPreferenceStore.save", "store.sql_preference.save.updating.app_error", nil, err.Error(), http.StatusInternalServerError)
-			return result
+			return model.NewAppError("SqlPreferenceStore.save", "store.sql_preference.save.updating.app_error", nil, err.Error(), http.StatusInternalServerError)
 		}
 
 		if count == 1 {
