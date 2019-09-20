@@ -100,6 +100,7 @@ func (s SqlPreferenceStore) save(transaction *gorp.Transaction, preference *mode
 				Value = :Value`, params); err != nil {
 			return model.NewAppError("SqlPreferenceStore.save", "store.sql_preference.save.updating.app_error", nil, err.Error(), http.StatusInternalServerError)
 		}
+		return nil
 	} else if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
 		count, err := transaction.SelectInt(
 			`SELECT

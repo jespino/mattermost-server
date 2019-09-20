@@ -1360,18 +1360,33 @@ func (us SqlUserStore) GetProfilesNotInTeam(teamId string, groupConstrained bool
 
 func (us SqlUserStore) GetEtagForProfilesNotInTeam(teamId string) string {
 	var querystr string
-	querystr = `
-		SELECT
-			CONCAT(MAX(UpdateAt), '.', COUNT(Id)) as etag
-		FROM
-			Users as u
-		LEFT JOIN TeamMembers tm
-			ON tm.UserId = u.Id
-			AND tm.TeamId = :TeamId
-			AND tm.DeleteAt = 0
-		WHERE
-			tm.UserId IS NULL
-	`
+	if us.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		querystr = `
+			SELECT
+				MAX(UpdateAt) || '.' || COUNT(Id) as etag
+			FROM
+				Users as u
+			LEFT JOIN TeamMembers tm
+				ON tm.UserId = u.Id
+				AND tm.TeamId = :TeamId
+				AND tm.DeleteAt = 0
+			WHERE
+				tm.UserId IS NULL
+		`
+	} else {
+		querystr = `
+			SELECT
+				CONCAT(MAX(UpdateAt), '.', COUNT(Id)) as etag
+			FROM
+				Users as u
+			LEFT JOIN TeamMembers tm
+				ON tm.UserId = u.Id
+				AND tm.TeamId = :TeamId
+				AND tm.DeleteAt = 0
+			WHERE
+				tm.UserId IS NULL
+		`
+	}
 	etag, err := us.GetReplica().SelectStr(querystr, map[string]interface{}{"TeamId": teamId})
 	if err != nil {
 		return fmt.Sprintf("%v.%v", model.CurrentVersion, model.GetMillis())

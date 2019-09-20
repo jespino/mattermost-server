@@ -236,6 +236,8 @@ func testUserStoreUpdateUpdateAt(t *testing.T, ss store.Store) {
 	_, err = ss.Team().SaveMember(&model.TeamMember{TeamId: model.NewId(), UserId: u1.Id}, -1)
 	require.Nil(t, err)
 
+	time.Sleep(time.Millisecond)
+
 	if _, err = ss.User().UpdateUpdateAt(u1.Id); err != nil {
 		t.Fatal(err)
 	}
@@ -1262,6 +1264,7 @@ func testUserStoreGetProfilesByIds(t *testing.T, ss store.Store) {
 		Email:    MakeEmail(),
 		Username: "u1" + model.NewId(),
 	})
+	time.Sleep(time.Millisecond)
 	require.Nil(t, err)
 	defer func() { require.Nil(t, ss.User().PermanentDelete(u1.Id)) }()
 	_, err = ss.Team().SaveMember(&model.TeamMember{TeamId: teamId, UserId: u1.Id}, -1)
@@ -1271,6 +1274,7 @@ func testUserStoreGetProfilesByIds(t *testing.T, ss store.Store) {
 		Email:    MakeEmail(),
 		Username: "u2" + model.NewId(),
 	})
+	time.Sleep(time.Millisecond)
 	require.Nil(t, err)
 	defer func() { require.Nil(t, ss.User().PermanentDelete(u2.Id)) }()
 	_, err = ss.Team().SaveMember(&model.TeamMember{TeamId: teamId, UserId: u2.Id}, -1)
@@ -1280,6 +1284,7 @@ func testUserStoreGetProfilesByIds(t *testing.T, ss store.Store) {
 		Email:    MakeEmail(),
 		Username: "u3" + model.NewId(),
 	})
+	time.Sleep(time.Millisecond)
 	require.Nil(t, err)
 	defer func() { require.Nil(t, ss.User().PermanentDelete(u3.Id)) }()
 	_, err = ss.Team().SaveMember(&model.TeamMember{TeamId: teamId, UserId: u3.Id}, -1)
@@ -1297,6 +1302,7 @@ func testUserStoreGetProfilesByIds(t *testing.T, ss store.Store) {
 		Email:    MakeEmail(),
 		Username: "u4" + model.NewId(),
 	})
+	time.Sleep(time.Millisecond)
 	require.Nil(t, err)
 	defer func() { require.Nil(t, ss.User().PermanentDelete(u4.Id)) }()
 
@@ -2198,6 +2204,8 @@ func testUserStoreGetNewUsersForTeam(t *testing.T, ss store.Store) {
 	_, err = ss.Team().SaveMember(&model.TeamMember{TeamId: teamId, UserId: u1.Id}, -1)
 	require.Nil(t, err)
 
+	time.Sleep(time.Millisecond)
+
 	u2, err := ss.User().Save(&model.User{
 		Email:    MakeEmail(),
 		Username: "u2" + model.NewId(),
@@ -2206,6 +2214,8 @@ func testUserStoreGetNewUsersForTeam(t *testing.T, ss store.Store) {
 	defer func() { require.Nil(t, ss.User().PermanentDelete(u2.Id)) }()
 	_, err = ss.Team().SaveMember(&model.TeamMember{TeamId: teamId, UserId: u2.Id}, -1)
 	require.Nil(t, err)
+
+	time.Sleep(time.Millisecond)
 
 	u3, err := ss.User().Save(&model.User{
 		Email:    MakeEmail(),
@@ -2223,6 +2233,8 @@ func testUserStoreGetNewUsersForTeam(t *testing.T, ss store.Store) {
 	require.Nil(t, err)
 	u3.IsBot = true
 	defer func() { require.Nil(t, ss.Bot().PermanentDelete(u3.Id)) }()
+
+	time.Sleep(time.Millisecond)
 
 	u4, err := ss.User().Save(&model.User{
 		Email:    MakeEmail(),
@@ -4882,6 +4894,8 @@ func testUserStoreResetLastPictureUpdate(t *testing.T, ss store.Store) {
 	_, err = ss.Team().SaveMember(&model.TeamMember{TeamId: model.NewId(), UserId: u1.Id}, -1)
 	require.Nil(t, err)
 
+	time.Sleep(time.Millisecond)
+
 	err = ss.User().UpdateLastPictureUpdate(u1.Id)
 	require.Nil(t, err)
 
@@ -4890,6 +4904,8 @@ func testUserStoreResetLastPictureUpdate(t *testing.T, ss store.Store) {
 
 	assert.NotZero(t, user.LastPictureUpdate)
 	assert.NotZero(t, user.UpdateAt)
+
+	time.Sleep(time.Millisecond)
 
 	err = ss.User().ResetLastPictureUpdate(u1.Id)
 	require.Nil(t, err)

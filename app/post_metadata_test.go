@@ -505,7 +505,7 @@ func testProxyOpenGraphImage(t *testing.T, th *TestHelper, shouldProxy bool) {
 	assert.Equal(t, "https://github.com/hmhealey/test-files", embed.URL, "embed URL should be correct")
 
 	og, ok := embed.Data.(*opengraph.OpenGraph)
-	assert.Equal(t, true, ok, "data should be non-nil OpenGraph data")
+	require.Equal(t, true, ok, "data should be non-nil OpenGraph data")
 	assert.Equal(t, "GitHub", og.SiteName, "OpenGraph data should be correctly populated")
 
 	require.Len(t, og.Images, 1, "OpenGraph data should have one image")

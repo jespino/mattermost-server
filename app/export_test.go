@@ -358,7 +358,7 @@ func TestExportGMandDMChannels(t *testing.T) {
 
 	// Adding some deteminism so its possible to assert on slice index
 	sort.Slice(channels, func(i, j int) bool { return channels[i].Type > channels[j].Type })
-	assert.Equal(t, 2, len(channels))
+	require.Equal(t, 2, len(channels))
 	assert.ElementsMatch(t, []string{th1.BasicUser.Username, user1.Username, user2.Username}, *channels[0].Members)
 	assert.ElementsMatch(t, []string{th1.BasicUser.Username, th1.BasicUser2.Username}, *channels[1].Members)
 }
@@ -436,7 +436,7 @@ func TestExportDMandGMPost(t *testing.T) {
 
 	// Adding some deteminism so its possible to assert on slice index
 	sort.Slice(posts, func(i, j int) bool { return posts[i].Message > posts[j].Message })
-	assert.Equal(t, 4, len(posts))
+	require.Equal(t, 4, len(posts))
 	assert.ElementsMatch(t, gmMembers, *posts[0].ChannelMembers)
 	assert.ElementsMatch(t, gmMembers, *posts[1].ChannelMembers)
 	assert.ElementsMatch(t, dmMembers, *posts[2].ChannelMembers)

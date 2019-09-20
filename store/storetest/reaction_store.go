@@ -5,6 +5,7 @@ package storetest
 
 import (
 	"testing"
+	"time"
 
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/store"
@@ -12,12 +13,12 @@ import (
 )
 
 func TestReactionStore(t *testing.T, ss store.Store) {
-	t.Run("ReactionSave", func(t *testing.T) { testReactionSave(t, ss) })
-	t.Run("ReactionDelete", func(t *testing.T) { testReactionDelete(t, ss) })
-	t.Run("ReactionGetForPost", func(t *testing.T) { testReactionGetForPost(t, ss) })
-	t.Run("ReactionDeleteAllWithEmojiName", func(t *testing.T) { testReactionDeleteAllWithEmojiName(t, ss) })
+	t.Run("Save", func(t *testing.T) { testReactionSave(t, ss) })
+	t.Run("Delete", func(t *testing.T) { testReactionDelete(t, ss) })
+	t.Run("GetForPost", func(t *testing.T) { testReactionGetForPost(t, ss) })
+	t.Run("DeleteAllWithEmojiName", func(t *testing.T) { testReactionDeleteAllWithEmojiName(t, ss) })
 	t.Run("PermanentDeleteBatch", func(t *testing.T) { testReactionStorePermanentDeleteBatch(t, ss) })
-	t.Run("ReactionBulkGetForPosts", func(t *testing.T) { testReactionBulkGetForPosts(t, ss) })
+	t.Run("BulkGetForPosts", func(t *testing.T) { testReactionBulkGetForPosts(t, ss) })
 }
 
 func testReactionSave(t *testing.T, ss store.Store) {
@@ -27,6 +28,8 @@ func testReactionSave(t *testing.T, ss store.Store) {
 	})
 	require.Nil(t, err)
 	firstUpdateAt := post.UpdateAt
+
+	time.Sleep(time.Millisecond)
 
 	reaction1 := &model.Reaction{
 		UserId:    model.NewId(),
@@ -41,23 +44,24 @@ func testReactionSave(t *testing.T, ss store.Store) {
 		t.Fatal("should've saved reaction and returned it")
 	}
 
+	time.Sleep(time.Millisecond)
+
 	var secondUpdateAt int64
 	postList, err := ss.Post().Get(reaction1.PostId, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !postList.Posts[post.Id].HasReactions {
-		t.Fatal("should've set HasReactions = true on post")
-	} else if postList.Posts[post.Id].UpdateAt == firstUpdateAt {
-		t.Fatal("should've marked post as updated when HasReactions changed")
-	} else {
-		secondUpdateAt = postList.Posts[post.Id].UpdateAt
-	}
+	require.True(t, postList.Posts[post.Id].HasReactions, "should've set HasReactions = true on post")
+	require.NotEqual(t, postList.Posts[post.Id].UpdateAt, firstUpdateAt, "should've marked post as updated when HasReactions changed")
+
+	secondUpdateAt = postList.Posts[post.Id].UpdateAt
 
 	if _, err = ss.Reaction().Save(reaction1); err != nil {
 		t.Log(err)
 		t.Fatal("should've allowed saving a duplicate reaction")
 	}
+
+	time.Sleep(time.Millisecond)
 
 	// different user
 	reaction2 := &model.Reaction{
@@ -68,6 +72,8 @@ func testReactionSave(t *testing.T, ss store.Store) {
 	if _, err = ss.Reaction().Save(reaction2); err != nil {
 		t.Fatal(err)
 	}
+
+	time.Sleep(time.Millisecond)
 
 	postList, err = ss.Post().Get(reaction2.PostId, false)
 	if err != nil {
@@ -88,6 +94,8 @@ func testReactionSave(t *testing.T, ss store.Store) {
 		t.Fatal(err)
 	}
 
+	time.Sleep(time.Millisecond)
+
 	// different emoji
 	reaction4 := &model.Reaction{
 		UserId:    reaction1.UserId,
@@ -97,6 +105,8 @@ func testReactionSave(t *testing.T, ss store.Store) {
 	if _, err := ss.Reaction().Save(reaction4); err != nil {
 		t.Fatal(err)
 	}
+
+	time.Sleep(time.Millisecond)
 
 	// invalid reaction
 	reaction5 := &model.Reaction{
@@ -128,6 +138,8 @@ func testReactionDelete(t *testing.T, ss store.Store) {
 		t.Fatal(err)
 	}
 	firstUpdateAt := result.Posts[post.Id].UpdateAt
+
+	time.Sleep(time.Millisecond)
 
 	if _, err = ss.Reaction().Delete(reaction); err != nil {
 		t.Fatal(err)
