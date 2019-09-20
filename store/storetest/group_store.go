@@ -362,6 +362,7 @@ func testGroupStoreUpdate(t *testing.T, ss store.Store) {
 	})
 	require.Equal(t, err.Id, "store.update_error")
 
+	time.Sleep(time.Millisecond)
 	// Cannot update CreateAt
 	someVal := model.GetMillis()
 	d1.CreateAt = someVal
