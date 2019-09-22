@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/stretchr/testify/assert"
@@ -732,6 +733,7 @@ func TestGetTeamMembers(t *testing.T) {
 
 		// Store the user ids for comparison later
 		userIDs = append(userIDs, ruser.Id)
+		time.Sleep(time.Millisecond)
 	}
 	// Sort them because the result of GetTeamMembers() is also sorted
 	sort.Sort(userIDs)

@@ -6,7 +6,6 @@ package app
 import (
 	"bufio"
 	"crypto/tls"
-	"github.com/mattermost/mattermost-server/mlog"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/mattermost/mattermost-server/mlog"
 
 	"github.com/mattermost/mattermost-server/config"
 	"github.com/mattermost/mattermost-server/model"
@@ -171,6 +172,7 @@ func TestStartServerTLSOverwriteCipher(t *testing.T) {
 
 	client := &http.Client{Transport: tr}
 	err = checkEndpoint(t, client, "https://localhost:"+strconv.Itoa(s.ListenAddr.Port)+"/", http.StatusNotFound)
+	require.NotNil(t, err)
 
 	if !strings.Contains(err.Error(), "remote error: tls: handshake failure") {
 		t.Errorf("Expected protocol version error, got %s", err)
