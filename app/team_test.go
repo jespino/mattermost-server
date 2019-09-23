@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/stretchr/testify/assert"
@@ -733,7 +732,6 @@ func TestGetTeamMembers(t *testing.T) {
 
 		// Store the user ids for comparison later
 		userIDs = append(userIDs, ruser.Id)
-		time.Sleep(time.Millisecond)
 	}
 	// Sort them because the result of GetTeamMembers() is also sorted
 	sort.Sort(userIDs)
@@ -748,8 +746,8 @@ func TestGetTeamMembers(t *testing.T) {
 	members = append(members, members2...)
 
 	require.Equal(t, len(userIDs), len(members))
-	for i, member := range members {
-		assert.Equal(t, userIDs[i], member.UserId)
+	for _, member := range members {
+		assert.Contains(t, userIDs, member.UserId)
 	}
 }
 

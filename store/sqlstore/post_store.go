@@ -1078,6 +1078,8 @@ func (s *SqlPostStore) Search(teamId string, userId string, params *model.Search
 			}
 			queryParams["Terms"] = strings.Join(splitTerms, " ") + excludeClause
 		}
+	} else if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		return nil, model.NewAppError("SqlPostStore.Search", "store.sql_post.search.sqlite.app_error", nil, "", http.StatusInternalServerError)
 	}
 
 	_, err := s.GetSearchReplica().Select(&posts, searchQuery, queryParams)

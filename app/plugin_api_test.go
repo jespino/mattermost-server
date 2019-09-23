@@ -20,6 +20,7 @@ import (
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
 	"github.com/mattermost/mattermost-server/services/mailservice"
+	"github.com/mattermost/mattermost-server/testlib"
 	"github.com/mattermost/mattermost-server/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -746,6 +747,9 @@ func TestPluginAPISetTeamIcon(t *testing.T) {
 }
 
 func TestPluginAPISearchChannels(t *testing.T) {
+	if testlib.TEST_DRIVER_NAME == model.DATABASE_DRIVER_SQLITE {
+		t.Skip("skiping the test for sqlite")
+	}
 	th := Setup(t).InitBasic()
 	defer th.TearDown()
 	api := th.SetupPluginAPI()
@@ -764,6 +768,9 @@ func TestPluginAPISearchChannels(t *testing.T) {
 }
 
 func TestPluginAPISearchPostsInTeam(t *testing.T) {
+	if testlib.TEST_DRIVER_NAME == model.DATABASE_DRIVER_SQLITE {
+		t.Skip("skiping the test for sqlite")
+	}
 	th := Setup(t).InitBasic()
 	defer th.TearDown()
 	api := th.SetupPluginAPI()

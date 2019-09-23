@@ -2020,6 +2020,10 @@ func (s SqlChannelStore) GetMembersForUserWithPagination(teamId, userId string, 
 }
 
 func (s SqlChannelStore) AutocompleteInTeam(teamId string, term string, includeDeleted bool) (*model.ChannelList, *model.AppError) {
+	if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		return nil, model.NewAppError("SqlChannelStore.AutocompleteInTeam", "store.sql_channel.autocomplete_in_team.sqlite.app_error", nil, "", http.StatusInternalServerError)
+	}
+
 	deleteFilter := "AND c.DeleteAt = 0"
 	if includeDeleted {
 		deleteFilter = ""
@@ -2064,6 +2068,9 @@ func (s SqlChannelStore) AutocompleteInTeam(teamId string, term string, includeD
 }
 
 func (s SqlChannelStore) AutocompleteInTeamForSearch(teamId string, userId string, term string, includeDeleted bool) (*model.ChannelList, *model.AppError) {
+	if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		return nil, model.NewAppError("SqlChannelStore.AutocompleteInTeamForSearch", "store.sql_channel.autocomplete_in_team_for_search.sqlite.app_error", nil, "", http.StatusInternalServerError)
+	}
 	deleteFilter := "AND DeleteAt = 0"
 	if includeDeleted {
 		deleteFilter = ""
@@ -2211,6 +2218,9 @@ func (s SqlChannelStore) SearchForUserInTeam(userId string, teamId string, term 
 }
 
 func (s SqlChannelStore) SearchAllChannels(term string, opts store.ChannelSearchOpts) (*model.ChannelListWithTeamData, *model.AppError) {
+	if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		return nil, model.NewAppError("SqlChannelStore.SearchAllChannels", "store.sql_channel.search_all_channels.sqlite.app_error", nil, "", http.StatusInternalServerError)
+	}
 	query := s.getQueryBuilder().
 		Select("c.*, t.DisplayName AS TeamDisplayName, t.Name AS TeamName, t.UpdateAt as TeamUpdateAt").
 		From("Channels AS c").
@@ -2356,6 +2366,10 @@ func (s SqlChannelStore) buildFulltextClause(term string, searchColumns string) 
 }
 
 func (s SqlChannelStore) performSearch(searchQuery string, term string, parameters map[string]interface{}) (*model.ChannelList, *model.AppError) {
+	if s.DriverName() == model.DATABASE_DRIVER_SQLITE {
+		return nil, model.NewAppError("SqlChannelStore.performSearch", "store.sql_channel.perform_search.sqlite.app_error", nil, "", http.StatusInternalServerError)
+	}
+
 	likeClause, likeTerm := s.buildLIKEClause(term, "c.Name, c.DisplayName, c.Purpose")
 	if likeTerm == "" {
 		// If the likeTerm is empty after preparing, then don't bother searching.
