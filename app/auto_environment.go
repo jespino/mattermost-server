@@ -65,9 +65,9 @@ func CreateTestEnvironmentInTeam(a *App, client *model.Client4, team *model.Team
 		usernames[i] = user.Username
 	}
 
-	channelCreator := NewAutoChannelCreator(client, team)
+	channelCreator := newAutoChannelCreator(client, team)
 	channelCreator.Fuzzy = fuzzy
-	channels, err := channelCreator.CreateTestChannels(rangeChannels)
+	channels, err := channelCreator.createTestChannels(rangeChannels)
 
 	// Have every user join every channel
 	for _, user := range users {

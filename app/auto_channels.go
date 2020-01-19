@@ -19,7 +19,7 @@ type AutoChannelCreator struct {
 	ChannelType        string
 }
 
-func NewAutoChannelCreator(client *model.Client4, team *model.Team) *AutoChannelCreator {
+func newAutoChannelCreator(client *model.Client4, team *model.Team) *AutoChannelCreator {
 	return &AutoChannelCreator{
 		client:             client,
 		team:               team,
@@ -57,7 +57,7 @@ func (cfg *AutoChannelCreator) createRandomChannel() (*model.Channel, bool) {
 	return channel, true
 }
 
-func (cfg *AutoChannelCreator) CreateTestChannels(num utils.Range) ([]*model.Channel, bool) {
+func (cfg *AutoChannelCreator) createTestChannels(num utils.Range) ([]*model.Channel, bool) {
 	numChannels := utils.RandIntFromRange(num)
 	channels := make([]*model.Channel, numChannels)
 

@@ -294,9 +294,9 @@ func (me *LoadTestProvider) ChannelsCommand(a *App, args *model.CommandArgs, mes
 
 	client := model.NewAPIv4Client(args.SiteURL)
 	client.SetToken(args.Session.Token)
-	channelCreator := NewAutoChannelCreator(client, team)
+	channelCreator := newAutoChannelCreator(client, team)
 	channelCreator.Fuzzy = doFuzz
-	channelCreator.CreateTestChannels(channelsr)
+	channelCreator.createTestChannels(channelsr)
 
 	return &model.CommandResponse{Text: "Added channels", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 }
