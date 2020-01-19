@@ -189,7 +189,7 @@ func (me *LoadTestProvider) SetupCommand(a *App, args *model.CommandArgs, messag
 	client := model.NewAPIv4Client(args.SiteURL)
 
 	if doTeams {
-		if err := a.CreateBasicUser(client); err != nil {
+		if err := a.createBasicUser(client); err != nil {
 			return &model.CommandResponse{Text: "Failed to create testing environment", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 		}
 		client.Login(BTEST_USER_EMAIL, BTEST_USER_PASSWORD)
@@ -266,9 +266,9 @@ func (me *LoadTestProvider) UsersCommand(a *App, args *model.CommandArgs, messag
 	}
 
 	client := model.NewAPIv4Client(args.SiteURL)
-	userCreator := NewAutoUserCreator(a, client, team)
+	userCreator := newAutoUserCreator(a, client, team)
 	userCreator.Fuzzy = doFuzz
-	userCreator.CreateTestUsers(usersr)
+	userCreator.createTestUsers(usersr)
 
 	return &model.CommandResponse{Text: "Added users", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 }
@@ -336,7 +336,7 @@ func (me *LoadTestProvider) PostsCommand(a *App, args *model.CommandArgs, messag
 
 	client := model.NewAPIv4Client(args.SiteURL)
 	client.SetToken(args.Session.Token)
-	testPoster := NewAutoPostCreator(client, args.ChannelId)
+	testPoster := newAutoPostCreator(client, args.ChannelId)
 	testPoster.Fuzzy = doFuzz
 	testPoster.Users = usernames
 
@@ -344,7 +344,7 @@ func (me *LoadTestProvider) PostsCommand(a *App, args *model.CommandArgs, messag
 	numPosts := utils.RandIntFromRange(postsr)
 	for i := 0; i < numPosts; i++ {
 		testPoster.HasImage = (i < numImages)
-		testPoster.CreateRandomPost()
+		testPoster.createRandomPost()
 	}
 
 	return &model.CommandResponse{Text: "Added posts", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}

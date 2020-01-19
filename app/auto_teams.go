@@ -24,7 +24,7 @@ type AutoTeamCreator struct {
 	EmailCharset  string
 }
 
-func NewAutoTeamCreator(client *model.Client4) *AutoTeamCreator {
+func newAutoTeamCreator(client *model.Client4) *AutoTeamCreator {
 	return &AutoTeamCreator{
 		client:        client,
 		Fuzzy:         false,
@@ -64,7 +64,7 @@ func (cfg *AutoTeamCreator) createRandomTeam() (*model.Team, bool) {
 	return createdTeam, true
 }
 
-func (cfg *AutoTeamCreator) CreateTestTeams(num utils.Range) ([]*model.Team, bool) {
+func (cfg *AutoTeamCreator) createTestTeams(num utils.Range) ([]*model.Team, bool) {
 	numTeams := utils.RandIntFromRange(num)
 	teams := make([]*model.Team, numTeams)
 

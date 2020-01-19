@@ -27,7 +27,7 @@ type AutoPostCreator struct {
 }
 
 // Automatic poster used for testing
-func NewAutoPostCreator(client *model.Client4, channelid string) *AutoPostCreator {
+func newAutoPostCreator(client *model.Client4, channelid string) *AutoPostCreator {
 	return &AutoPostCreator{
 		client:         client,
 		channelid:      channelid,
@@ -41,7 +41,7 @@ func NewAutoPostCreator(client *model.Client4, channelid string) *AutoPostCreato
 	}
 }
 
-func (cfg *AutoPostCreator) UploadTestFile() ([]string, bool) {
+func (cfg *AutoPostCreator) uploadTestFile() ([]string, bool) {
 	filename := cfg.ImageFilenames[utils.RandIntFromRange(utils.Range{Begin: 0, End: len(cfg.ImageFilenames) - 1})]
 
 	path, _ := fileutils.FindDir("web/static/images")
@@ -65,11 +65,11 @@ func (cfg *AutoPostCreator) UploadTestFile() ([]string, bool) {
 	return []string{resp.FileInfos[0].Id}, true
 }
 
-func (cfg *AutoPostCreator) CreateRandomPost() (*model.Post, bool) {
+func (cfg *AutoPostCreator) createRandomPost() (*model.Post, bool) {
 	var fileIds []string
 	if cfg.HasImage {
 		var err1 bool
-		fileIds, err1 = cfg.UploadTestFile()
+		fileIds, err1 = cfg.uploadTestFile()
 		if !err1 {
 			return nil, false
 		}

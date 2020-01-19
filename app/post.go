@@ -399,7 +399,7 @@ func (a *App) handlePostEvents(post *model.Post, user *model.User, channel *mode
 	}
 
 	a.Srv.Go(func() {
-		_, err := a.SendAutoResponseIfNecessary(channel, user)
+		_, err := a.sendAutoResponseIfNecessary(channel, user)
 		if err != nil {
 			mlog.Error("Failed to send auto response", mlog.String("user_id", user.Id), mlog.String("post_id", post.Id), mlog.Err(err))
 		}

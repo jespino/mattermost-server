@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-func (a *App) SendAutoResponseIfNecessary(channel *model.Channel, sender *model.User) (bool, *model.AppError) {
+func (a *App) sendAutoResponseIfNecessary(channel *model.Channel, sender *model.User) (bool, *model.AppError) {
 	if channel.Type != model.CHANNEL_DIRECT {
 		return false, nil
 	}
@@ -20,10 +20,10 @@ func (a *App) SendAutoResponseIfNecessary(channel *model.Channel, sender *model.
 		return false, err
 	}
 
-	return a.SendAutoResponse(channel, receiver)
+	return a.sendAutoResponse(channel, receiver)
 }
 
-func (a *App) SendAutoResponse(channel *model.Channel, receiver *model.User) (bool, *model.AppError) {
+func (a *App) sendAutoResponse(channel *model.Channel, receiver *model.User) (bool, *model.AppError) {
 	if receiver == nil || receiver.NotifyProps == nil {
 		return false, nil
 	}

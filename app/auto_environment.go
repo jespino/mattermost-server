@@ -19,9 +19,9 @@ type TestEnvironment struct {
 func createTestEnvironmentWithTeams(a *App, client *model.Client4, rangeTeams utils.Range, rangeChannels utils.Range, rangeUsers utils.Range, rangePosts utils.Range, fuzzy bool) (TestEnvironment, bool) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	teamCreator := NewAutoTeamCreator(client)
+	teamCreator := newAutoTeamCreator(client)
 	teamCreator.Fuzzy = fuzzy
-	teams, err := teamCreator.CreateTestTeams(rangeTeams)
+	teams, err := teamCreator.createTestTeams(rangeTeams)
 	if !err {
 		return TestEnvironment{}, false
 	}
@@ -29,7 +29,7 @@ func createTestEnvironmentWithTeams(a *App, client *model.Client4, rangeTeams ut
 	environment := TestEnvironment{teams, make([]TeamEnvironment, len(teams))}
 
 	for i, team := range teams {
-		userCreator := NewAutoUserCreator(a, client, team)
+		userCreator := newAutoUserCreator(a, client, team)
 		userCreator.Fuzzy = fuzzy
 		randomUser, err := userCreator.createRandomUser()
 		if !err {
@@ -54,9 +54,9 @@ func createTestEnvironmentInTeam(a *App, client *model.Client4, team *model.Team
 		rangeUsers.Begin = 1
 	}
 
-	userCreator := NewAutoUserCreator(a, client, team)
+	userCreator := newAutoUserCreator(a, client, team)
 	userCreator.Fuzzy = fuzzy
-	users, err := userCreator.CreateTestUsers(rangeUsers)
+	users, err := userCreator.createTestUsers(rangeUsers)
 	if !err {
 		return TeamEnvironment{}, false
 	}
@@ -87,11 +87,11 @@ func createTestEnvironmentInTeam(a *App, client *model.Client4, team *model.Team
 		user := users[utils.RandIntFromRange(utils.Range{Begin: 0, End: len(users) - 1})]
 		client.LoginById(user.Id, USER_PASSWORD)
 		for i, channel := range channels {
-			postCreator := NewAutoPostCreator(client, channel.Id)
+			postCreator := newAutoPostCreator(client, channel.Id)
 			postCreator.HasImage = i < numImages
 			postCreator.Users = usernames
 			postCreator.Fuzzy = fuzzy
-			postCreator.CreateRandomPost()
+			postCreator.createRandomPost()
 		}
 	}
 
