@@ -80,7 +80,7 @@ func (a *App) sendDailyDiagnostics(override bool) {
 func (a *App) SendDiagnostic(event string, properties map[string]interface{}) {
 	a.Srv.diagnosticClient.Enqueue(analytics.Track{
 		Event:      event,
-		UserId:     a.DiagnosticId(),
+		UserId:     a.diagnosticId(),
 		Properties: properties,
 	})
 }

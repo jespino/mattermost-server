@@ -98,15 +98,15 @@ func (s *Server) initJobs() {
 	s.Jobs.Schedulers = s.Jobs.InitSchedulers()
 }
 
-func (a *App) DiagnosticId() string {
+func (a *App) diagnosticId() string {
 	return a.Srv.diagnosticId
 }
 
-func (a *App) SetDiagnosticId(id string) {
+func (a *App) setDiagnosticId(id string) {
 	a.Srv.diagnosticId = id
 }
 
-func (a *App) EnsureDiagnosticId() {
+func (a *App) ensureDiagnosticId() {
 	if a.Srv.diagnosticId != "" {
 		return
 	}
@@ -133,7 +133,7 @@ func (a *App) HTMLTemplates() *template.Template {
 	return nil
 }
 
-func (a *App) Handle404(w http.ResponseWriter, r *http.Request) {
+func (a *App) handle404(w http.ResponseWriter, r *http.Request) {
 	ipAddress := utils.GetIpAddress(r, a.Config().ServiceSettings.TrustedProxyIPHeader)
 	mlog.Debug("not found handler triggered", mlog.String("path", r.URL.Path), mlog.Int("code", 404), mlog.String("ip", ipAddress))
 

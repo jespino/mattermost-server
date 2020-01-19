@@ -103,7 +103,7 @@ func TestDiagnostics(t *testing.T) {
 	defer server.Close()
 
 	diagnosticID := "test-diagnostic-id-12345"
-	th.App.SetDiagnosticId(diagnosticID)
+	th.App.setDiagnosticId(diagnosticID)
 	th.Server.initDiagnostics(server.URL)
 
 	assertPayload := func(t *testing.T, actual payload, event string, properties map[string]interface{}) {

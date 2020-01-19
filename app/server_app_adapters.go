@@ -89,7 +89,7 @@ func (s *Server) RunOldAppInitialization() error {
 		return errors.Wrapf(err, "unable to ensure installation date")
 	}
 
-	s.FakeApp().EnsureDiagnosticId()
+	s.FakeApp().ensureDiagnosticId()
 	s.FakeApp().regenerateClientConfig()
 
 	s.FakeApp().Srv.clusterLeaderListenerId = s.FakeApp().Srv.AddClusterLeaderChangedListener(func() {
@@ -116,7 +116,7 @@ func (s *Server) RunOldAppInitialization() error {
 			http.Redirect(w, r, r.URL.String(), http.StatusFound)
 		})
 	}
-	s.FakeApp().Srv.Router.NotFoundHandler = http.HandlerFunc(s.FakeApp().Handle404)
+	s.FakeApp().Srv.Router.NotFoundHandler = http.HandlerFunc(s.FakeApp().handle404)
 
 	s.FakeApp().Srv.WebSocketRouter = &WebSocketRouter{
 		app:      s.FakeApp(),

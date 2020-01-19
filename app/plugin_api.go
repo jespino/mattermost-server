@@ -129,7 +129,7 @@ func (api *PluginAPI) GetSystemInstallDate() (int64, *model.AppError) {
 }
 
 func (api *PluginAPI) GetDiagnosticId() string {
-	return api.app.DiagnosticId()
+	return api.app.diagnosticId()
 }
 
 func (api *PluginAPI) CreateTeam(team *model.Team) (*model.Team, *model.AppError) {
