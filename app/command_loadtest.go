@@ -193,7 +193,7 @@ func (me *LoadTestProvider) SetupCommand(a *App, args *model.CommandArgs, messag
 			return &model.CommandResponse{Text: "Failed to create testing environment", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 		}
 		client.Login(BTEST_USER_EMAIL, BTEST_USER_PASSWORD)
-		environment, err := CreateTestEnvironmentWithTeams(
+		environment, err := createTestEnvironmentWithTeams(
 			a,
 			client,
 			utils.Range{Begin: numTeams, End: numTeams},
@@ -217,7 +217,7 @@ func (me *LoadTestProvider) SetupCommand(a *App, args *model.CommandArgs, messag
 		}
 
 		client.SetToken(args.Session.Token)
-		CreateTestEnvironmentInTeam(
+		createTestEnvironmentInTeam(
 			a,
 			client,
 			team,
