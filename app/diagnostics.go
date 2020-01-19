@@ -65,7 +65,7 @@ func (a *App) SendDailyDiagnostics() {
 }
 
 func (a *App) sendDailyDiagnostics(override bool) {
-	if *a.Config().LogSettings.EnableDiagnostics && a.IsLeader() && (!strings.Contains(SEGMENT_KEY, "placeholder") || override) {
+	if *a.Config().LogSettings.EnableDiagnostics && a.isLeader() && (!strings.Contains(SEGMENT_KEY, "placeholder") || override) {
 		a.Srv.initDiagnostics("")
 		a.trackActivity()
 		a.trackConfig()

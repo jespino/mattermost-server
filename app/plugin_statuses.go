@@ -24,7 +24,7 @@ func (a *App) GetPluginStatus(id string) (*model.PluginStatus, *model.AppError) 
 	// Add our cluster ID
 	for _, status := range pluginStatuses {
 		if status.PluginId == id {
-			status.ClusterId = a.GetClusterId()
+			status.ClusterId = a.getClusterId()
 			return status, nil
 		}
 	}
@@ -45,7 +45,7 @@ func (a *App) GetPluginStatuses() (model.PluginStatuses, *model.AppError) {
 
 	// Add our cluster ID
 	for _, status := range pluginStatuses {
-		status.ClusterId = a.GetClusterId()
+		status.ClusterId = a.getClusterId()
 	}
 
 	return pluginStatuses, nil
