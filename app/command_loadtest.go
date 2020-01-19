@@ -84,11 +84,11 @@ func init() {
 	RegisterCommandProvider(&LoadTestProvider{})
 }
 
-func (me *LoadTestProvider) GetTrigger() string {
+func (me *LoadTestProvider) getTrigger() string {
 	return CMD_TEST
 }
 
-func (me *LoadTestProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *LoadTestProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	if !*a.Config().ServiceSettings.EnableTesting {
 		return nil
 	}
@@ -101,54 +101,54 @@ func (me *LoadTestProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Co
 	}
 }
 
-func (me *LoadTestProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LoadTestProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	//This command is only available when EnableTesting is true
 	if !*a.Config().ServiceSettings.EnableTesting {
 		return &model.CommandResponse{}
 	}
 
 	if strings.HasPrefix(message, "setup") {
-		return me.SetupCommand(a, args, message)
+		return me.setupCommand(a, args, message)
 	}
 
 	if strings.HasPrefix(message, "users") {
-		return me.UsersCommand(a, args, message)
+		return me.usersCommand(a, args, message)
 	}
 
 	if strings.HasPrefix(message, "activate_user") {
-		return me.ActivateUserCommand(a, args, message)
+		return me.activateUserCommand(a, args, message)
 	}
 
 	if strings.HasPrefix(message, "deactivate_user") {
-		return me.DeActivateUserCommand(a, args, message)
+		return me.deActivateUserCommand(a, args, message)
 	}
 
 	if strings.HasPrefix(message, "channels") {
-		return me.ChannelsCommand(a, args, message)
+		return me.channelsCommand(a, args, message)
 	}
 
 	if strings.HasPrefix(message, "posts") {
-		return me.PostsCommand(a, args, message)
+		return me.postsCommand(a, args, message)
 	}
 
 	if strings.HasPrefix(message, "post") {
-		return me.PostCommand(a, args, message)
+		return me.postCommand(a, args, message)
 	}
 
 	if strings.HasPrefix(message, "url") {
-		return me.UrlCommand(a, args, message)
+		return me.urlCommand(a, args, message)
 	}
 	if strings.HasPrefix(message, "json") {
-		return me.JsonCommand(a, args, message)
+		return me.jsonCommand(a, args, message)
 	}
-	return me.HelpCommand(args, message)
+	return me.helpCommand(args, message)
 }
 
-func (me *LoadTestProvider) HelpCommand(args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LoadTestProvider) helpCommand(args *model.CommandArgs, message string) *model.CommandResponse {
 	return &model.CommandResponse{Text: usage, ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 }
 
-func (me *LoadTestProvider) SetupCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LoadTestProvider) setupCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	tokens := strings.Fields(strings.TrimPrefix(message, "setup"))
 	doTeams := contains(tokens, "teams")
 	doFuzz := contains(tokens, "fuzz")
@@ -230,7 +230,7 @@ func (me *LoadTestProvider) SetupCommand(a *App, args *model.CommandArgs, messag
 	return &model.CommandResponse{Text: "Created environment", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 }
 
-func (me *LoadTestProvider) ActivateUserCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LoadTestProvider) activateUserCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	user_id := strings.TrimSpace(strings.TrimPrefix(message, "activate_user"))
 	if err := a.UpdateUserActive(user_id, true); err != nil {
 		return &model.CommandResponse{Text: "Failed to activate user", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
@@ -238,7 +238,7 @@ func (me *LoadTestProvider) ActivateUserCommand(a *App, args *model.CommandArgs,
 	return &model.CommandResponse{Text: "Activated user", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 }
 
-func (me *LoadTestProvider) DeActivateUserCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LoadTestProvider) deActivateUserCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	user_id := strings.TrimSpace(strings.TrimPrefix(message, "deactivate_user"))
 	if err := a.UpdateUserActive(user_id, false); err != nil {
 		return &model.CommandResponse{Text: "Failed to deactivate user", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
@@ -246,7 +246,7 @@ func (me *LoadTestProvider) DeActivateUserCommand(a *App, args *model.CommandArg
 	return &model.CommandResponse{Text: "DeActivated user", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 }
 
-func (me *LoadTestProvider) UsersCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LoadTestProvider) usersCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	cmd := strings.TrimSpace(strings.TrimPrefix(message, "users"))
 
 	doFuzz := false
@@ -273,7 +273,7 @@ func (me *LoadTestProvider) UsersCommand(a *App, args *model.CommandArgs, messag
 	return &model.CommandResponse{Text: "Added users", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 }
 
-func (me *LoadTestProvider) ChannelsCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LoadTestProvider) channelsCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	cmd := strings.TrimSpace(strings.TrimPrefix(message, "channels"))
 
 	doFuzz := false
@@ -301,7 +301,7 @@ func (me *LoadTestProvider) ChannelsCommand(a *App, args *model.CommandArgs, mes
 	return &model.CommandResponse{Text: "Added channels", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 }
 
-func (me *LoadTestProvider) PostsCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LoadTestProvider) postsCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	cmd := strings.TrimSpace(strings.TrimPrefix(message, "posts"))
 
 	doFuzz := false
@@ -358,7 +358,7 @@ func getMatch(re *regexp.Regexp, text string) string {
 	return ""
 }
 
-func (me *LoadTestProvider) PostCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LoadTestProvider) postCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	textMessage := getMatch(messageRE, message)
 	if textMessage == "" {
 		return &model.CommandResponse{Text: "No message to post", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
@@ -401,7 +401,7 @@ func (me *LoadTestProvider) PostCommand(a *App, args *model.CommandArgs, message
 	return &model.CommandResponse{Text: "Added a post to " + channel.DisplayName, ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 }
 
-func (me *LoadTestProvider) UrlCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LoadTestProvider) urlCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	url := strings.TrimSpace(strings.TrimPrefix(message, "url"))
 	if len(url) == 0 {
 		return &model.CommandResponse{Text: "Command must contain a url", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
@@ -451,7 +451,7 @@ func (me *LoadTestProvider) UrlCommand(a *App, args *model.CommandArgs, message 
 	return &model.CommandResponse{Text: "Loaded data", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 }
 
-func (me *LoadTestProvider) JsonCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LoadTestProvider) jsonCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	url := strings.TrimSpace(strings.TrimPrefix(message, "json"))
 	if len(url) == 0 {
 		return &model.CommandResponse{Text: "Command must contain a url", ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}

@@ -20,11 +20,11 @@ func init() {
 	RegisterCommandProvider(&RenameProvider{})
 }
 
-func (me *RenameProvider) GetTrigger() string {
+func (me *RenameProvider) getTrigger() string {
 	return CMD_RENAME
 }
 
-func (me *RenameProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *RenameProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_RENAME,
 		AutoComplete:     true,
@@ -34,7 +34,7 @@ func (me *RenameProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Comm
 	}
 }
 
-func (me *RenameProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *RenameProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	channel, err := a.GetChannel(args.ChannelId)
 	if err != nil {
 		return &model.CommandResponse{

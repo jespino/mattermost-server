@@ -22,11 +22,11 @@ func init() {
 	RegisterCommandProvider(&msgProvider{})
 }
 
-func (me *msgProvider) GetTrigger() string {
+func (me *msgProvider) getTrigger() string {
 	return CMD_MSG
 }
 
-func (me *msgProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *msgProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_MSG,
 		AutoComplete:     true,
@@ -36,7 +36,7 @@ func (me *msgProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command
 	}
 }
 
-func (me *msgProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *msgProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	splitMessage := strings.SplitN(message, " ", 2)
 
 	parsedMessage := ""

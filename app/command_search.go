@@ -19,11 +19,11 @@ func init() {
 	RegisterCommandProvider(&SearchProvider{})
 }
 
-func (search *SearchProvider) GetTrigger() string {
+func (search *SearchProvider) getTrigger() string {
 	return CMD_SEARCH
 }
 
-func (search *SearchProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (search *SearchProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_SEARCH,
 		AutoComplete:     true,
@@ -33,7 +33,7 @@ func (search *SearchProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.
 	}
 }
 
-func (search *SearchProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (search *SearchProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	// This command is handled client-side and shouldn't hit the server.
 	return &model.CommandResponse{
 		Text:         args.T("api.command_search.unsupported.app_error"),

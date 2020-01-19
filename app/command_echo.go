@@ -26,11 +26,11 @@ func init() {
 	RegisterCommandProvider(&EchoProvider{})
 }
 
-func (me *EchoProvider) GetTrigger() string {
+func (me *EchoProvider) getTrigger() string {
 	return CMD_ECHO
 }
 
-func (me *EchoProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *EchoProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_ECHO,
 		AutoComplete:     true,
@@ -40,7 +40,7 @@ func (me *EchoProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Comman
 	}
 }
 
-func (me *EchoProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *EchoProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	if len(message) == 0 {
 		return &model.CommandResponse{Text: args.T("api.command_echo.message.app_error"), ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 	}

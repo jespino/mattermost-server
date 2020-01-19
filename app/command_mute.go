@@ -21,11 +21,11 @@ func init() {
 	RegisterCommandProvider(&MuteProvider{})
 }
 
-func (me *MuteProvider) GetTrigger() string {
+func (me *MuteProvider) getTrigger() string {
 	return CMD_MUTE
 }
 
-func (me *MuteProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *MuteProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_MUTE,
 		AutoComplete:     true,
@@ -35,7 +35,7 @@ func (me *MuteProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Comman
 	}
 }
 
-func (me *MuteProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *MuteProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	var channel *model.Channel
 	var noChannelErr *model.AppError
 

@@ -19,11 +19,11 @@ func init() {
 	RegisterCommandProvider(&LogoutProvider{})
 }
 
-func (me *LogoutProvider) GetTrigger() string {
+func (me *LogoutProvider) getTrigger() string {
 	return CMD_LOGOUT
 }
 
-func (me *LogoutProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *LogoutProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_LOGOUT,
 		AutoComplete:     true,
@@ -33,7 +33,7 @@ func (me *LogoutProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Comm
 	}
 }
 
-func (me *LogoutProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LogoutProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	FAIL := &model.CommandResponse{ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL, Text: args.T("api.command_logout.fail_message")}
 	SUCCESS := &model.CommandResponse{GotoLocation: "/login"}
 

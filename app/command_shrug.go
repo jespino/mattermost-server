@@ -19,11 +19,11 @@ func init() {
 	RegisterCommandProvider(&ShrugProvider{})
 }
 
-func (me *ShrugProvider) GetTrigger() string {
+func (me *ShrugProvider) getTrigger() string {
 	return CMD_SHRUG
 }
 
-func (me *ShrugProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *ShrugProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_SHRUG,
 		AutoComplete:     true,
@@ -33,7 +33,7 @@ func (me *ShrugProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Comma
 	}
 }
 
-func (me *ShrugProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *ShrugProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	rmsg := `¯\\\_(ツ)\_/¯`
 	if len(message) > 0 {
 		rmsg = message + " " + rmsg

@@ -19,11 +19,11 @@ func init() {
 	RegisterCommandProvider(&OfflineProvider{})
 }
 
-func (me *OfflineProvider) GetTrigger() string {
+func (me *OfflineProvider) getTrigger() string {
 	return CMD_OFFLINE
 }
 
-func (me *OfflineProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *OfflineProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_OFFLINE,
 		AutoComplete:     true,
@@ -32,7 +32,7 @@ func (me *OfflineProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Com
 	}
 }
 
-func (me *OfflineProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *OfflineProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	a.SetStatusOffline(args.UserId, true)
 
 	return &model.CommandResponse{ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL, Text: args.T("api.command_offline.success")}

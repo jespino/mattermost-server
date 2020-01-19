@@ -19,11 +19,11 @@ func init() {
 	RegisterCommandProvider(&LeaveProvider{})
 }
 
-func (me *LeaveProvider) GetTrigger() string {
+func (me *LeaveProvider) getTrigger() string {
 	return CMD_LEAVE
 }
 
-func (me *LeaveProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *LeaveProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_LEAVE,
 		AutoComplete:     true,
@@ -32,7 +32,7 @@ func (me *LeaveProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Comma
 	}
 }
 
-func (me *LeaveProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *LeaveProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	var channel *model.Channel
 	var noChannelErr *model.AppError
 	if channel, noChannelErr = a.GetChannel(args.ChannelId); noChannelErr != nil {

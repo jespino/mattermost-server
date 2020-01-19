@@ -18,15 +18,15 @@ import (
 )
 
 type CommandProvider interface {
-	GetTrigger() string
-	GetCommand(a *App, T goi18n.TranslateFunc) *model.Command
-	DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse
+	getTrigger() string
+	getCommand(a *App, T goi18n.TranslateFunc) *model.Command
+	doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse
 }
 
 var commandProviders = make(map[string]CommandProvider)
 
 func RegisterCommandProvider(newProvider CommandProvider) {
-	commandProviders[newProvider.GetTrigger()] = newProvider
+	commandProviders[newProvider.getTrigger()] = newProvider
 }
 
 func GetCommandProvider(name string) CommandProvider {
@@ -73,7 +73,7 @@ func (a *App) ListAutocompleteCommands(teamId string, T goi18n.TranslateFunc) ([
 	commands := make([]*model.Command, 0, 32)
 	seen := make(map[string]bool)
 	for _, value := range commandProviders {
-		if cmd := value.GetCommand(a, T); cmd != nil {
+		if cmd := value.getCommand(a, T); cmd != nil {
 			cpy := *cmd
 			if cpy.AutoComplete && !seen[cpy.Id] {
 				cpy.Sanitize()
@@ -120,7 +120,7 @@ func (a *App) ListAllCommands(teamId string, T goi18n.TranslateFunc) ([]*model.C
 	commands := make([]*model.Command, 0, 32)
 	seen := make(map[string]bool)
 	for _, value := range commandProviders {
-		if cmd := value.GetCommand(a, T); cmd != nil {
+		if cmd := value.getCommand(a, T); cmd != nil {
 			cpy := *cmd
 			if cpy.AutoComplete && !seen[cpy.Trigger] {
 				cpy.Sanitize()
@@ -199,12 +199,12 @@ func (a *App) tryExecuteBuiltInCommand(args *model.CommandArgs, trigger string, 
 		return nil, nil
 	}
 
-	cmd := provider.GetCommand(a, args.T)
+	cmd := provider.getCommand(a, args.T)
 	if cmd == nil {
 		return nil, nil
 	}
 
-	return cmd, provider.DoCommand(a, args, message)
+	return cmd, provider.doCommand(a, args, message)
 }
 
 // tryExecuteCustomCommand attempts to run a custom command based on the given arguments. If no such command can be
@@ -466,7 +466,7 @@ func (a *App) CreateCommand(cmd *model.Command) (*model.Command, *model.AppError
 	}
 
 	for _, builtInProvider := range commandProviders {
-		builtInCommand := builtInProvider.GetCommand(a, utils.T)
+		builtInCommand := builtInProvider.getCommand(a, utils.T)
 		if builtInCommand != nil && cmd.Trigger == builtInCommand.Trigger {
 			return nil, model.NewAppError("CreateCommand", "api.command.duplicate_trigger.app_error", nil, "", http.StatusBadRequest)
 		}

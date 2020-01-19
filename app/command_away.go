@@ -19,11 +19,11 @@ func init() {
 	RegisterCommandProvider(&AwayProvider{})
 }
 
-func (me *AwayProvider) GetTrigger() string {
+func (me *AwayProvider) getTrigger() string {
 	return CMD_AWAY
 }
 
-func (me *AwayProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *AwayProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_AWAY,
 		AutoComplete:     true,
@@ -32,7 +32,7 @@ func (me *AwayProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Comman
 	}
 }
 
-func (me *AwayProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *AwayProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	a.SetStatusAwayIfNeeded(args.UserId, true)
 
 	return &model.CommandResponse{ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL, Text: args.T("api.command_away.success")}

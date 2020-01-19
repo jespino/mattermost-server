@@ -23,11 +23,11 @@ func init() {
 	RegisterCommandProvider(&groupmsgProvider{})
 }
 
-func (me *groupmsgProvider) GetTrigger() string {
+func (me *groupmsgProvider) getTrigger() string {
 	return CMD_GROUPMSG
 }
 
-func (me *groupmsgProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *groupmsgProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_GROUPMSG,
 		AutoComplete:     true,
@@ -37,7 +37,7 @@ func (me *groupmsgProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Co
 	}
 }
 
-func (me *groupmsgProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *groupmsgProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	targetUsers := map[string]*model.User{}
 	targetUsersSlice := []string{args.UserId}
 	invalidUsernames := []string{}
@@ -81,7 +81,7 @@ func (me *groupmsgProvider) DoCommand(a *App, args *model.CommandArgs, message s
 	}
 
 	if len(targetUsersSlice) == 2 {
-		return GetCommandProvider("msg").DoCommand(a, args, fmt.Sprintf("%s %s", targetUsers[targetUsersSlice[1]].Username, parsedMessage))
+		return GetCommandProvider("msg").doCommand(a, args, fmt.Sprintf("%s %s", targetUsers[targetUsersSlice[1]].Username, parsedMessage))
 	}
 
 	if len(targetUsersSlice) < model.CHANNEL_GROUP_MIN_USERS {

@@ -19,11 +19,11 @@ func init() {
 	RegisterCommandProvider(&MeProvider{})
 }
 
-func (me *MeProvider) GetTrigger() string {
+func (me *MeProvider) getTrigger() string {
 	return CMD_ME
 }
 
-func (me *MeProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *MeProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_ME,
 		AutoComplete:     true,
@@ -33,7 +33,7 @@ func (me *MeProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command 
 	}
 }
 
-func (me *MeProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *MeProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	return &model.CommandResponse{
 		ResponseType: model.COMMAND_RESPONSE_TYPE_IN_CHANNEL,
 		Type:         model.POST_ME,

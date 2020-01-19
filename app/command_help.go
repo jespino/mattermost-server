@@ -19,11 +19,11 @@ func init() {
 	RegisterCommandProvider(&HelpProvider{})
 }
 
-func (h *HelpProvider) GetTrigger() string {
+func (h *HelpProvider) getTrigger() string {
 	return CMD_HELP
 }
 
-func (h *HelpProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (h *HelpProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_HELP,
 		AutoComplete:     true,
@@ -32,7 +32,7 @@ func (h *HelpProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command
 	}
 }
 
-func (h *HelpProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (h *HelpProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	helpLink := *a.Config().SupportSettings.HelpLink
 
 	if helpLink == "" {

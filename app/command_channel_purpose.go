@@ -20,11 +20,11 @@ func init() {
 	RegisterCommandProvider(&PurposeProvider{})
 }
 
-func (me *PurposeProvider) GetTrigger() string {
+func (me *PurposeProvider) getTrigger() string {
 	return CMD_PURPOSE
 }
 
-func (me *PurposeProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+func (me *PurposeProvider) getCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
 		Trigger:          CMD_PURPOSE,
 		AutoComplete:     true,
@@ -34,7 +34,7 @@ func (me *PurposeProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Com
 	}
 }
 
-func (me *PurposeProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+func (me *PurposeProvider) doCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	channel, err := a.GetChannel(args.ChannelId)
 	if err != nil {
 		return &model.CommandResponse{
