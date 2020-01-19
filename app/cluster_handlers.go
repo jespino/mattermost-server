@@ -40,7 +40,7 @@ func (a *App) ClusterUpdateStatusHandler(msg *model.ClusterMessage) {
 }
 
 func (a *App) ClusterInvalidateAllCachesHandler(msg *model.ClusterMessage) {
-	a.InvalidateAllCachesSkipSend()
+	a.invalidateAllCachesSkipSend()
 }
 
 func (a *App) ClusterInvalidateCacheForChannelMembersNotifyPropHandler(msg *model.ClusterMessage) {
@@ -76,5 +76,5 @@ func (a *App) ClusterRemovePluginHandler(msg *model.ClusterMessage) {
 }
 
 func (a *App) ClusterBusyStateChgHandler(msg *model.ClusterMessage) {
-	a.ServerBusyStateChanged(model.ServerBusyStateFromJson(strings.NewReader(msg.Data)))
+	a.serverBusyStateChanged(model.ServerBusyStateFromJson(strings.NewReader(msg.Data)))
 }
