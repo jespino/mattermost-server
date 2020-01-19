@@ -29,7 +29,7 @@ func (a *App) CreateTeam(team *model.Team) (*model.Team, *model.AppError) {
 		return nil, err
 	}
 
-	if _, err := a.CreateDefaultChannels(rteam.Id); err != nil {
+	if _, err := a.createDefaultChannels(rteam.Id); err != nil {
 		return nil, err
 	}
 
@@ -624,7 +624,7 @@ func (a *App) JoinUserToTeam(team *model.Team, user *model.User, userRequestorId
 
 	if !user.IsGuest() {
 		// Soft error if there is an issue joining the default channels
-		if err := a.JoinDefaultChannels(team.Id, user, shouldBeAdmin, userRequestorId); err != nil {
+		if err := a.joinDefaultChannels(team.Id, user, shouldBeAdmin, userRequestorId); err != nil {
 			mlog.Error(
 				"Encountered an issue joining default channels.",
 				mlog.String("user_id", user.Id),

@@ -60,7 +60,7 @@ func (me *MuteProvider) DoCommand(a *App, args *model.CommandArgs, message strin
 		}
 	}
 
-	channelMember := a.ToggleMuteChannel(channel.Id, args.UserId)
+	channelMember := a.toggleMuteChannel(channel.Id, args.UserId)
 	if channelMember == nil {
 		return &model.CommandResponse{Text: args.T("api.command_mute.not_member.error", map[string]interface{}{"Channel": channelName}), ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 	}

@@ -294,7 +294,7 @@ func (a *App) generateHyperlinkForChannels(postMessage, teamName, teamURL string
 		return postMessage
 	}
 
-	channels, err := a.GetChannelsByNames(channelNames, team.Id)
+	channels, err := a.getChannelsByNames(channelNames, team.Id)
 	if err != nil {
 		mlog.Error("Encountered error while getting channels", mlog.Err(err))
 		return postMessage

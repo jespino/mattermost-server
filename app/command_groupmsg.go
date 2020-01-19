@@ -114,7 +114,7 @@ func (me *groupmsgProvider) DoCommand(a *App, args *model.CommandArgs, message s
 			return &model.CommandResponse{Text: args.T("api.command_groupmsg.group_fail.app_error"), ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 		}
 	} else {
-		groupChannel, channelErr = a.GetGroupChannel(targetUsersSlice)
+		groupChannel, channelErr = a.getGroupChannel(targetUsersSlice)
 		if channelErr != nil {
 			return &model.CommandResponse{Text: args.T("api.command_groupmsg.permission.app_error"), ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 		}

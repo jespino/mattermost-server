@@ -74,7 +74,7 @@ func (a *App) CreatePostAsUser(post *model.Post, currentSessionId string) (*mode
 
 	// Update the LastViewAt only if the post does not have from_webhook prop set (eg. Zapier app)
 	if _, ok := post.Props["from_webhook"]; !ok {
-		if _, err := a.MarkChannelsAsViewed([]string{post.ChannelId}, post.UserId, currentSessionId); err != nil {
+		if _, err := a.markChannelsAsViewed([]string{post.ChannelId}, post.UserId, currentSessionId); err != nil {
 			mlog.Error(
 				"Encountered error updating last viewed",
 				mlog.String("channel_id", post.ChannelId),
@@ -355,7 +355,7 @@ func (a *App) FillInPostProps(post *model.Post, channel *model.Channel) *model.A
 			channel = postChannel
 		}
 
-		mentionedChannels, err := a.GetChannelsByNames(channelMentions, channel.TeamId)
+		mentionedChannels, err := a.getChannelsByNames(channelMentions, channel.TeamId)
 		if err != nil {
 			return err
 		}
@@ -666,7 +666,7 @@ func (a *App) GetPermalinkPost(postId string, userId string) (*model.PostList, *
 		return nil, err
 	}
 
-	if err = a.JoinChannel(channel, userId); err != nil {
+	if err = a.joinChannel(channel, userId); err != nil {
 		return nil, err
 	}
 
@@ -887,7 +887,7 @@ func (a *App) parseAndFetchChannelIdByNameFromInFilter(channelName, userId, team
 			userIds = append(userIds, user.Id)
 		}
 
-		channel, err := a.GetGroupChannel(userIds)
+		channel, err := a.getGroupChannel(userIds)
 		if err != nil {
 			return nil, err
 		}

@@ -452,7 +452,7 @@ func (api *PluginAPI) UpdateChannelMemberNotifications(channelId, userId string,
 }
 
 func (api *PluginAPI) DeleteChannelMember(channelId, userId string) *model.AppError {
-	return api.app.LeaveChannel(channelId, userId)
+	return api.app.leaveChannel(channelId, userId)
 }
 
 func (api *PluginAPI) GetGroup(groupId string) (*model.Group, *model.AppError) {
