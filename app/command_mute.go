@@ -18,7 +18,7 @@ const (
 )
 
 func init() {
-	RegisterCommandProvider(&MuteProvider{})
+	registerCommandProvider(&MuteProvider{})
 }
 
 func (me *MuteProvider) getTrigger() string {

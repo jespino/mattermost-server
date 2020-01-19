@@ -20,7 +20,7 @@ const (
 )
 
 func init() {
-	RegisterCommandProvider(&groupmsgProvider{})
+	registerCommandProvider(&groupmsgProvider{})
 }
 
 func (me *groupmsgProvider) getTrigger() string {
@@ -81,7 +81,7 @@ func (me *groupmsgProvider) doCommand(a *App, args *model.CommandArgs, message s
 	}
 
 	if len(targetUsersSlice) == 2 {
-		return GetCommandProvider("msg").doCommand(a, args, fmt.Sprintf("%s %s", targetUsers[targetUsersSlice[1]].Username, parsedMessage))
+		return getCommandProvider("msg").doCommand(a, args, fmt.Sprintf("%s %s", targetUsers[targetUsersSlice[1]].Username, parsedMessage))
 	}
 
 	if len(targetUsersSlice) < model.CHANNEL_GROUP_MIN_USERS {

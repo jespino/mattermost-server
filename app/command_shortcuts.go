@@ -16,7 +16,7 @@ const (
 )
 
 func init() {
-	RegisterCommandProvider(&ShortcutsProvider{})
+	registerCommandProvider(&ShortcutsProvider{})
 }
 
 func (me *ShortcutsProvider) getTrigger() string {

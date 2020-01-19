@@ -22,8 +22,8 @@ const (
 )
 
 func init() {
-	RegisterCommandProvider(&ExpandProvider{})
-	RegisterCommandProvider(&CollapseProvider{})
+	registerCommandProvider(&ExpandProvider{})
+	registerCommandProvider(&CollapseProvider{})
 }
 
 func (me *ExpandProvider) getTrigger() string {

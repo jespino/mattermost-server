@@ -16,7 +16,7 @@ const (
 )
 
 func init() {
-	RegisterCommandProvider(&SearchProvider{})
+	registerCommandProvider(&SearchProvider{})
 }
 
 func (search *SearchProvider) getTrigger() string {

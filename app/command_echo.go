@@ -23,7 +23,7 @@ const (
 )
 
 func init() {
-	RegisterCommandProvider(&EchoProvider{})
+	registerCommandProvider(&EchoProvider{})
 }
 
 func (me *EchoProvider) getTrigger() string {

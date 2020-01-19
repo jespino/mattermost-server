@@ -17,7 +17,7 @@ const (
 )
 
 func init() {
-	RegisterCommandProvider(&PurposeProvider{})
+	registerCommandProvider(&PurposeProvider{})
 }
 
 func (me *PurposeProvider) getTrigger() string {

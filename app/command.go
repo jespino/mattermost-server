@@ -25,11 +25,11 @@ type CommandProvider interface {
 
 var commandProviders = make(map[string]CommandProvider)
 
-func RegisterCommandProvider(newProvider CommandProvider) {
+func registerCommandProvider(newProvider CommandProvider) {
 	commandProviders[newProvider.getTrigger()] = newProvider
 }
 
-func GetCommandProvider(name string) CommandProvider {
+func getCommandProvider(name string) CommandProvider {
 	provider, ok := commandProviders[name]
 	if ok {
 		return provider
@@ -38,7 +38,7 @@ func GetCommandProvider(name string) CommandProvider {
 	return nil
 }
 
-func (a *App) CreateCommandPost(post *model.Post, teamId string, response *model.CommandResponse, skipSlackParsing bool) (*model.Post, *model.AppError) {
+func (a *App) createCommandPost(post *model.Post, teamId string, response *model.CommandResponse, skipSlackParsing bool) (*model.Post, *model.AppError) {
 	if skipSlackParsing {
 		post.Message = response.Text
 	} else {
@@ -48,7 +48,7 @@ func (a *App) CreateCommandPost(post *model.Post, teamId string, response *model
 	post.CreateAt = model.GetMillis()
 
 	if strings.HasPrefix(post.Type, model.POST_SYSTEM_MESSAGE_PREFIX) {
-		err := model.NewAppError("CreateCommandPost", "api.context.invalid_param.app_error", map[string]interface{}{"Name": "post.type"}, "", http.StatusBadRequest)
+		err := model.NewAppError("createCommandPost", "api.context.invalid_param.app_error", map[string]interface{}{"Name": "post.type"}, "", http.StatusBadRequest)
 		return nil, err
 	}
 
@@ -169,7 +169,7 @@ func (a *App) ExecuteCommand(args *model.CommandArgs) (*model.CommandResponse, *
 
 	cmd, response := a.tryExecuteBuiltInCommand(args, trigger, message)
 	if cmd != nil && response != nil {
-		return a.HandleCommandResponse(cmd, args, response, true)
+		return a.handleCommandResponse(cmd, args, response, true)
 	}
 
 	cmd, response, appErr = a.tryExecutePluginCommand(args)
@@ -177,7 +177,7 @@ func (a *App) ExecuteCommand(args *model.CommandArgs) (*model.CommandResponse, *
 		return nil, appErr
 	} else if cmd != nil && response != nil {
 		response.TriggerId = clientTriggerId
-		return a.HandleCommandResponse(cmd, args, response, true)
+		return a.handleCommandResponse(cmd, args, response, true)
 	}
 
 	cmd, response, appErr = a.tryExecuteCustomCommand(args, trigger, message)
@@ -185,7 +185,7 @@ func (a *App) ExecuteCommand(args *model.CommandArgs) (*model.CommandResponse, *
 		return nil, appErr
 	} else if cmd != nil && response != nil {
 		response.TriggerId = clientTriggerId
-		return a.HandleCommandResponse(cmd, args, response, false)
+		return a.handleCommandResponse(cmd, args, response, false)
 	}
 
 	return nil, model.NewAppError("command", "api.command.execute_command.not_found.app_error", map[string]interface{}{"Trigger": trigger}, "", http.StatusNotFound)
@@ -194,7 +194,7 @@ func (a *App) ExecuteCommand(args *model.CommandArgs) (*model.CommandResponse, *
 // tryExecuteBuiltInCommand attempts to run a built in command based on the given arguments. If no such command can be
 // found, returns nil for all arguments.
 func (a *App) tryExecuteBuiltInCommand(args *model.CommandArgs, trigger string, message string) (*model.Command, *model.CommandResponse) {
-	provider := GetCommandProvider(trigger)
+	provider := getCommandProvider(trigger)
 	if provider == nil {
 		return nil, nil
 	}
@@ -354,7 +354,7 @@ func (a *App) doCommandRequest(cmd *model.Command, p url.Values) (*model.Command
 	return cmd, response, nil
 }
 
-func (a *App) HandleCommandResponse(command *model.Command, args *model.CommandArgs, response *model.CommandResponse, builtIn bool) (*model.CommandResponse, *model.AppError) {
+func (a *App) handleCommandResponse(command *model.Command, args *model.CommandArgs, response *model.CommandResponse, builtIn bool) (*model.CommandResponse, *model.AppError) {
 	trigger := ""
 	if len(args.Command) != 0 {
 		parts := strings.Split(args.Command, " ")
@@ -363,7 +363,7 @@ func (a *App) HandleCommandResponse(command *model.Command, args *model.CommandA
 	}
 
 	var lastError *model.AppError
-	_, err := a.HandleCommandResponsePost(command, args, response, builtIn)
+	_, err := a.handleCommandResponsePost(command, args, response, builtIn)
 
 	if err != nil {
 		mlog.Error("error occurred in handling command response post", mlog.Err(err))
@@ -372,7 +372,7 @@ func (a *App) HandleCommandResponse(command *model.Command, args *model.CommandA
 
 	if response.ExtraResponses != nil {
 		for _, resp := range response.ExtraResponses {
-			_, err := a.HandleCommandResponsePost(command, args, resp, builtIn)
+			_, err := a.handleCommandResponsePost(command, args, resp, builtIn)
 
 			if err != nil {
 				mlog.Error("error occurred in handling command response post", mlog.Err(err))
@@ -388,7 +388,7 @@ func (a *App) HandleCommandResponse(command *model.Command, args *model.CommandA
 	return response, nil
 }
 
-func (a *App) HandleCommandResponsePost(command *model.Command, args *model.CommandArgs, response *model.CommandResponse, builtIn bool) (*model.Post, *model.AppError) {
+func (a *App) handleCommandResponsePost(command *model.Command, args *model.CommandArgs, response *model.CommandResponse, builtIn bool) (*model.Post, *model.AppError) {
 	post := &model.Post{}
 	post.ChannelId = args.ChannelId
 	post.RootId = args.RootId
@@ -400,7 +400,7 @@ func (a *App) HandleCommandResponsePost(command *model.Command, args *model.Comm
 	if len(response.ChannelId) != 0 {
 		_, err := a.GetChannelMember(response.ChannelId, args.UserId)
 		if err != nil {
-			err = model.NewAppError("HandleCommandResponsePost", "api.command.command_post.forbidden.app_error", nil, err.Error(), http.StatusForbidden)
+			err = model.NewAppError("handleCommandResponsePost", "api.command.command_post.forbidden.app_error", nil, err.Error(), http.StatusForbidden)
 			return nil, err
 		}
 		post.ChannelId = response.ChannelId
@@ -440,7 +440,7 @@ func (a *App) HandleCommandResponsePost(command *model.Command, args *model.Comm
 		response.Attachments = a.ProcessSlackAttachments(response.Attachments)
 	}
 
-	if _, err := a.CreateCommandPost(post, args.TeamId, response, response.SkipSlackParsing); err != nil {
+	if _, err := a.createCommandPost(post, args.TeamId, response, response.SkipSlackParsing); err != nil {
 		return post, err
 	}
 

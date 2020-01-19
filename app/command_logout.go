@@ -16,7 +16,7 @@ const (
 )
 
 func init() {
-	RegisterCommandProvider(&LogoutProvider{})
+	registerCommandProvider(&LogoutProvider{})
 }
 
 func (me *LogoutProvider) getTrigger() string {

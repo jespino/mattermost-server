@@ -81,7 +81,7 @@ type LoadTestProvider struct {
 }
 
 func init() {
-	RegisterCommandProvider(&LoadTestProvider{})
+	registerCommandProvider(&LoadTestProvider{})
 }
 
 func (me *LoadTestProvider) getTrigger() string {

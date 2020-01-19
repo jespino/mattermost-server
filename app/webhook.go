@@ -721,6 +721,6 @@ func (a *App) HandleCommandWebhook(hookId string, response *model.CommandRespons
 		return model.NewAppError("HandleCommandWebhook", "web.command_webhook.invalid.app_error", nil, "err="+err.Message, err.StatusCode)
 	}
 
-	_, err = a.HandleCommandResponse(cmd, args, response, false)
+	_, err = a.handleCommandResponse(cmd, args, response, false)
 	return err
 }

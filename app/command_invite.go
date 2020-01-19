@@ -20,7 +20,7 @@ const (
 )
 
 func init() {
-	RegisterCommandProvider(&InviteProvider{})
+	registerCommandProvider(&InviteProvider{})
 }
 
 func (me *InviteProvider) getTrigger() string {

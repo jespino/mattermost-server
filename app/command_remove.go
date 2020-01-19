@@ -24,8 +24,8 @@ const (
 )
 
 func init() {
-	RegisterCommandProvider(&RemoveProvider{})
-	RegisterCommandProvider(&KickProvider{})
+	registerCommandProvider(&RemoveProvider{})
+	registerCommandProvider(&KickProvider{})
 }
 
 func (me *RemoveProvider) getTrigger() string {

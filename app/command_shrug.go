@@ -16,7 +16,7 @@ const (
 )
 
 func init() {
-	RegisterCommandProvider(&ShrugProvider{})
+	registerCommandProvider(&ShrugProvider{})
 }
 
 func (me *ShrugProvider) getTrigger() string {

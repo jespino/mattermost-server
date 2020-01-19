@@ -19,7 +19,7 @@ const (
 )
 
 func init() {
-	RegisterCommandProvider(&JoinProvider{})
+	registerCommandProvider(&JoinProvider{})
 }
 
 func (me *JoinProvider) getTrigger() string {
