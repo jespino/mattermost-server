@@ -10,14 +10,14 @@ import (
 // Registers a given function to be called when the cluster leader may have changed. Returns a unique ID for the
 // listener which can later be used to remove it. If clustering is not enabled in this build, the callback will never
 // be called.
-func (s *Server) AddClusterLeaderChangedListener(listener func()) string {
+func (s *Server) addClusterLeaderChangedListener(listener func()) string {
 	id := model.NewId()
 	s.clusterLeaderListeners.Store(id, listener)
 	return id
 }
 
 // Removes a listener function by the unique ID returned when AddConfigListener was called
-func (s *Server) RemoveClusterLeaderChangedListener(id string) {
+func (s *Server) removeClusterLeaderChangedListener(id string) {
 	s.clusterLeaderListeners.Delete(id)
 }
 

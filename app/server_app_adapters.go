@@ -92,7 +92,7 @@ func (s *Server) RunOldAppInitialization() error {
 	s.FakeApp().ensureDiagnosticId()
 	s.FakeApp().regenerateClientConfig()
 
-	s.FakeApp().Srv.clusterLeaderListenerId = s.FakeApp().Srv.AddClusterLeaderChangedListener(func() {
+	s.FakeApp().Srv.clusterLeaderListenerId = s.FakeApp().Srv.addClusterLeaderChangedListener(func() {
 		mlog.Info("Cluster leader changed. Determining if job schedulers should be running:", mlog.Bool("isLeader", s.FakeApp().isLeader()))
 		if s.FakeApp().Srv.Jobs != nil {
 			s.FakeApp().Srv.Jobs.Schedulers.HandleClusterLeaderChange(s.FakeApp().isLeader())
@@ -162,7 +162,7 @@ func (s *Server) RunOldAppShutdown() {
 	s.FakeApp().StopPushNotificationsHubWorkers()
 	s.FakeApp().ShutDownPlugins()
 	s.FakeApp().RemoveLicenseListener(s.licenseListenerId)
-	s.RemoveClusterLeaderChangedListener(s.clusterLeaderListenerId)
+	s.removeClusterLeaderChangedListener(s.clusterLeaderListenerId)
 }
 
 // A temporary bridge to deal with cases where the code is so tighly coupled that
