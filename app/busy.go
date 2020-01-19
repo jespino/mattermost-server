@@ -30,7 +30,7 @@ type Busy struct {
 
 // NewBusy creates a new Busy instance with optional cluster which will
 // be notified of busy state changes.
-func NewBusy(cluster einterfaces.ClusterInterface) *Busy {
+func newBusy(cluster einterfaces.ClusterInterface) *Busy {
 	return &Busy{cluster: cluster}
 }
 
@@ -94,7 +94,7 @@ func (b *Busy) clearWithoutNotify() {
 // Expires returns the expected time that the server
 // will be marked not busy. This expiry can be extended
 // via additional calls to SetBusy.
-func (b *Busy) Expires() time.Time {
+func (b *Busy) getExpires() time.Time {
 	b.mux.RLock()
 	defer b.mux.RUnlock()
 	return b.expires
@@ -115,7 +115,7 @@ func (b *Busy) notifyServerBusyChange(sbs *model.ServerBusyState) {
 }
 
 // ClusterEventChanged is called when a CLUSTER_EVENT_BUSY_STATE_CHANGED is received.
-func (b *Busy) ClusterEventChanged(sbs *model.ServerBusyState) {
+func (b *Busy) clusterEventChanged(sbs *model.ServerBusyState) {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 
