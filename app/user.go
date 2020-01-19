@@ -308,7 +308,7 @@ func (a *App) createUserOrGuest(user *model.User, guest bool) (*model.User, *mod
 func (a *App) createUser(user *model.User) (*model.User, *model.AppError) {
 	user.MakeNonNil()
 
-	if err := a.IsPasswordValid(user.Password); user.AuthService == "" && err != nil {
+	if err := a.isPasswordValid(user.Password); user.AuthService == "" && err != nil {
 		return nil, err
 	}
 
@@ -1088,7 +1088,7 @@ func (a *App) UpdateUserAuth(userId string, userAuth *model.UserAuth) (*model.Us
 		userAuth.AuthData = nil
 		userAuth.AuthService = ""
 
-		if err := a.IsPasswordValid(userAuth.Password); err != nil {
+		if err := a.isPasswordValid(userAuth.Password); err != nil {
 			return nil, err
 		}
 		password := model.HashPassword(userAuth.Password)
@@ -1269,7 +1269,7 @@ func (a *App) UpdatePasswordByUserIdSendEmail(userId, newPassword, method string
 }
 
 func (a *App) UpdatePassword(user *model.User, newPassword string) *model.AppError {
-	if err := a.IsPasswordValid(newPassword); err != nil {
+	if err := a.isPasswordValid(newPassword); err != nil {
 		return err
 	}
 

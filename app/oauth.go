@@ -810,7 +810,7 @@ func (a *App) SwitchEmailToOAuth(w http.ResponseWriter, r *http.Request, email, 
 		return "", err
 	}
 
-	if err = a.CheckPasswordAndAllCriteria(user, password, code); err != nil {
+	if err = a.checkPasswordAndAllCriteria(user, password, code); err != nil {
 		return "", err
 	}
 
