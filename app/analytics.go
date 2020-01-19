@@ -324,21 +324,6 @@ func (a *App) GetAnalytics(name string, teamId string) (model.AnalyticsRows, *mo
 	return nil, nil
 }
 
-func (a *App) GetRecentlyActiveUsersForTeam(teamId string) (map[string]*model.User, *model.AppError) {
-	users, err := a.Srv.Store.User().GetRecentlyActiveUsersForTeam(teamId, 0, 100, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	userMap := make(map[string]*model.User)
-
-	for _, user := range users {
-		userMap[user.Id] = user
-	}
-
-	return userMap, nil
-}
-
 func (a *App) GetRecentlyActiveUsersForTeamPage(teamId string, page, perPage int, asAdmin bool, viewRestrictions *model.ViewUsersRestrictions) ([]*model.User, *model.AppError) {
 	users, err := a.Srv.Store.User().GetRecentlyActiveUsersForTeam(teamId, page*perPage, perPage, viewRestrictions)
 	if err != nil {
