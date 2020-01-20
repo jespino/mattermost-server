@@ -1,5 +1,5 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
-// See License.txt for license information.
+// See LICENSE.txt for license information.
 
 package app
 
@@ -10,9 +10,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mattermost/mattermost-server/model"
-	"github.com/mattermost/mattermost-server/store/sqlstore"
-	"github.com/mattermost/mattermost-server/utils"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/store/sqlstore"
+	"github.com/mattermost/mattermost-server/v5/utils"
 )
 
 func TestConfigListener(t *testing.T) {
@@ -68,12 +68,10 @@ func TestClientConfigWithComputed(t *testing.T) {
 	defer th.TearDown()
 
 	config := th.App.ClientConfigWithComputed()
-	if _, ok := config["NoAccounts"]; !ok {
-		t.Fatal("expected NoAccounts in returned config")
-	}
-	if _, ok := config["MaxPostSize"]; !ok {
-		t.Fatal("expected MaxPostSize in returned config")
-	}
+	_, ok := config["NoAccounts"]
+	assert.True(t, ok, "expected NoAccounts in returned config")
+	_, ok = config["MaxPostSize"]
+	assert.True(t, ok, "expected MaxPostSize in returned config")
 }
 
 func TestEnsureInstallationDate(t *testing.T) {

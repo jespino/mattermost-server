@@ -1,5 +1,5 @@
-// Copyright (c) 2017-present Mattermost, Inc. All Rights Reserved.
-// See License.txt for license information.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
 
 package app
 
@@ -15,11 +15,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mattermost/mattermost-server/mlog"
+	"github.com/mattermost/mattermost-server/v5/config"
+	"github.com/mattermost/mattermost-server/v5/mlog"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/utils/fileutils"
 
-	"github.com/mattermost/mattermost-server/config"
-	"github.com/mattermost/mattermost-server/model"
-	"github.com/mattermost/mattermost-server/utils/fileutils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -165,14 +165,15 @@ func TestStartServerTLSOverwriteCipher(t *testing.T) {
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 			CipherSuites: []uint16{
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
 			},
+			MaxVersion: tls.VersionTLS12,
 		},
 	}
 
 	client := &http.Client{Transport: tr}
 	err = checkEndpoint(t, client, "https://localhost:"+strconv.Itoa(s.ListenAddr.Port)+"/", http.StatusNotFound)
-	require.NotNil(t, err)
+	require.Error(t, err, "Expected error due to Cipher mismatch")
 
 	if !strings.Contains(err.Error(), "remote error: tls: handshake failure") {
 		t.Errorf("Expected protocol version error, got %s", err)
@@ -185,6 +186,7 @@ func TestStartServerTLSOverwriteCipher(t *testing.T) {
 				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 			},
+			MaxVersion: tls.VersionTLS12,
 		},
 	}
 

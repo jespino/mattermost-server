@@ -1,3 +1,6 @@
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
+
 package config_test
 
 import (
@@ -5,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/mattermost/mattermost-server/model"
-	"github.com/mattermost/mattermost-server/testlib"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/testlib"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,8 +29,8 @@ func TestMain(m *testing.M) {
 // truncateTable clears the given table
 func truncateTable(t *testing.T, table string) {
 	t.Helper()
-	sqlSetting := mainHelper.GetSqlSettings()
-	sqlSupplier := mainHelper.GetSqlSupplier()
+	sqlSetting := mainHelper.GetSQLSettings()
+	sqlSupplier := mainHelper.GetSQLSupplier()
 
 	switch *sqlSetting.DriverName {
 	case model.DATABASE_DRIVER_MYSQL:
@@ -47,7 +50,7 @@ func truncateTable(t *testing.T, table string) {
 		require.NoError(t, err)
 
 	default:
-		t.Fatalf("unsupported driver name: %s", *sqlSetting.DriverName)
+		require.Failf(t, "failed", "unsupported driver name: %s", *sqlSetting.DriverName)
 	}
 }
 

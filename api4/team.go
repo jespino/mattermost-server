@@ -1,5 +1,5 @@
-// Copyright (c) 2017-present Mattermost, Inc. All Rights Reserved.
-// See License.txt for license information.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
 
 package api4
 
@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 const (
@@ -34,7 +34,7 @@ func (api *API) InitTeam() {
 	api.BaseRoutes.Teams.Handle("", api.ApiSessionRequired(createTeam)).Methods("POST")
 	api.BaseRoutes.Teams.Handle("", api.ApiSessionRequired(getAllTeams)).Methods("GET")
 	api.BaseRoutes.Teams.Handle("/{team_id:[A-Za-z0-9]+}/scheme", api.ApiSessionRequired(updateTeamScheme)).Methods("PUT")
-	api.BaseRoutes.Teams.Handle("/search", api.ApiSessionRequired(searchTeams)).Methods("POST")
+	api.BaseRoutes.Teams.Handle("/search", api.ApiSessionRequiredDisableWhenBusy(searchTeams)).Methods("POST")
 	api.BaseRoutes.TeamsForUser.Handle("", api.ApiSessionRequired(getTeamsForUser)).Methods("GET")
 	api.BaseRoutes.TeamsForUser.Handle("/unread", api.ApiSessionRequired(getTeamsUnreadForUser)).Methods("GET")
 
@@ -502,6 +502,11 @@ func addUserToTeamFromInvite(c *Context, w http.ResponseWriter, r *http.Request)
 	if len(tokenId) > 0 {
 		member, err = c.App.AddTeamMemberByToken(c.App.Session.UserId, tokenId)
 	} else if len(inviteId) > 0 {
+		if c.App.Session.Props[model.SESSION_PROP_IS_GUEST] == "true" {
+			c.Err = model.NewAppError("addUserToTeamFromInvite", "api.team.add_user_to_team_from_invite.guest.app_error", nil, "", http.StatusForbidden)
+			return
+		}
+
 		member, err = c.App.AddTeamMemberByInviteId(inviteId, c.App.Session.UserId)
 	} else {
 		err = model.NewAppError("addTeamMember", "api.team.add_user_to_team.missing_parameter.app_error", nil, "", http.StatusBadRequest)
@@ -517,6 +522,8 @@ func addUserToTeamFromInvite(c *Context, w http.ResponseWriter, r *http.Request)
 }
 
 func addTeamMembers(c *Context, w http.ResponseWriter, r *http.Request) {
+	graceful := r.URL.Query().Get("graceful") != ""
+
 	c.RequireTeamId()
 	if c.Err != nil {
 		return
@@ -582,7 +589,7 @@ func addTeamMembers(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	members, err = c.App.AddTeamMembers(c.Params.TeamId, userIds, c.App.Session.UserId)
+	membersWithErrors, err := c.App.AddTeamMembers(c.Params.TeamId, userIds, c.App.Session.UserId, graceful)
 
 	if err != nil {
 		c.Err = err
@@ -590,7 +597,14 @@ func addTeamMembers(c *Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(model.TeamMembersToJson(members)))
+
+	if graceful {
+		// in 'graceful' mode we allow a different return value, notifying the client which users were not added
+		w.Write([]byte(model.TeamMembersWithErrorToJson(membersWithErrors)))
+	} else {
+		w.Write([]byte(model.TeamMembersToJson(model.TeamMembersWithErrorToTeamMembers(membersWithErrors))))
+	}
+
 }
 
 func removeTeamMember(c *Context, w http.ResponseWriter, r *http.Request) {
@@ -784,13 +798,22 @@ func searchTeams(c *Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	var teams []*model.Team
+	var totalCount int64
 	var err *model.AppError
 
 	if c.App.SessionHasPermissionTo(c.App.Session, model.PERMISSION_LIST_PRIVATE_TEAMS) && c.App.SessionHasPermissionTo(c.App.Session, model.PERMISSION_LIST_PUBLIC_TEAMS) {
-		teams, err = c.App.SearchAllTeams(props.Term)
+		teams, totalCount, err = c.App.SearchAllTeams(props)
 	} else if c.App.SessionHasPermissionTo(c.App.Session, model.PERMISSION_LIST_PRIVATE_TEAMS) {
+		if props.Page != nil || props.PerPage != nil {
+			c.Err = model.NewAppError("searchTeams", "api.team.search_teams.pagination_not_implemented.private_team_search", nil, "", http.StatusNotImplemented)
+			return
+		}
 		teams, err = c.App.SearchPrivateTeams(props.Term)
 	} else if c.App.SessionHasPermissionTo(c.App.Session, model.PERMISSION_LIST_PUBLIC_TEAMS) {
+		if props.Page != nil || props.PerPage != nil {
+			c.Err = model.NewAppError("searchTeams", "api.team.search_teams.pagination_not_implemented.public_team_search", nil, "", http.StatusNotImplemented)
+			return
+		}
 		teams, err = c.App.SearchPublicTeams(props.Term)
 	} else {
 		teams = []*model.Team{}
@@ -803,7 +826,15 @@ func searchTeams(c *Context, w http.ResponseWriter, r *http.Request) {
 
 	c.App.SanitizeTeams(c.App.Session, teams)
 
-	w.Write([]byte(model.TeamListToJson(teams)))
+	var payload []byte
+	if props.Page != nil && props.PerPage != nil {
+		twc := &model.TeamsWithCount{Teams: teams, TotalCount: totalCount}
+		payload = model.TeamsWithCountToJson(twc)
+	} else {
+		payload = []byte(model.TeamListToJson(teams))
+	}
+
+	w.Write(payload)
 }
 
 func teamExists(c *Context, w http.ResponseWriter, r *http.Request) {
@@ -812,14 +843,31 @@ func teamExists(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := make(map[string]bool)
-
-	if _, err := c.App.GetTeamByName(c.Params.TeamName); err != nil {
-		resp["exists"] = false
-	} else {
-		resp["exists"] = true
+	team, err := c.App.GetTeamByName(c.Params.TeamName)
+	if err != nil && err.StatusCode != http.StatusNotFound {
+		c.Err = err
+		return
 	}
 
+	exists := false
+
+	if team != nil {
+		var teamMember *model.TeamMember
+		teamMember, err = c.App.GetTeamMember(team.Id, c.App.Session.UserId)
+		if err != nil && err.StatusCode != http.StatusNotFound {
+			c.Err = err
+			return
+		}
+
+		// Verify that the user can see the team (be a member or have the permission to list the team)
+		if (teamMember != nil && teamMember.DeleteAt == 0) ||
+			(team.AllowOpenInvite && c.App.SessionHasPermissionTo(c.App.Session, model.PERMISSION_LIST_PUBLIC_TEAMS)) ||
+			(!team.AllowOpenInvite && c.App.SessionHasPermissionTo(c.App.Session, model.PERMISSION_LIST_PRIVATE_TEAMS)) {
+			exists = true
+		}
+	}
+
+	resp := map[string]bool{"exists": exists}
 	w.Write([]byte(model.MapBoolToJson(resp)))
 }
 
@@ -889,7 +937,7 @@ func importTeam(c *Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]string{}
-	data["results"] = base64.StdEncoding.EncodeToString([]byte(log.Bytes()))
+	data["results"] = base64.StdEncoding.EncodeToString(log.Bytes())
 	if c.Err != nil {
 		w.WriteHeader(c.Err.StatusCode)
 	}
@@ -929,7 +977,7 @@ func inviteUsersToTeam(c *Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func inviteGuestsToChannels(c *Context, w http.ResponseWriter, r *http.Request) {
-	if c.App.License() == nil {
+	if c.App.License() == nil || !*c.App.License().Features.GuestAccounts {
 		c.Err = model.NewAppError("Api4.InviteGuestsToChannels", "api.team.invate_guests_to_channels.license.error", nil, "", http.StatusNotImplemented)
 		return
 	}

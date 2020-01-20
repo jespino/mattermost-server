@@ -1,5 +1,5 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
-// See License.txt for license information.
+// See LICENSE.txt for license information.
 
 package app
 
@@ -18,10 +18,10 @@ import (
 	"time"
 
 	"github.com/dyatlov/go-opengraph/opengraph"
-	"github.com/mattermost/mattermost-server/model"
-	"github.com/mattermost/mattermost-server/services/httpservice"
-	"github.com/mattermost/mattermost-server/services/imageproxy"
-	"github.com/mattermost/mattermost-server/utils/testutils"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/services/httpservice"
+	"github.com/mattermost/mattermost-server/v5/services/imageproxy"
+	"github.com/mattermost/mattermost-server/v5/utils/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -58,12 +58,54 @@ func TestPreparePostListForClient(t *testing.T) {
 }
 
 func TestPreparePostForClient(t *testing.T) {
+	var serverURL string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte(`
+			<html>
+			<head>
+			<meta property="og:image" content="` + serverURL + `/test-image3.png" />
+			<meta property="og:site_name" content="GitHub" />
+			<meta property="og:type" content="object" />
+			<meta property="og:title" content="hmhealey/test-files" />
+			<meta property="og:url" content="https://github.com/hmhealey/test-files" />
+			<meta property="og:description" content="Contribute to hmhealey/test-files development by creating an account on GitHub." />
+			</head>
+			</html>`))
+		case "/test-image1.png":
+			file, err := testutils.ReadTestFile("test.png")
+			require.Nil(t, err)
+
+			w.Header().Set("Content-Type", "image/png")
+			w.Write(file)
+		case "/test-image2.png":
+			file, err := testutils.ReadTestFile("test-data-graph.png")
+			require.Nil(t, err)
+
+			w.Header().Set("Content-Type", "image/png")
+			w.Write(file)
+		case "/test-image3.png":
+			file, err := testutils.ReadTestFile("qa-data-graph.png")
+			require.Nil(t, err)
+
+			w.Header().Set("Content-Type", "image/png")
+			w.Write(file)
+		default:
+			require.Fail(t, "Invalid path", r.URL.Path)
+		}
+	}))
+	serverURL = server.URL
+	defer server.Close()
+
 	setup := func() *TestHelper {
 		th := Setup(t).InitBasic()
 
 		th.App.UpdateConfig(func(cfg *model.Config) {
 			*cfg.ServiceSettings.EnableLinkPreviews = true
 			*cfg.ImageProxySettings.Enable = false
+			*cfg.ServiceSettings.AllowedUntrustedInternalConnections = "localhost,127.0.0.1"
 		})
 
 		return th
@@ -90,11 +132,11 @@ func TestPreparePostForClient(t *testing.T) {
 		t.Run("populates all fields", func(t *testing.T) {
 			assert.Equal(t, message, clientPost.Message, "shouldn't have changed Message")
 			assert.NotEqual(t, nil, clientPost.Metadata, "should've populated Metadata")
-			assert.Len(t, clientPost.Metadata.Embeds, 0, "should've populated Embeds")
-			assert.Len(t, clientPost.Metadata.Reactions, 0, "should've populated Reactions")
-			assert.Len(t, clientPost.Metadata.Files, 0, "should've populated Files")
-			assert.Len(t, clientPost.Metadata.Emojis, 0, "should've populated Emojis")
-			assert.Len(t, clientPost.Metadata.Images, 0, "should've populated Images")
+			assert.Empty(t, clientPost.Metadata.Embeds, "should've populated Embeds")
+			assert.Empty(t, clientPost.Metadata.Reactions, "should've populated Reactions")
+			assert.Empty(t, clientPost.Metadata.Files, "should've populated Files")
+			assert.Empty(t, clientPost.Metadata.Emojis, "should've populated Emojis")
+			assert.Empty(t, clientPost.Metadata.Images, "should've populated Images")
 		})
 	})
 
@@ -265,18 +307,22 @@ func TestPreparePostForClient(t *testing.T) {
 		t.Run("does not override icon URL", func(t *testing.T) {
 			clientPost := prepare(false, url, emoji)
 
-			s, _ := clientPost.Props[model.POST_PROPS_OVERRIDE_ICON_URL]
+			s, ok := clientPost.Props[model.POST_PROPS_OVERRIDE_ICON_URL]
+			assert.True(t, ok)
 			assert.EqualValues(t, url, s)
-			s, _ = clientPost.Props[model.POST_PROPS_OVERRIDE_ICON_EMOJI]
+			s, ok = clientPost.Props[model.POST_PROPS_OVERRIDE_ICON_EMOJI]
+			assert.True(t, ok)
 			assert.EqualValues(t, emoji, s)
 		})
 
 		t.Run("overrides icon URL", func(t *testing.T) {
 			clientPost := prepare(true, url, emoji)
 
-			s, _ := clientPost.Props[model.POST_PROPS_OVERRIDE_ICON_URL]
+			s, ok := clientPost.Props[model.POST_PROPS_OVERRIDE_ICON_URL]
+			assert.True(t, ok)
 			assert.EqualValues(t, overridenUrl, s)
-			s, _ = clientPost.Props[model.POST_PROPS_OVERRIDE_ICON_EMOJI]
+			s, ok = clientPost.Props[model.POST_PROPS_OVERRIDE_ICON_EMOJI]
+			assert.True(t, ok)
 			assert.EqualValues(t, emoji, s)
 		})
 
@@ -289,7 +335,7 @@ func TestPreparePostForClient(t *testing.T) {
 		post, err := th.App.CreatePost(&model.Post{
 			UserId:    th.BasicUser.Id,
 			ChannelId: th.BasicChannel.Id,
-			Message:   "This is ![our logo](https://github.com/hmhealey/test-files/raw/master/logoVertical.png) and ![our icon](https://github.com/hmhealey/test-files/raw/master/icon.png)",
+			Message:   fmt.Sprintf("This is ![our logo](%s/test-image2.png) and ![our icon](%s/test-image1.png)", server.URL, server.URL),
 		}, th.BasicChannel, false)
 		require.Nil(t, err)
 
@@ -300,14 +346,14 @@ func TestPreparePostForClient(t *testing.T) {
 			require.Len(t, imageDimensions, 2)
 			assert.Equal(t, &model.PostImage{
 				Format: "png",
-				Width:  1068,
-				Height: 552,
-			}, imageDimensions["https://github.com/hmhealey/test-files/raw/master/logoVertical.png"])
+				Width:  1280,
+				Height: 1780,
+			}, imageDimensions[server.URL+"/test-image2.png"])
 			assert.Equal(t, &model.PostImage{
 				Format: "png",
-				Width:  501,
-				Height: 501,
-			}, imageDimensions["https://github.com/hmhealey/test-files/raw/master/icon.png"])
+				Width:  408,
+				Height: 336,
+			}, imageDimensions[server.URL+"/test-image1.png"])
 		})
 	})
 
@@ -332,8 +378,8 @@ func TestPreparePostForClient(t *testing.T) {
 		post, err := th.App.CreatePost(&model.Post{
 			UserId:    th.BasicUser.Id,
 			ChannelId: th.BasicChannel.Id,
-			Message: `This is our logo: https://github.com/hmhealey/test-files/raw/master/logoVertical.png
-	And this is our icon: https://github.com/hmhealey/test-files/raw/master/icon.png`,
+			Message: `This is our logo: ` + server.URL + `/test-image2.png
+	And this is our icon: ` + server.URL + `/test-image1.png`,
 		}, th.BasicChannel, false)
 		require.Nil(t, err)
 
@@ -345,7 +391,7 @@ func TestPreparePostForClient(t *testing.T) {
 			assert.ElementsMatch(t, []*model.PostEmbed{
 				{
 					Type: model.POST_EMBED_IMAGE,
-					URL:  "https://github.com/hmhealey/test-files/raw/master/logoVertical.png",
+					URL:  server.URL + "/test-image2.png",
 				},
 			}, clientPost.Metadata.Embeds)
 		})
@@ -355,9 +401,9 @@ func TestPreparePostForClient(t *testing.T) {
 			require.Len(t, imageDimensions, 1)
 			assert.Equal(t, &model.PostImage{
 				Format: "png",
-				Width:  1068,
-				Height: 552,
-			}, imageDimensions["https://github.com/hmhealey/test-files/raw/master/logoVertical.png"])
+				Width:  1280,
+				Height: 1780,
+			}, imageDimensions[server.URL+"/test-image2.png"])
 		})
 	})
 
@@ -368,7 +414,7 @@ func TestPreparePostForClient(t *testing.T) {
 		post, err := th.App.CreatePost(&model.Post{
 			UserId:    th.BasicUser.Id,
 			ChannelId: th.BasicChannel.Id,
-			Message:   `This is our web page: https://github.com/hmhealey/test-files`,
+			Message:   `This is our web page: ` + server.URL,
 		}, th.BasicChannel, false)
 		require.Nil(t, err)
 
@@ -379,13 +425,13 @@ func TestPreparePostForClient(t *testing.T) {
 
 		t.Run("populates embeds", func(t *testing.T) {
 			assert.Equal(t, firstEmbed.Type, model.POST_EMBED_OPENGRAPH)
-			assert.Equal(t, firstEmbed.URL, "https://github.com/hmhealey/test-files")
+			assert.Equal(t, firstEmbed.URL, server.URL)
 			assert.Equal(t, ogData.Description, "Contribute to hmhealey/test-files development by creating an account on GitHub.")
 			assert.Equal(t, ogData.SiteName, "GitHub")
 			assert.Equal(t, ogData.Title, "hmhealey/test-files")
 			assert.Equal(t, ogData.Type, "object")
-			assert.Equal(t, ogData.URL, "https://github.com/hmhealey/test-files")
-			assert.Equal(t, ogData.Images[0].URL, "https://avatars1.githubusercontent.com/u/3277310?s=400&v=4")
+			assert.Equal(t, ogData.URL, server.URL)
+			assert.Equal(t, ogData.Images[0].URL, server.URL+"/test-image3.png")
 		})
 
 		t.Run("populates image dimensions", func(t *testing.T) {
@@ -393,9 +439,9 @@ func TestPreparePostForClient(t *testing.T) {
 			require.Len(t, imageDimensions, 1)
 			assert.Equal(t, &model.PostImage{
 				Format: "png",
-				Width:  420,
-				Height: 420,
-			}, imageDimensions["https://avatars1.githubusercontent.com/u/3277310?s=400&v=4"])
+				Width:  1790,
+				Height: 1340,
+			}, imageDimensions[server.URL+"/test-image3.png"])
 		})
 	})
 
@@ -409,7 +455,7 @@ func TestPreparePostForClient(t *testing.T) {
 			Props: map[string]interface{}{
 				"attachments": []interface{}{
 					map[string]interface{}{
-						"text": "![icon](https://github.com/hmhealey/test-files/raw/master/icon.png)",
+						"text": "![icon](" + server.URL + "/test-image1.png)",
 					},
 				},
 			},
@@ -431,10 +477,40 @@ func TestPreparePostForClient(t *testing.T) {
 			require.Len(t, imageDimensions, 1)
 			assert.Equal(t, &model.PostImage{
 				Format: "png",
-				Width:  501,
-				Height: 501,
-			}, imageDimensions["https://github.com/hmhealey/test-files/raw/master/icon.png"])
+				Width:  408,
+				Height: 336,
+			}, imageDimensions[server.URL+"/test-image1.png"])
 		})
+	})
+
+	t.Run("no metadata for deleted posts", func(t *testing.T) {
+		th := setup()
+		defer th.TearDown()
+
+		fileInfo, err := th.App.DoUploadFile(time.Now(), th.BasicTeam.Id, th.BasicChannel.Id, th.BasicUser.Id, "test.txt", []byte("test"))
+		require.Nil(t, err)
+
+		post, err := th.App.CreatePost(&model.Post{
+			Message:   "test",
+			FileIds:   []string{fileInfo.Id},
+			UserId:    th.BasicUser.Id,
+			ChannelId: th.BasicChannel.Id,
+		}, th.BasicChannel, false)
+		require.Nil(t, err)
+
+		th.AddReactionToPost(post, th.BasicUser, "taco")
+
+		post, err = th.App.DeletePost(post.Id, th.BasicUser.Id)
+		require.Nil(t, err)
+
+		// DeleteAt isn't set on the post returned by App.DeletePost
+		post.DeleteAt = model.GetMillis()
+
+		clientPost := th.App.PreparePostForClient(post, false, false)
+
+		assert.NotEqual(t, nil, clientPost.Metadata, "should've populated Metadata“")
+		assert.Nil(t, clientPost.Metadata.Reactions, "should not have populated Reactions")
+		assert.Nil(t, clientPost.Metadata.Files, "should not have populated Files")
 	})
 }
 
@@ -445,6 +521,7 @@ func TestPreparePostForClientWithImageProxy(t *testing.T) {
 		th.App.UpdateConfig(func(cfg *model.Config) {
 			*cfg.ServiceSettings.EnableLinkPreviews = true
 			*cfg.ServiceSettings.SiteURL = "http://mymattermost.com"
+			*cfg.ServiceSettings.AllowedUntrustedInternalConnections = "localhost,127.0.0.1"
 			*cfg.ImageProxySettings.Enable = true
 			*cfg.ImageProxySettings.ImageProxyType = "atmos/camo"
 			*cfg.ImageProxySettings.RemoteImageProxyURL = "https://127.0.0.1"
@@ -491,10 +568,39 @@ func testProxyLinkedImage(t *testing.T, th *TestHelper, shouldProxy bool) {
 }
 
 func testProxyOpenGraphImage(t *testing.T, th *TestHelper, shouldProxy bool) {
+	var serverURL string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte(`
+			<html>
+			<head>
+			<meta property="og:image" content="` + serverURL + `/test-image3.png" />
+			<meta property="og:site_name" content="GitHub" />
+			<meta property="og:type" content="object" />
+			<meta property="og:title" content="hmhealey/test-files" />
+			<meta property="og:url" content="https://github.com/hmhealey/test-files" />
+			<meta property="og:description" content="Contribute to hmhealey/test-files development by creating an account on GitHub." />
+			</head>
+			</html>`))
+		case "/test-image3.png":
+			file, err := testutils.ReadTestFile("qa-data-graph.png")
+			require.Nil(t, err)
+
+			w.Header().Set("Content-Type", "image/png")
+			w.Write(file)
+		default:
+			require.Fail(t, "Invalid path", r.URL.Path)
+		}
+	}))
+	serverURL = server.URL
+	defer server.Close()
+
 	post, err := th.App.CreatePost(&model.Post{
 		UserId:    th.BasicUser.Id,
 		ChannelId: th.BasicChannel.Id,
-		Message:   `This is our web page: https://github.com/hmhealey/test-files`,
+		Message:   `This is our web page: ` + server.URL,
 	}, th.BasicChannel, false)
 	require.Nil(t, err)
 
@@ -503,10 +609,11 @@ func testProxyOpenGraphImage(t *testing.T, th *TestHelper, shouldProxy bool) {
 
 	embed := embeds[0]
 	assert.Equal(t, model.POST_EMBED_OPENGRAPH, embed.Type, "embed type should be OpenGraph")
-	assert.Equal(t, "https://github.com/hmhealey/test-files", embed.URL, "embed URL should be correct")
+	assert.Equal(t, server.URL, embed.URL, "embed URL should be correct")
 
 	og, ok := embed.Data.(*opengraph.OpenGraph)
-	require.Equal(t, true, ok, "data should be non-nil OpenGraph data")
+	assert.True(t, ok, "data should be non-nil OpenGraph data")
+	assert.NotNil(t, og, "data should be non-nil OpenGraph data")
 	assert.Equal(t, "GitHub", og.SiteName, "OpenGraph data should be correctly populated")
 
 	require.Len(t, og.Images, 1, "OpenGraph data should have one image")
@@ -514,9 +621,9 @@ func testProxyOpenGraphImage(t *testing.T, th *TestHelper, shouldProxy bool) {
 	image := og.Images[0]
 	if shouldProxy {
 		assert.Equal(t, "", image.URL, "image URL should not be set with proxy")
-		assert.Equal(t, "http://mymattermost.com/api/v4/image?url=https%3A%2F%2Favatars1.githubusercontent.com%2Fu%2F3277310%3Fs%3D400%26v%3D4", image.SecureURL, "secure image URL should be sent through proxy")
+		assert.Equal(t, "http://mymattermost.com/api/v4/image?url="+url.QueryEscape(server.URL+"/test-image3.png"), image.SecureURL, "secure image URL should be sent through proxy")
 	} else {
-		assert.Equal(t, "https://avatars1.githubusercontent.com/u/3277310?s=400&v=4", image.URL, "image URL should be set")
+		assert.Equal(t, server.URL+"/test-image3.png", image.URL, "image URL should be set")
 		assert.Equal(t, "", image.SecureURL, "secure image URL should not be set")
 	}
 }

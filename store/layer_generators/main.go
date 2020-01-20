@@ -10,11 +10,11 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
-	"html/template"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
+	"text/template"
 )
 
 func main() {
@@ -213,8 +213,8 @@ package store
 import (
 	timemodule "time"
 
-    "github.com/mattermost/mattermost-server/einterfaces"
-	"github.com/mattermost/mattermost-server/model"
+    "github.com/mattermost/mattermost-server/v5/einterfaces"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 type {{.Name}} struct {
@@ -246,16 +246,19 @@ func (s *{{$.Name}}{{$substoreName}}Store) {{$index}}({{$element.Params | joinPa
 	{{ else }}
 	{{$element.Results | genResultsVars}} := s.{{$substoreName}}Store.{{$index}}({{$element.Params | joinParams}})
 	{{ end }}
-	t := timemodule.Now()
-	elapsed := t.Sub(start)
+	elapsed := float64(timemodule.Since(start)) / float64(timemodule.Second)
 	if s.Root.Metrics != nil {
 		success := "false"
 		if {{$element.Results | errorToBoolean}} {
 			success = "true"
 		}
-		s.Root.Metrics.ObserveStoreMethodDuration("{{$substoreName}}Store.{{$index}}", success, float64(elapsed))
+		s.Root.Metrics.ObserveStoreMethodDuration("{{$substoreName}}Store.{{$index}}", success, elapsed)
+	{{ with ($element.Results | genResultsVars) -}}
 	}
-	return {{$element.Results | genResultsVars}}
+	return {{ . }}
+	{{- else -}}
+	}
+	{{- end }}
 }
 {{end}}
 {{end}}

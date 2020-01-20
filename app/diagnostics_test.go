@@ -1,9 +1,10 @@
-// Copyright (c) 2017-present Mattermost, Inc. All Rights Reserved.
-// See License.txt for license information.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
 
 package app
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -13,13 +14,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 func TestPluginSetting(t *testing.T) {
 	settings := &model.PluginSettings{
 		Plugins: map[string]map[string]interface{}{
-			"test": map[string]interface{}{
+			"test": {
 				"foo": "bar",
 			},
 		},
@@ -30,16 +31,36 @@ func TestPluginSetting(t *testing.T) {
 
 func TestPluginActivated(t *testing.T) {
 	states := map[string]*model.PluginState{
-		"foo": &model.PluginState{
+		"foo": {
 			Enable: true,
 		},
-		"bar": &model.PluginState{
+		"bar": {
 			Enable: false,
 		},
 	}
 	assert.True(t, pluginActivated(states, "foo"))
 	assert.False(t, pluginActivated(states, "bar"))
 	assert.False(t, pluginActivated(states, "none"))
+}
+
+func TestPluginVersion(t *testing.T) {
+	plugins := []*model.BundleInfo{
+		{
+			Manifest: &model.Manifest{
+				Id:      "test.plugin",
+				Version: "1.2.3",
+			},
+		},
+		{
+			Manifest: &model.Manifest{
+				Id:      "test.plugin2",
+				Version: "4.5.6",
+			},
+		},
+	}
+	assert.Equal(t, "1.2.3", pluginVersion(plugins, "test.plugin"))
+	assert.Equal(t, "4.5.6", pluginVersion(plugins, "test.plugin2"))
+	assert.Empty(t, pluginVersion(plugins, "unknown.plugin"))
 }
 
 func TestDiagnostics(t *testing.T) {
@@ -50,12 +71,34 @@ func TestDiagnostics(t *testing.T) {
 	th := Setup(t).InitBasic()
 	defer th.TearDown()
 
-	data := make(chan string, 100)
+	type payload struct {
+		MessageId string
+		SentAt    time.Time
+		Batch     []struct {
+			MessageId  string
+			UserId     string
+			Event      string
+			Timestamp  time.Time
+			Properties map[string]interface{}
+		}
+		Context struct {
+			Library struct {
+				Name    string
+				Version string
+			}
+		}
+	}
+
+	data := make(chan payload, 100)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		require.NoError(t, err)
 
-		data <- string(body)
+		var p payload
+		err = json.Unmarshal(body, &p)
+		require.NoError(t, err)
+
+		data <- p
 	}))
 	defer server.Close()
 
@@ -63,12 +106,30 @@ func TestDiagnostics(t *testing.T) {
 	th.App.SetDiagnosticId(diagnosticID)
 	th.Server.initDiagnostics(server.URL)
 
+	assertPayload := func(t *testing.T, actual payload, event string, properties map[string]interface{}) {
+		assert.NotEmpty(t, actual.MessageId)
+		assert.False(t, actual.SentAt.IsZero())
+		if assert.Len(t, actual.Batch, 1) {
+			assert.NotEmpty(t, actual.Batch[0].MessageId, "message id should not be empty")
+			assert.Equal(t, diagnosticID, actual.Batch[0].UserId)
+			if event != "" {
+				assert.Equal(t, event, actual.Batch[0].Event)
+			}
+			assert.False(t, actual.Batch[0].Timestamp.IsZero(), "batch timestamp should not be the zero value")
+			if properties != nil {
+				assert.Equal(t, properties, actual.Batch[0].Properties)
+			}
+		}
+		assert.Equal(t, "analytics-go", actual.Context.Library.Name)
+		assert.Equal(t, "3.0.0", actual.Context.Library.Version)
+	}
+
 	// Should send a client identify message
 	select {
 	case identifyMessage := <-data:
-		require.Contains(t, identifyMessage, diagnosticID)
+		assertPayload(t, identifyMessage, "", nil)
 	case <-time.After(time.Second * 1):
-		require.Fail(t,"Did not receive ID message")
+		require.Fail(t, "Did not receive ID message")
 	}
 
 	t.Run("Send", func(t *testing.T) {
@@ -78,30 +139,31 @@ func TestDiagnostics(t *testing.T) {
 		})
 		select {
 		case result := <-data:
-			require.Contains(t, result, testValue)
+			assertPayload(t, result, "Testing Diagnostic", map[string]interface{}{
+				"hey": testValue,
+			})
 		case <-time.After(time.Second * 1):
-			require.Fail(t,"Did not receive diagnostic")
+			require.Fail(t, "Did not receive diagnostic")
 		}
 	})
 
 	t.Run("SendDailyDiagnostics", func(t *testing.T) {
 		th.App.sendDailyDiagnostics(true)
 
-		var info string
+		var info []string
 		// Collect the info sent.
 	Loop:
 		for {
 			select {
 			case result := <-data:
-				info += result
+				assertPayload(t, result, "", nil)
+				info = append(info, result.Batch[0].Event)
 			case <-time.After(time.Second * 1):
 				break Loop
 			}
 		}
 
 		for _, item := range []string{
-			TRACK_CONFIG_SERVICE,
-			TRACK_CONFIG_TEAM,
 			TRACK_CONFIG_SERVICE,
 			TRACK_CONFIG_TEAM,
 			TRACK_CONFIG_SQL,
@@ -121,6 +183,7 @@ func TestDiagnostics(t *testing.T) {
 			TRACK_CONFIG_METRICS,
 			TRACK_CONFIG_SUPPORT,
 			TRACK_CONFIG_NATIVEAPP,
+			TRACK_CONFIG_EXPERIMENTAL,
 			TRACK_CONFIG_ANALYTICS,
 			TRACK_CONFIG_PLUGIN,
 			TRACK_ACTIVITY,
@@ -137,7 +200,7 @@ func TestDiagnostics(t *testing.T) {
 
 		select {
 		case <-data:
-			require.Fail(t,"Should not send diagnostics when the segment key is not set")
+			require.Fail(t, "Should not send diagnostics when the segment key is not set")
 		case <-time.After(time.Second * 1):
 			// Did not receive diagnostics
 		}
@@ -150,7 +213,7 @@ func TestDiagnostics(t *testing.T) {
 
 		select {
 		case <-data:
-			require.Fail(t,"Should not send diagnostics when they are disabled")
+			require.Fail(t, "Should not send diagnostics when they are disabled")
 		case <-time.After(time.Second * 1):
 			// Did not receive diagnostics
 		}
