@@ -18,6 +18,7 @@ import (
 	"github.com/icrowley/fake"
 	"github.com/mattermost/mattermost-server/v5/app"
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/o1egl/govatar"
 	"github.com/spf13/cobra"
 )
 
@@ -48,6 +49,7 @@ func init() {
 	SampleDataCmd.Flags().Int("posts-per-group-channel", 30, "The number of sample posts per group message channel.")
 	SampleDataCmd.Flags().IntP("workers", "w", 2, "How many workers to run during the import.")
 	SampleDataCmd.Flags().String("profile-images", "", "Optional. Path to folder with images to randomly pick as user profile image.")
+	SampleDataCmd.Flags().Bool("govatar", false, "Enable govatar profile image generation")
 	SampleDataCmd.Flags().StringP("bulk", "b", "", "Optional. Path to write a JSONL bulk file instead of loading into the database.")
 	RootCmd.AddCommand(SampleDataCmd)
 }
@@ -233,6 +235,27 @@ func sampleDataCmdF(command *cobra.Command, args []string) error {
 		}
 		for _, profileImage := range profileImagesFiles {
 			profileImages = append(profileImages, path.Join(profileImagesPath, profileImage.Name()))
+		}
+		sort.Strings(profileImages)
+	}
+	enableGovatar, err := command.Flags().GetBool("govatar")
+	if err != nil {
+		return errors.New("Unable to handle govatar parameter")
+	}
+	if enableGovatar {
+		govatarDir, err := ioutil.TempDir("", ".govatars-")
+		if err != nil {
+			return errors.New("Unable to create temporary dir for govatars")
+		}
+		defer os.RemoveAll(govatarDir)
+
+		for counter := 0; counter < 30; counter++ {
+			counterString := fmt.Sprintf("%d", counter)
+			err = govatar.GenerateFileForUsername(govatar.MALE, counterString, path.Join(govatarDir, counterString))
+			if err != nil {
+				return errors.New("Unable generate all the govatar profile images")
+			}
+			profileImages = append(profileImages, path.Join(govatarDir, fmt.Sprintf("%d", counter)))
 		}
 		sort.Strings(profileImages)
 	}
