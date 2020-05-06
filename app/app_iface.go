@@ -322,6 +322,7 @@ type AppIface interface {
 	GetUserStatusesByIds(userIds []string) ([]*model.Status, *model.AppError)
 	AcceptLanguage() string
 	AccountMigration() einterfaces.AccountMigrationInterface
+	AckThreshold(userId string, thresholdKey string) *model.AppError
 	ActivateMfa(userId, token string) *model.AppError
 	AddChannelMember(userId string, channel *model.Channel, userRequestorId string, postRootId string) (*model.ChannelMember, *model.AppError)
 	AddConfigListener(listener func(*model.Config, *model.Config)) string
@@ -838,7 +839,6 @@ type AppIface interface {
 	SearchUsersNotInTeam(notInTeamId string, term string, options *model.UserSearchOptions) ([]*model.User, *model.AppError)
 	SearchUsersWithoutTeam(term string, options *model.UserSearchOptions) ([]*model.User, *model.AppError)
 	SendAckToPushProxy(ack *model.PushNotificationAck) error
-	SendAdminAckEmail(email string) *model.AppError
 	SendAutoResponse(channel *model.Channel, receiver *model.User) (bool, *model.AppError)
 	SendAutoResponseIfNecessary(channel *model.Channel, sender *model.User) (bool, *model.AppError)
 	SendDailyDiagnostics()
@@ -871,7 +871,6 @@ type AppIface interface {
 	SetIpAddress(s string)
 	SetLicense(license *model.License) bool
 	SetLog(l *mlog.Logger)
-	SetNumberOfActiveUsersMetricStatus() *model.AppError
 	SetPath(s string)
 	SetPhase2PermissionsMigrationStatus(isComplete bool) error
 	SetPluginKey(pluginId string, key string, value []byte) *model.AppError

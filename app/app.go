@@ -169,17 +169,6 @@ func (a *App) GetThresholds() (map[string]bool, *model.AppError) {
 	return result, nil
 }
 
-func (a *App) SetNumberOfActiveUsersMetricStatus() *model.AppError {
-	if err := a.Srv().Store.System().SaveOrUpdate(&model.System{
-		Name:  model.SYSTEM_NUMBER_OF_ACTIVE_USERS_METRIC,
-		Value: strconv.FormatInt(-1, 10),
-	}); err != nil {
-		mlog.Error("Unable to write to database.", mlog.Err(err))
-		return model.NewAppError("SetNumberOfActiveUsersMetricStatus", "app.system.number_active_users_metric.store.app_error", nil, err.Error(), http.StatusInternalServerError)
-	}
-	return nil
-}
-
 func (a *App) Srv() *Server {
 	return a.srv
 }

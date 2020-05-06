@@ -513,21 +513,31 @@ func (a *App) SendDeactivateAccountEmail(email string, locale, siteURL string) *
 	return nil
 }
 
-func (a *App) SendAdminAckEmail(email string) *model.AppError {
+func (a *App) AckThreshold(userId string, thresholdKey string) *model.AppError {
+	user, err := a.Srv().Store.User().Get(userId)
+	if err != nil {
+		return err
+	}
+
+	mlog.Info("Storing user acknowledge for threshold", mlog.String("threshold", thresholdKey), mlog.String("user_id", userId))
+	user.Props[thresholdKey+"_ack"] = "true"
+	_, err = a.Srv().Store.User().Save(user)
+	if err != nil {
+		return err
+	}
+
 	if len(*a.Config().EmailSettings.SMTPServer) == 0 {
-		model.NewAppError("SendAdminAckEmail", "api.email.send_admin_ack.missing_server.app_error", nil, utils.T("api.context.invalid_param.app_error", map[string]interface{}{"Name": "SMTPServer"}), http.StatusInternalServerError)
+		return model.NewAppError("AckThreshold", "api.email.ack_threshold.missing_server.app_error", nil, utils.T("api.context.invalid_param.app_error", map[string]interface{}{"Name": "SMTPServer"}), http.StatusInternalServerError)
 	}
+
 	//send email to support with current admin info
-	subject := fmt.Sprintf("%s Received acknowledgement for number of active users metric over limit", *a.Config().TeamSettings.SiteName)
-	body := fmt.Sprintf("Contact Email: %s DiagnosticId: %s SiteURL: %s LicenseId: %s", email, a.DiagnosticId(), a.GetSiteURL(), a.License().Id)
+	subject := fmt.Sprintf("%s Received acknowledgement for threshold %s over limit", *a.Config().TeamSettings.SiteName, thresholdKey)
+	body := fmt.Sprintf("Contact Email: %s DiagnosticId: %s SiteURL: %s LicenseId: %s", user.Email, a.DiagnosticId(), a.GetSiteURL(), a.License().Id)
 
-	if err := mailservice.SendMailUsingConfig(model.MM_SUPPORT_ADDRESS, subject, body, a.Config(), false, email); err != nil {
+	if err := mailservice.SendMailUsingConfig(model.MM_SUPPORT_ADDRESS, subject, body, a.Config(), false, user.Email); err != nil {
 		mlog.Error("Error while sending to", mlog.String("email", model.MM_SUPPORT_ADDRESS), mlog.Err(err))
-		return model.NewAppError("SendAdminAckEmail", "api.email.send_admin_ack.failure.app_error", map[string]interface{}{"Error": err.Error()}, "", http.StatusInternalServerError)
+		return model.NewAppError("AckThreshold", "api.email.ack_threshold.failure.app_error", map[string]interface{}{"Error": err.Error()}, "", http.StatusInternalServerError)
 	}
-
-	mlog.Info("Disable the monitoring of the number of active users metric")
-	a.SetNumberOfActiveUsersMetricStatus()
 
 	return nil
 }

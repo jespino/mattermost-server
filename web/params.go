@@ -38,6 +38,7 @@ type Params struct {
 	EmojiId                string
 	AppId                  string
 	Email                  string
+	ThresholdKey           string
 	Username               string
 	TeamName               string
 	ChannelName            string
@@ -142,6 +143,10 @@ func ParamsFromRequest(r *http.Request) *Params {
 
 	if val, ok := props["email"]; ok {
 		params.Email = val
+	}
+
+	if val, ok := props["threshold_key"]; ok {
+		params.ThresholdKey = val
 	}
 
 	if val, ok := props["username"]; ok {

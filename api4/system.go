@@ -52,7 +52,7 @@ func (api *API) InitSystem() {
 	api.BaseRoutes.ApiRoot.Handle("/server_busy", api.ApiSessionRequired(clearServerBusy)).Methods("DELETE")
 
 	api.BaseRoutes.ApiRoot.Handle("/thresholds", api.ApiSessionRequired(getThresholds)).Methods("GET")
-	api.BaseRoutes.ApiRoot.Handle("/email/admin_ack/send", api.ApiHandler(sendAdminAckEmail)).Methods("POST")
+	api.BaseRoutes.ApiRoot.Handle("/thresholds/ack/{threshold_key:[A-Za-z-_]+}", api.ApiHandler(ackThreshold)).Methods("POST")
 
 }
 
@@ -560,22 +560,16 @@ func getThresholds(c *Context, w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(model.MapBoolToJson(thresholds)))
 }
 
-func sendAdminAckEmail(c *Context, w http.ResponseWriter, r *http.Request) {
-	auditRec := c.MakeAuditRecord("sendAdminAckEmail", audit.Fail)
+func ackThreshold(c *Context, w http.ResponseWriter, r *http.Request) {
+	auditRec := c.MakeAuditRecord("ackThreshold", audit.Fail)
 	defer c.LogAuditRec(auditRec)
 
 	if !c.IsSystemAdmin() {
-		c.Err = model.NewAppError("sendAdminAckEmail", "api.send_admin_ack_email.no_sysadmin.app_error", nil, "", http.StatusBadRequest)
+		c.Err = model.NewAppError("ackThreshold", "api.ack_threshold.no_sysadmin.app_error", nil, "", http.StatusBadRequest)
 		return
 	}
 
-	user, err := c.App.GetUser(c.App.Session().UserId)
-	if err != nil {
-		c.Err = err
-		return
-	}
-
-	c.App.SendAdminAckEmail(user.Email)
+	c.App.AckThreshold(c.App.Session().UserId, c.Params.ThresholdKey)
 
 	auditRec.Success()
 	ReturnStatusOK(w)
