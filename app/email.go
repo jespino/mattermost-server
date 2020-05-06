@@ -520,6 +520,7 @@ func (a *App) AckThreshold(userId string, thresholdKey string) *model.AppError {
 	}
 
 	mlog.Info("Storing user acknowledge for threshold", mlog.String("threshold", thresholdKey), mlog.String("user_id", userId))
+	// TODO: Find the best option to store this data, probably the Props attribute is not a valid usage for that
 	user.Props[thresholdKey+"_ack"] = "true"
 	_, err = a.Srv().Store.User().Save(user)
 	if err != nil {
