@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 
 	goi18n "github.com/mattermost/go-i18n/i18n"
 	"github.com/mattermost/mattermost-server/v5/einterfaces"
@@ -154,22 +155,18 @@ func (a *App) getFirstServerRunTimestamp() (int64, *model.AppError) {
 	return value, nil
 }
 
-func (a *App) GetNumberOfActiveUsersMetricStatus() (bool, *model.AppError) {
-	systemData, appErr := a.Srv().Store.System().GetByName(model.SYSTEM_NUMBER_OF_ACTIVE_USERS_METRIC)
+func (a *App) GetThresholds() (map[string]bool, *model.AppError) {
+	systemDataList, appErr := a.Srv().Store.System().Get()
 	if appErr != nil {
-		return false, appErr
+		return nil, appErr
 	}
-	value, err := strconv.ParseInt(systemData.Value, 10, 64)
-	if err != nil {
-		return false, model.NewAppError("GetNumberOfActiveUsersMetricStatus", "app.system.number_active_users_metric.parse_int.app_error", nil, err.Error(), http.StatusInternalServerError)
+
+	result := map[string]bool{}
+	for key, value := range systemDataList {
+		strings.HasPrefix(key, ThresholdPrefix)
+		result[key] = value == "true"
 	}
-	if value > model.NUMBER_OF_ACTIVE_USERS_METRIC_LIMIT {
-		mlog.Debug("The Number of Active Users metric exceeded its limit", mlog.Int64("number of active users", value))
-		return true, nil
-	} else {
-		mlog.Debug("The Number of Active Users metric is under the limit", mlog.Int64("number of active users", value))
-	}
-	return false, nil
+	return result, nil
 }
 
 func (a *App) SetNumberOfActiveUsersMetricStatus() *model.AppError {

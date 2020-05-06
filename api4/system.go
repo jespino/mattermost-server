@@ -51,7 +51,7 @@ func (api *API) InitSystem() {
 	api.BaseRoutes.ApiRoot.Handle("/server_busy", api.ApiSessionRequired(getServerBusyExpires)).Methods("GET")
 	api.BaseRoutes.ApiRoot.Handle("/server_busy", api.ApiSessionRequired(clearServerBusy)).Methods("DELETE")
 
-	api.BaseRoutes.ApiRoot.Handle("/analytics/number_of_active_users", api.ApiSessionRequired(getNumberOfActiveUsersMetricStatus)).Methods("GET")
+	api.BaseRoutes.ApiRoot.Handle("/thresholds", api.ApiSessionRequired(getThresholds)).Methods("GET")
 	api.BaseRoutes.ApiRoot.Handle("/email/admin_ack/send", api.ApiHandler(sendAdminAckEmail)).Methods("POST")
 
 }
@@ -550,15 +550,14 @@ func getServerBusyExpires(c *Context, w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(c.App.Srv().Busy.ToJson()))
 }
 
-func getNumberOfActiveUsersMetricStatus(c *Context, w http.ResponseWriter, r *http.Request) {
-	status, err := c.App.GetNumberOfActiveUsersMetricStatus()
+func getThresholds(c *Context, w http.ResponseWriter, r *http.Request) {
+	thresholds, err := c.App.GetThresholds()
 	if err != nil {
 		c.Err = err
 		return
 	}
 
-	resp := map[string]bool{"numberOfActiveUsersMetricStatus": status}
-	w.Write([]byte(model.MapBoolToJson(resp)))
+	w.Write([]byte(model.MapBoolToJson(thresholds)))
 }
 
 func sendAdminAckEmail(c *Context, w http.ResponseWriter, r *http.Request) {

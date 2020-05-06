@@ -562,7 +562,6 @@ type AppIface interface {
 	GetNewUsersForTeamPage(teamId string, page, perPage int, asAdmin bool, viewRestrictions *model.ViewUsersRestrictions) ([]*model.User, *model.AppError)
 	GetNextPostIdFromPostList(postList *model.PostList) string
 	GetNotificationNameFormat(user *model.User) string
-	GetNumberOfActiveUsersMetricStatus() (bool, *model.AppError)
 	GetNumberOfChannelsOnTeam(teamId string) (int, *model.AppError)
 	GetOAuthAccessTokenForCodeFlow(clientId, grantType, redirectUri, code, secret, refreshToken string) (*model.AccessResponse, *model.AppError)
 	GetOAuthAccessTokenForImplicitFlow(userId string, authRequest *model.AuthorizeRequest) (*model.Session, *model.AppError)
@@ -648,6 +647,7 @@ type AppIface interface {
 	GetTeamsForUser(userId string) ([]*model.Team, *model.AppError)
 	GetTeamsUnreadForUser(excludeTeamId string, userId string) ([]*model.TeamUnread, *model.AppError)
 	GetTermsOfService(id string) (*model.TermsOfService, *model.AppError)
+	GetThresholds() (map[string]bool, *model.AppError)
 	GetUser(userId string) (*model.User, *model.AppError)
 	GetUserAccessToken(tokenId string, sanitize bool) (*model.UserAccessToken, *model.AppError)
 	GetUserAccessTokens(page, perPage int) ([]*model.UserAccessToken, *model.AppError)

@@ -5951,28 +5951,6 @@ func (a *OpenTracingAppLayer) GetNotificationNameFormat(user *model.User) string
 	return resultVar0
 }
 
-func (a *OpenTracingAppLayer) GetNumberOfActiveUsersMetricStatus() (bool, *model.AppError) {
-	origCtx := a.ctx
-	span, newCtx := tracing.StartSpanWithParentByContext(a.ctx, "app.GetNumberOfActiveUsersMetricStatus")
-
-	a.ctx = newCtx
-	a.app.Srv().Store.SetContext(newCtx)
-	defer func() {
-		a.app.Srv().Store.SetContext(origCtx)
-		a.ctx = origCtx
-	}()
-
-	defer span.Finish()
-	resultVar0, resultVar1 := a.app.GetNumberOfActiveUsersMetricStatus()
-
-	if resultVar1 != nil {
-		span.LogFields(spanlog.Error(resultVar1))
-		ext.Error.Set(span, true)
-	}
-
-	return resultVar0, resultVar1
-}
-
 func (a *OpenTracingAppLayer) GetNumberOfChannelsOnTeam(teamId string) (int, *model.AppError) {
 	origCtx := a.ctx
 	span, newCtx := tracing.StartSpanWithParentByContext(a.ctx, "app.GetNumberOfChannelsOnTeam")
@@ -7960,6 +7938,28 @@ func (a *OpenTracingAppLayer) GetTermsOfService(id string) (*model.TermsOfServic
 
 	defer span.Finish()
 	resultVar0, resultVar1 := a.app.GetTermsOfService(id)
+
+	if resultVar1 != nil {
+		span.LogFields(spanlog.Error(resultVar1))
+		ext.Error.Set(span, true)
+	}
+
+	return resultVar0, resultVar1
+}
+
+func (a *OpenTracingAppLayer) GetThresholds() (map[string]bool, *model.AppError) {
+	origCtx := a.ctx
+	span, newCtx := tracing.StartSpanWithParentByContext(a.ctx, "app.GetThresholds")
+
+	a.ctx = newCtx
+	a.app.Srv().Store.SetContext(newCtx)
+	defer func() {
+		a.app.Srv().Store.SetContext(origCtx)
+		a.ctx = origCtx
+	}()
+
+	defer span.Finish()
+	resultVar0, resultVar1 := a.app.GetThresholds()
 
 	if resultVar1 != nil {
 		span.LogFields(spanlog.Error(resultVar1))

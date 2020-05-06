@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -350,13 +349,7 @@ func NewServer(options ...Option) (*Server, error) {
 			runCommandWebhookCleanupJob(s)
 		})
 		s.Go(func() {
-			runStoreAndCheckNumberOfActiveUsersMetricStatusJob(s)
-		})
-		s.Go(func() {
-			runStoreAndCheckNumberOfRegisteredUsersMetricStatusJob(s)
-		})
-		s.Go(func() {
-			runStoreAndCheckNumberOfPostsMetricStatusJob(s)
+			StartThresholds(s)
 		})
 
 		if complianceI := s.Compliance; complianceI != nil {
@@ -787,27 +780,6 @@ func runSessionCleanupJob(s *Server) {
 	}, time.Hour*24)
 }
 
-func runStoreAndCheckNumberOfActiveUsersMetricStatusJob(s *Server) {
-	doStoreAndCheckNumberOfActiveUsersMetricStatus(s)
-	model.CreateRecurringTask("Store and Check Number Of Active Users Metric Status", func() {
-		doStoreAndCheckNumberOfActiveUsersMetricStatus(s)
-	}, time.Hour*24)
-}
-
-func runStoreAndCheckNumberOfRegisteredUsersMetricStatusJob(s *Server) {
-	doStoreAndCheckNumberOfRegisteredUsersMetricStatus(s)
-	model.CreateRecurringTask("Store and Check Number Of Registered Users Metric Status", func() {
-		doStoreAndCheckNumberOfRegisteredUsersMetricStatus(s)
-	}, time.Hour*24)
-}
-
-func runStoreAndCheckNumberOfPostsMetricStatusJob(s *Server) {
-	doStoreAndCheckNumberOfPostsMetricStatus(s)
-	model.CreateRecurringTask("Store and Check Number Of Posts Metric Status", func() {
-		doStoreAndCheckNumberOfPostsMetricStatus(s)
-	}, time.Hour*24)
-}
-
 func doSecurity(s *Server) {
 	s.DoSecurityUpdateCheck()
 }
@@ -833,148 +805,6 @@ const (
 
 func doSessionCleanup(s *Server) {
 	s.Store.Session().Cleanup(model.GetMillis(), SESSIONS_CLEANUP_BATCH_SIZE)
-}
-
-func doStoreAndCheckNumberOfActiveUsersMetricStatus(s *Server) {
-	// uncomment this if we want to have this check only for TE
-	// license := s.License()
-	// if license != nil {
-	// 	mlog.Debug("License is present, skip this check")
-	// 	return
-	// }
-
-	props, err := s.Store.System().Get()
-	if err != nil {
-		mlog.Error("Error to get system settings.", mlog.Err(err))
-		return
-	}
-
-	if props[model.SYSTEM_NUMBER_OF_ACTIVE_USERS_METRIC] != "" {
-		val, err := strconv.ParseInt(props[model.SYSTEM_NUMBER_OF_ACTIVE_USERS_METRIC], 10, 64)
-		if err != nil {
-			mlog.Error("Number Of Active Users Metric", mlog.String("Invalid entry value stored", model.SYSTEM_NUMBER_OF_ACTIVE_USERS_METRIC))
-		}
-		if val == -1 {
-			mlog.Info("Exceeding the number of active users metric limit has been already acknowledged")
-			return
-		}
-	} else {
-		mlog.Debug("Number Of Active Users Metric", mlog.String("Cannot find metric in store", model.SYSTEM_NUMBER_OF_ACTIVE_USERS_METRIC))
-	}
-
-	//change MONTH_MILLISECONDS to a different value if we want to capture active users for a different period
-	noActiveUsers, err := s.Store.User().AnalyticsActiveCount(MONTH_MILLISECONDS, model.UserCountOptions{IncludeBotAccounts: false, IncludeDeleted: false})
-	if err != nil {
-		mlog.Error("Error to get active registered users.", mlog.Err(err))
-	}
-
-	mlog.Info("Number of active users", mlog.Int64("value", noActiveUsers))
-
-	if err := s.Store.System().SaveOrUpdate(&model.System{Name: model.SYSTEM_NUMBER_OF_ACTIVE_USERS_METRIC, Value: strconv.FormatInt(noActiveUsers, 10)}); err != nil {
-		mlog.Error("Unable to write to database.", mlog.Err(err))
-		return
-	}
-
-	if noActiveUsers > model.NUMBER_OF_ACTIVE_USERS_METRIC_LIMIT {
-		mlog.Info("Number of active users is greater than limit")
-		message := model.NewWebSocketEvent(model.WEBSOCKET_NUMBER_OF_ACTIVE_USERS_METRIC_STATUS, "", "", "", nil)
-		message.Add("numberOfActiveUsersMetricStatus", "true")
-		s.FakeApp().Publish(message)
-	}
-}
-
-func doStoreAndCheckNumberOfRegisteredUsersMetricStatus(s *Server) {
-	// uncomment this if we want to have this check only for TE
-	// license := s.License()
-	// if license != nil {
-	// 	mlog.Debug("License is present, skip this check")
-	// 	return
-	// }
-
-	props, err := s.Store.System().Get()
-	if err != nil {
-		mlog.Error("Error to get system settings.", mlog.Err(err))
-		return
-	}
-
-	if props[model.SYSTEM_NUMBER_OF_REGISTERED_USERS_METRIC] != "" {
-		val, err := strconv.ParseInt(props[model.SYSTEM_NUMBER_OF_REGISTERED_USERS_METRIC], 10, 64)
-		if err != nil {
-			mlog.Error("Number Of Registered Users Metric", mlog.String("Invalid entry value stored", model.SYSTEM_NUMBER_OF_REGISTERED_USERS_METRIC))
-		}
-		if val == -1 {
-			mlog.Info("Exceeding the number of registered users metric limit has been already acknowledged")
-			return
-		}
-	} else {
-		mlog.Debug("Number Of Registered Users Metric", mlog.String("Cannot find metric in store", model.SYSTEM_NUMBER_OF_REGISTERED_USERS_METRIC))
-	}
-
-	noUsers, err := s.Store.User().Count(model.UserCountOptions{IncludeBotAccounts: false, IncludeDeleted: false})
-	if err != nil {
-		mlog.Error("Error to get registered users.", mlog.Err(err))
-	}
-
-	mlog.Info("Number of registered users", mlog.Int64("value", noUsers))
-
-	if err := s.Store.System().SaveOrUpdate(&model.System{Name: model.SYSTEM_NUMBER_OF_REGISTERED_USERS_METRIC, Value: strconv.FormatInt(noUsers, 10)}); err != nil {
-		mlog.Error("Unable to write to database.", mlog.Err(err))
-		return
-	}
-
-	if noUsers > model.NUMBER_OF_REGISTERED_USERS_METRIC_LIMIT {
-		mlog.Info("Number of registered users is greater than limit")
-		message := model.NewWebSocketEvent(model.WEBSOCKET_NUMBER_OF_REGISTERED_USERS_METRIC_STATUS, "", "", "", nil)
-		message.Add("numberOfRegisteredUsersMetricStatus", "true")
-		s.FakeApp().Publish(message)
-	}
-}
-
-func doStoreAndCheckNumberOfPostsMetricStatus(s *Server) {
-	// uncomment this if we want to have this check only for TE
-	// license := s.License()
-	// if license != nil {
-	// 	mlog.Debug("License is present, skip this check")
-	// 	return
-	// }
-
-	props, err := s.Store.System().Get()
-	if err != nil {
-		mlog.Error("Error to get system settings.", mlog.Err(err))
-		return
-	}
-
-	if props[model.SYSTEM_NUMBER_OF_POSTS_METRIC] != "" {
-		val, err := strconv.ParseInt(props[model.SYSTEM_NUMBER_OF_POSTS_METRIC], 10, 64)
-		if err != nil {
-			mlog.Error("Number Of Posts Metric", mlog.String("Invalid entry value stored", model.SYSTEM_NUMBER_OF_POSTS_METRIC))
-		}
-		if val == -1 {
-			mlog.Info("Exceeding the number of posts metric limit has been already acknowledged")
-			return
-		}
-	} else {
-		mlog.Debug("Number Of Posts Metric", mlog.String("Cannot find metric in store", model.SYSTEM_NUMBER_OF_POSTS_METRIC))
-	}
-
-	noPosts, err := s.Store.Post().AnalyticsPostCount("", false, false)
-	if err != nil {
-		mlog.Error("Error to get posts.", mlog.Err(err))
-	}
-
-	mlog.Info("Number of posts", mlog.Int64("value", noPosts))
-
-	if err := s.Store.System().SaveOrUpdate(&model.System{Name: model.SYSTEM_NUMBER_OF_POSTS_METRIC, Value: strconv.FormatInt(noPosts, 10)}); err != nil {
-		mlog.Error("Unable to write to database.", mlog.Err(err))
-		return
-	}
-
-	if noPosts > model.NUMBER_OF_POSTS_METRIC_LIMIT {
-		mlog.Info("Number of posts is greater than limit")
-		message := model.NewWebSocketEvent(model.WEBSOCKET_NUMBER_OF_POSTS_METRIC_STATUS, "", "", "", nil)
-		message.Add("numberOfPostsMetricStatus", "true")
-		s.FakeApp().Publish(message)
-	}
 }
 
 func (s *Server) StartSearchEngine() (string, string) {
