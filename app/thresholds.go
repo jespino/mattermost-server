@@ -23,6 +23,11 @@ func StartThresholds(s *Server) {
 }
 
 func RunThreshold(threshold Threshold, server *Server) {
+	data, err := server.Store.System().GetByName(threshold.Key())
+	if err == nil && data.Value == "ack" || data.Value == "true" {
+		return
+	}
+
 	if threshold.IsExeeded() {
 		if err := server.Store.System().SaveOrUpdate(&model.System{Name: threshold.Key(), Value: "true"}); err != nil {
 			mlog.Error("Unable to write to database.", mlog.Err(err))
@@ -31,11 +36,6 @@ func RunThreshold(threshold Threshold, server *Server) {
 		message := model.NewWebSocketEvent(model.WEBSOCKET_THRESHOLD_EXEEDED, "", "", "", nil)
 		message.Add(threshold.Key(), "true")
 		server.FakeApp().Publish(message)
-		return
-	}
-
-	if err := server.Store.System().SaveOrUpdate(&model.System{Name: threshold.Key(), Value: "false"}); err != nil {
-		mlog.Error("Unable to write to database.", mlog.Err(err))
 		return
 	}
 }

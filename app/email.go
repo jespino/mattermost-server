@@ -514,17 +514,15 @@ func (a *App) SendDeactivateAccountEmail(email string, locale, siteURL string) *
 }
 
 func (a *App) AckThreshold(userId string, thresholdKey string) *model.AppError {
-	user, err := a.Srv().Store.User().Get(userId)
-	if err != nil {
-		return err
+	mlog.Info("Storing user acknowledge for threshold", mlog.String("threshold", thresholdKey))
+	appErr := a.Srv().Store.System().SaveOrUpdate(&model.System{Name: thresholdKey, Value: "ack"})
+	if appErr != nil {
+		return appErr
 	}
 
-	mlog.Info("Storing user acknowledge for threshold", mlog.String("threshold", thresholdKey), mlog.String("user_id", userId))
-	// TODO: Find the best option to store this data, probably the Props attribute is not a valid usage for that
-	user.Props[thresholdKey+"_ack"] = "true"
-	_, err = a.Srv().Store.User().Save(user)
-	if err != nil {
-		return err
+	user, appErr := a.Srv().Store.User().Get(userId)
+	if appErr != nil {
+		return appErr
 	}
 
 	if len(*a.Config().EmailSettings.SMTPServer) == 0 {
