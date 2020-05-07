@@ -119,8 +119,9 @@ type Server struct {
 
 	phase2PermissionsMigrationComplete bool
 
-	HTTPService            httpservice.HTTPService
-	pushNotificationClient *http.Client // TODO: move this to it's own package
+	HTTPService             httpservice.HTTPService
+	pushNotificationClient  *http.Client // TODO: move this to it's own package
+	pushNotificationCounter int64        // TODO: move this to it's own package
 
 	ImageProxy *imageproxy.ImageProxy
 

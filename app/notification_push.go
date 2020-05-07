@@ -7,6 +7,7 @@ import (
 	"hash/fnv"
 	"net/http"
 	"strings"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 
@@ -326,6 +327,7 @@ func (a *App) sendToPushProxy(msg *model.PushNotification, session *model.Sessio
 		return err
 	}
 	defer resp.Body.Close()
+	atomic.AddInt64(&a.Srv().pushNotificationCounter, 1)
 
 	pushResponse := model.PushResponseFromJson(resp.Body)
 
