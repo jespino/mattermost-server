@@ -60,6 +60,13 @@ services:
     extends:
         file: build/docker-compose.common.yml
         service: keycloak
+  redis:
+    container_name: mattermost-redis
+    ports:
+      - "6379:6379"
+    extends:
+        file: build/docker-compose.common.yml
+        service: redis
 
   start_dependencies:
     image: mattermost/mattermost-wait-for-dep:latest

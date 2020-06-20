@@ -33,6 +33,7 @@ func main() {
 		"elasticsearch": 9200,
 		"dejavu":        1358,
 		"keycloak":      8080,
+		"redis":         6379,
 	}
 	command := []string{}
 	for _, arg := range os.Args[1:] {

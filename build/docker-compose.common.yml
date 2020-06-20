@@ -76,3 +76,7 @@ services:
       - mm-test
     volumes:
      - "./docker/keycloak:/setup"
+  redis:
+    image: "redis:6.0.5"
+    networks:
+      - mm-test
