@@ -8,6 +8,9 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+// I think all this status cache is not really the same patter of cache, is a
+// data structure that handles all the connected users current status we can
+// handle that with a map structure (with atomic access)
 func (a *App) AddStatusCacheSkipClusterSend(status *model.Status) {
 	a.Srv().statusCache.Set(status.UserId, status)
 }
