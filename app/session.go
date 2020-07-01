@@ -178,22 +178,18 @@ func (a *App) ClearSessionCacheForAllUsers() {
 }
 
 func (a *App) ClearSessionCacheForUserSkipClusterSend(userId string) {
-	// TODO: Find a better way to do this
-	// if keys, err := a.Srv().sessionCache.Keys(); err == nil {
-	// 	var session *model.Session
-	// 	for _, key := range keys {
-	// 		if err := a.Srv().sessionCache.Get(key, &session); err == nil {
-	// 			if session.UserId == userId {
-	// 				a.Srv().sessionCache.Remove(key)
-	// 				if a.Metrics() != nil {
-	// 					a.Metrics().IncrementMemCacheInvalidationCounterSession()
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
+	var sessionsList []string
+	if err := a.Srv().sessionCache.Get("user-"+userId, &sessionsList); err != nil {
+		for _, key := range sessionsList {
+			a.Srv().sessionCache.Remove(key)
+			if a.Metrics() != nil {
+				a.Metrics().IncrementMemCacheInvalidationCounterSession()
+			}
+		}
+		a.Srv().sessionCache.Remove("user-" + userId)
+	}
 
-	// a.InvalidateWebConnSessionCacheForUser(userId)
+	a.InvalidateWebConnSessionCacheForUser(userId)
 }
 
 func (a *App) ClearSessionCacheForAllUsersSkipClusterSend() {
@@ -203,14 +199,13 @@ func (a *App) ClearSessionCacheForAllUsersSkipClusterSend() {
 
 func (a *App) AddSessionToCache(session *model.Session) {
 	a.Srv().sessionCache.SetWithExpiry(session.Token, session, time.Duration(int64(*a.Config().ServiceSettings.SessionCacheInMinutes))*time.Minute)
+	var sessionsList []string
+	if err := a.Srv().sessionCache.Get("user-"+session.UserId, &sessionsList); err != nil {
+		a.Srv().sessionCache.SetWithExpiry("user-"+session.UserId, []string{session.Token}, time.Duration(int64(*a.Config().ServiceSettings.SessionCacheInMinutes))*time.Minute)
+	} else {
+		a.Srv().sessionCache.SetWithExpiry("user-"+session.UserId, sessionsList, time.Duration(int64(*a.Config().ServiceSettings.SessionCacheInMinutes))*time.Minute)
+	}
 }
-
-// func (a *App) SessionCacheLength() int {
-// 	if l, err := a.Srv().sessionCache.Len(); err == nil {
-// 		return l
-// 	}
-// 	return 0
-// }
 
 func (a *App) RevokeSessionsForDeviceId(userId string, deviceId string, currentSessionId string) *model.AppError {
 	sessions, err := a.Srv().Store.Session().GetSessions(userId)
