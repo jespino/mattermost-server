@@ -187,31 +187,6 @@ func (c *Cache) Remove(key string) {
 	}
 }
 
-// Keys returns a slice of the keys in the cache, from oldest to newest.
-func (c *Cache) Keys() []string {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-
-	keys := make([]string, c.len)
-	i := 0
-	for ent := c.evictList.Back(); ent != nil; ent = ent.Prev() {
-		e := ent.Value.(*entry)
-		if e.generation == c.currentGeneration {
-			keys[i] = e.key
-			i++
-		}
-	}
-
-	return keys
-}
-
-// Len returns the number of items in the cache.
-func (c *Cache) Len() int {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-	return c.len
-}
-
 // Name identifies this cache instance among others in the system.
 func (c *Cache) Name() string {
 	return c.name

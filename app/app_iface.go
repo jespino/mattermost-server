@@ -858,7 +858,6 @@ type AppIface interface {
 	ServeInterPluginRequest(w http.ResponseWriter, r *http.Request, sourcePluginId, destinationPluginId string)
 	ServePluginRequest(w http.ResponseWriter, r *http.Request)
 	Session() *model.Session
-	SessionCacheLength() int
 	SessionHasPermissionTo(session model.Session, permission *model.Permission) bool
 	SessionHasPermissionToChannel(session model.Session, channelId string, permission *model.Permission) bool
 	SessionHasPermissionToChannelByPost(session model.Session, postId string, permission *model.Permission) bool

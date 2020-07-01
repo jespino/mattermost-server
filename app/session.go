@@ -178,21 +178,22 @@ func (a *App) ClearSessionCacheForAllUsers() {
 }
 
 func (a *App) ClearSessionCacheForUserSkipClusterSend(userId string) {
-	if keys, err := a.Srv().sessionCache.Keys(); err == nil {
-		var session *model.Session
-		for _, key := range keys {
-			if err := a.Srv().sessionCache.Get(key, &session); err == nil {
-				if session.UserId == userId {
-					a.Srv().sessionCache.Remove(key)
-					if a.Metrics() != nil {
-						a.Metrics().IncrementMemCacheInvalidationCounterSession()
-					}
-				}
-			}
-		}
-	}
+	// TODO: Find a better way to do this
+	// if keys, err := a.Srv().sessionCache.Keys(); err == nil {
+	// 	var session *model.Session
+	// 	for _, key := range keys {
+	// 		if err := a.Srv().sessionCache.Get(key, &session); err == nil {
+	// 			if session.UserId == userId {
+	// 				a.Srv().sessionCache.Remove(key)
+	// 				if a.Metrics() != nil {
+	// 					a.Metrics().IncrementMemCacheInvalidationCounterSession()
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 
-	a.InvalidateWebConnSessionCacheForUser(userId)
+	// a.InvalidateWebConnSessionCacheForUser(userId)
 }
 
 func (a *App) ClearSessionCacheForAllUsersSkipClusterSend() {
@@ -204,12 +205,12 @@ func (a *App) AddSessionToCache(session *model.Session) {
 	a.Srv().sessionCache.SetWithExpiry(session.Token, session, time.Duration(int64(*a.Config().ServiceSettings.SessionCacheInMinutes))*time.Minute)
 }
 
-func (a *App) SessionCacheLength() int {
-	if l, err := a.Srv().sessionCache.Len(); err == nil {
-		return l
-	}
-	return 0
-}
+// func (a *App) SessionCacheLength() int {
+// 	if l, err := a.Srv().sessionCache.Len(); err == nil {
+// 		return l
+// 	}
+// 	return 0
+// }
 
 func (a *App) RevokeSessionsForDeviceId(userId string, deviceId string, currentSessionId string) *model.AppError {
 	sessions, err := a.Srv().Store.Session().GetSessions(userId)

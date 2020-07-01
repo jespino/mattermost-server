@@ -31,14 +31,15 @@ func (a *App) GetAllStatuses() map[string]*model.Status {
 	}
 
 	statusMap := map[string]*model.Status{}
-	if userIds, err := a.Srv().statusCache.Keys(); err == nil {
-		for _, userId := range userIds {
-			status := a.GetStatusFromCache(userId)
-			if status != nil {
-				statusMap[userId] = status
-			}
-		}
-	}
+	// TODO: Find a better way to do this
+	// if userIds, err := a.Srv().statusCache.Keys(); err == nil {
+	// 	for _, userId := range userIds {
+	// 		status := a.GetStatusFromCache(userId)
+	// 		if status != nil {
+	// 			statusMap[userId] = status
+	// 		}
+	// 	}
+	// }
 	return statusMap
 }
 

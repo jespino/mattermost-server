@@ -45,11 +45,9 @@ func (s LocalCacheTermsOfServiceStore) Save(termsOfService *model.TermsOfService
 
 func (s LocalCacheTermsOfServiceStore) GetLatest(allowFromCache bool) (*model.TermsOfService, error) {
 	if allowFromCache {
-		if len, err := s.rootStore.termsOfServiceCache.Len(); err == nil && len != 0 {
-			var cacheItem *model.TermsOfService
-			if err := s.rootStore.doStandardReadCache(s.rootStore.termsOfServiceCache, LATEST_KEY, &cacheItem); err == nil {
-				return cacheItem, nil
-			}
+		var cacheItem *model.TermsOfService
+		if err := s.rootStore.doStandardReadCache(s.rootStore.termsOfServiceCache, LATEST_KEY, &cacheItem); err == nil {
+			return cacheItem, nil
 		}
 	}
 

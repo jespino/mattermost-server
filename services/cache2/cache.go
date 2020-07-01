@@ -35,12 +35,6 @@ type Cache interface {
 	// Remove deletes the value for a given key.
 	Remove(key string) error
 
-	// Keys returns a slice of the keys in the cache.
-	Keys() ([]string, error)
-
-	// Len returns the number of items in the cache.
-	Len() (int, error)
-
 	// GetInvalidateClusterEvent returns the cluster event configured when this cache was created.
 	GetInvalidateClusterEvent() string
 
