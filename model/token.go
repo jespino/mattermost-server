@@ -6,9 +6,13 @@ package model
 import "net/http"
 
 const (
-	TOKEN_SIZE            = 64
-	MAX_TOKEN_EXIPRY_TIME = 1000 * 60 * 60 * 48 // 48 hour
-	TOKEN_TYPE_OAUTH      = "oauth"
+	TOKEN_SIZE                   = 64
+	MAX_TOKEN_EXIPRY_TIME        = 1000 * 60 * 60 * 48 // 48 hour
+	TOKEN_TYPE_OAUTH             = "oauth"
+	TOKEN_TYPE_PASSWORD_RECOVERY = "password_recovery"
+	TOKEN_TYPE_VERIFY_EMAIL      = "verify_email"
+	TOKEN_TYPE_TEAM_INVITATION   = "team_invitation"
+	TOKEN_TYPE_GUEST_INVITATION  = "guest_invitation"
 )
 
 type Token struct {

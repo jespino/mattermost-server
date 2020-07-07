@@ -198,7 +198,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 
 	t.Run("invalid token type", func(t *testing.T) {
 		token := model.NewToken(
-			TOKEN_TYPE_VERIFY_EMAIL,
+			model.TOKEN_TYPE_VERIFY_EMAIL,
 			model.MapToJson(map[string]string{"teamId": th.BasicTeam.Id}),
 		)
 
@@ -211,7 +211,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 
 	t.Run("expired token", func(t *testing.T) {
 		token := model.NewToken(
-			TOKEN_TYPE_TEAM_INVITATION,
+			model.TOKEN_TYPE_TEAM_INVITATION,
 			model.MapToJson(map[string]string{"teamId": th.BasicTeam.Id}),
 		)
 
@@ -225,7 +225,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 
 	t.Run("invalid team id", func(t *testing.T) {
 		token := model.NewToken(
-			TOKEN_TYPE_TEAM_INVITATION,
+			model.TOKEN_TYPE_TEAM_INVITATION,
 			model.MapToJson(map[string]string{"teamId": model.NewId()}),
 		)
 		require.Nil(t, th.App.Srv().Store.Token().Save(token))
@@ -237,7 +237,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 
 	t.Run("invalid user id", func(t *testing.T) {
 		token := model.NewToken(
-			TOKEN_TYPE_TEAM_INVITATION,
+			model.TOKEN_TYPE_TEAM_INVITATION,
 			model.MapToJson(map[string]string{"teamId": th.BasicTeam.Id}),
 		)
 		require.Nil(t, th.App.Srv().Store.Token().Save(token))
@@ -249,7 +249,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 
 	t.Run("valid request", func(t *testing.T) {
 		token := model.NewToken(
-			TOKEN_TYPE_TEAM_INVITATION,
+			model.TOKEN_TYPE_TEAM_INVITATION,
 			model.MapToJson(map[string]string{"teamId": th.BasicTeam.Id}),
 		)
 		require.Nil(t, th.App.Srv().Store.Token().Save(token))
@@ -266,7 +266,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 
 	t.Run("invalid add a guest using a regular invite", func(t *testing.T) {
 		token := model.NewToken(
-			TOKEN_TYPE_TEAM_INVITATION,
+			model.TOKEN_TYPE_TEAM_INVITATION,
 			model.MapToJson(map[string]string{"teamId": th.BasicTeam.Id}),
 		)
 		require.Nil(t, th.App.Srv().Store.Token().Save(token))
@@ -276,7 +276,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 
 	t.Run("invalid add a regular user using a guest invite", func(t *testing.T) {
 		token := model.NewToken(
-			TOKEN_TYPE_GUEST_INVITATION,
+			model.TOKEN_TYPE_GUEST_INVITATION,
 			model.MapToJson(map[string]string{"teamId": th.BasicTeam.Id, "channels": th.BasicChannel.Id}),
 		)
 		require.Nil(t, th.App.Srv().Store.Token().Save(token))
@@ -291,7 +291,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 		}()
 		th.App.UpdateConfig(func(cfg *model.Config) { *cfg.GuestAccountsSettings.RestrictCreationToDomains = "restricted.com" })
 		token := model.NewToken(
-			TOKEN_TYPE_GUEST_INVITATION,
+			model.TOKEN_TYPE_GUEST_INVITATION,
 			model.MapToJson(map[string]string{"teamId": th.BasicTeam.Id, "channels": th.BasicChannel.Id}),
 		)
 		require.Nil(t, th.App.Srv().Store.Token().Save(token))
@@ -307,7 +307,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 		}()
 		th.App.UpdateConfig(func(cfg *model.Config) { *cfg.GuestAccountsSettings.RestrictCreationToDomains = "restricted.com" })
 		token := model.NewToken(
-			TOKEN_TYPE_GUEST_INVITATION,
+			model.TOKEN_TYPE_GUEST_INVITATION,
 			model.MapToJson(map[string]string{"teamId": th.BasicTeam.Id, "channels": th.BasicChannel.Id}),
 		)
 		guestEmail := rguest.Email
@@ -333,7 +333,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 		}()
 		th.App.UpdateConfig(func(cfg *model.Config) { *cfg.TeamSettings.RestrictCreationToDomains = "restricted.com" })
 		token := model.NewToken(
-			TOKEN_TYPE_GUEST_INVITATION,
+			model.TOKEN_TYPE_GUEST_INVITATION,
 			model.MapToJson(map[string]string{"teamId": th.BasicTeam.Id, "channels": th.BasicChannel.Id}),
 		)
 		_, err = th.App.Srv().Store.User().Update(rguest, false)
@@ -348,7 +348,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 
 	t.Run("valid request from guest invite", func(t *testing.T) {
 		token := model.NewToken(
-			TOKEN_TYPE_GUEST_INVITATION,
+			model.TOKEN_TYPE_GUEST_INVITATION,
 			model.MapToJson(map[string]string{"teamId": th.BasicTeam.Id, "channels": th.BasicChannel.Id}),
 		)
 		require.Nil(t, th.App.Srv().Store.Token().Save(token))
@@ -371,7 +371,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 		require.Nil(t, err, "Should update the team")
 
 		token := model.NewToken(
-			TOKEN_TYPE_TEAM_INVITATION,
+			model.TOKEN_TYPE_TEAM_INVITATION,
 			model.MapToJson(map[string]string{"teamId": th.BasicTeam.Id}),
 		)
 		require.Nil(t, th.App.Srv().Store.Token().Save(token))
@@ -395,7 +395,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 		defer th.App.PermanentDeleteUser(&user)
 
 		token := model.NewToken(
-			TOKEN_TYPE_TEAM_INVITATION,
+			model.TOKEN_TYPE_TEAM_INVITATION,
 			model.MapToJson(map[string]string{"teamId": th.BasicTeam.Id}),
 		)
 		require.Nil(t, th.App.Srv().Store.Token().Save(token))
@@ -410,7 +410,7 @@ func TestAddUserToTeamByToken(t *testing.T) {
 		team := th.CreateTeam()
 
 		token := model.NewToken(
-			TOKEN_TYPE_TEAM_INVITATION,
+			model.TOKEN_TYPE_TEAM_INVITATION,
 			model.MapToJson(map[string]string{"teamId": team.Id}),
 		)
 		require.Nil(t, th.App.Srv().Store.Token().Save(token))
@@ -1100,7 +1100,7 @@ func TestInvalidateAllEmailInvites(t *testing.T) {
 	t1 := model.Token{
 		Token:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 		CreateAt: model.GetMillis(),
-		Type:     TOKEN_TYPE_GUEST_INVITATION,
+		Type:     model.TOKEN_TYPE_GUEST_INVITATION,
 		Extra:    "",
 	}
 	err := th.App.Srv().Store.Token().Save(&t1)
@@ -1109,7 +1109,7 @@ func TestInvalidateAllEmailInvites(t *testing.T) {
 	t2 := model.Token{
 		Token:    "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
 		CreateAt: model.GetMillis(),
-		Type:     TOKEN_TYPE_TEAM_INVITATION,
+		Type:     model.TOKEN_TYPE_TEAM_INVITATION,
 		Extra:    "",
 	}
 	err = th.App.Srv().Store.Token().Save(&t2)

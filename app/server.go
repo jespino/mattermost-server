@@ -88,7 +88,7 @@ type Server struct {
 	PluginConfigListenerId string
 	PluginsLock            sync.RWMutex
 
-	EmailService *EmailService
+	EmailService *mailservice.EmailService
 
 	hubs     []*Hub
 	hashSeed maphash.Seed
@@ -350,7 +350,7 @@ func NewServer(options ...Option) (*Server, error) {
 
 	s.Store = s.newStore()
 
-	emailService, err := NewEmailService(s)
+	emailService, err := mailservice.NewEmailService(s, s.Store, s.Log)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to initialize email service")
 	}

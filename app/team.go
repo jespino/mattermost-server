@@ -457,7 +457,7 @@ func (a *App) AddUserToTeamByToken(userId string, tokenId string) (*model.Team, 
 		return nil, model.NewAppError("AddUserToTeamByToken", "api.user.create_user.signup_link_invalid.app_error", nil, err.Error(), http.StatusBadRequest)
 	}
 
-	if token.Type != TOKEN_TYPE_TEAM_INVITATION && token.Type != TOKEN_TYPE_GUEST_INVITATION {
+	if token.Type != model.TOKEN_TYPE_TEAM_INVITATION && token.Type != model.TOKEN_TYPE_GUEST_INVITATION {
 		return nil, model.NewAppError("AddUserToTeamByToken", "api.user.create_user.signup_link_invalid.app_error", nil, "", http.StatusBadRequest)
 	}
 
@@ -498,10 +498,10 @@ func (a *App) AddUserToTeamByToken(userId string, tokenId string) (*model.Team, 
 	}
 	user := result.Data.(*model.User)
 
-	if user.IsGuest() && token.Type == TOKEN_TYPE_TEAM_INVITATION {
+	if user.IsGuest() && token.Type == model.TOKEN_TYPE_TEAM_INVITATION {
 		return nil, model.NewAppError("AddUserToTeamByToken", "api.user.create_user.invalid_invitation_type.app_error", nil, "", http.StatusBadRequest)
 	}
-	if !user.IsGuest() && token.Type == TOKEN_TYPE_GUEST_INVITATION {
+	if !user.IsGuest() && token.Type == model.TOKEN_TYPE_GUEST_INVITATION {
 		return nil, model.NewAppError("AddUserToTeamByToken", "api.user.create_user.invalid_invitation_type.app_error", nil, "", http.StatusBadRequest)
 	}
 
@@ -509,7 +509,7 @@ func (a *App) AddUserToTeamByToken(userId string, tokenId string) (*model.Team, 
 		return nil, err
 	}
 
-	if token.Type == TOKEN_TYPE_GUEST_INVITATION {
+	if token.Type == model.TOKEN_TYPE_GUEST_INVITATION {
 		channels, err := a.Srv().Store.Channel().GetChannelsByIds(strings.Split(tokenData["channels"], " "), false)
 		if err != nil {
 			return nil, err
@@ -1235,7 +1235,7 @@ func (a *App) InviteGuestsToChannelsGracefully(teamId string, guestsInvite *mode
 		if err != nil {
 			a.Log().Warn("Unable to get the sender user profile image.", mlog.String("user_id", user.Id), mlog.String("team_id", team.Id), mlog.Err(err))
 		}
-		a.Srv().EmailService.sendGuestInviteEmails(team, channels, user.GetDisplayName(nameFormat), user.Id, senderProfileImage, goodEmails, a.GetSiteURL(), guestsInvite.Message)
+		a.Srv().EmailService.SendGuestInviteEmails(team, channels, user.GetDisplayName(nameFormat), user.Id, senderProfileImage, goodEmails, a.GetSiteURL(), guestsInvite.Message)
 	}
 
 	return inviteListWithErrors, nil
@@ -1304,7 +1304,7 @@ func (a *App) InviteGuestsToChannels(teamId string, guestsInvite *model.GuestsIn
 	if err != nil {
 		a.Log().Warn("Unable to get the sender user profile image.", mlog.String("user_id", user.Id), mlog.String("team_id", team.Id), mlog.Err(err))
 	}
-	a.Srv().EmailService.sendGuestInviteEmails(team, channels, user.GetDisplayName(nameFormat), user.Id, senderProfileImage, guestsInvite.Emails, a.GetSiteURL(), guestsInvite.Message)
+	a.Srv().EmailService.SendGuestInviteEmails(team, channels, user.GetDisplayName(nameFormat), user.Id, senderProfileImage, guestsInvite.Emails, a.GetSiteURL(), guestsInvite.Message)
 
 	return nil
 }
@@ -1469,7 +1469,7 @@ func (a *App) GetTeamIdFromQuery(query url.Values) (string, *model.AppError) {
 			return "", model.NewAppError("GetTeamIdFromQuery", "api.oauth.singup_with_oauth.invalid_link.app_error", nil, "", http.StatusBadRequest)
 		}
 
-		if token.Type != TOKEN_TYPE_TEAM_INVITATION {
+		if token.Type != model.TOKEN_TYPE_TEAM_INVITATION {
 			return "", model.NewAppError("GetTeamIdFromQuery", "api.oauth.singup_with_oauth.invalid_link.app_error", nil, "", http.StatusBadRequest)
 		}
 
@@ -1629,10 +1629,10 @@ func (a *App) RemoveTeamIcon(teamId string) *model.AppError {
 }
 
 func (a *App) InvalidateAllEmailInvites() *model.AppError {
-	if err := a.Srv().Store.Token().RemoveAllTokensByType(TOKEN_TYPE_TEAM_INVITATION); err != nil {
+	if err := a.Srv().Store.Token().RemoveAllTokensByType(model.TOKEN_TYPE_TEAM_INVITATION); err != nil {
 		return model.NewAppError("InvalidateAllEmailInvites", "api.team.invalidate_all_email_invites.app_error", nil, err.Error(), http.StatusBadRequest)
 	}
-	if err := a.Srv().Store.Token().RemoveAllTokensByType(TOKEN_TYPE_GUEST_INVITATION); err != nil {
+	if err := a.Srv().Store.Token().RemoveAllTokensByType(model.TOKEN_TYPE_GUEST_INVITATION); err != nil {
 		return model.NewAppError("InvalidateAllEmailInvites", "api.team.invalidate_all_email_invites.app_error", nil, err.Error(), http.StatusBadRequest)
 	}
 	return nil

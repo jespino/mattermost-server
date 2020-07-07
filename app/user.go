@@ -38,10 +38,6 @@ import (
 )
 
 const (
-	TOKEN_TYPE_PASSWORD_RECOVERY  = "password_recovery"
-	TOKEN_TYPE_VERIFY_EMAIL       = "verify_email"
-	TOKEN_TYPE_TEAM_INVITATION    = "team_invitation"
-	TOKEN_TYPE_GUEST_INVITATION   = "guest_invitation"
 	PASSWORD_RECOVER_EXPIRY_TIME  = 1000 * 60 * 60      // 1 hour
 	INVITATION_EXPIRY_TIME        = 1000 * 60 * 60 * 48 // 48 hours
 	IMAGE_PROFILE_PIXEL_DIMENSION = 128
@@ -52,7 +48,7 @@ func (a *App) CreateUserWithToken(user *model.User, token *model.Token) (*model.
 		return nil, err
 	}
 
-	if token.Type != TOKEN_TYPE_TEAM_INVITATION && token.Type != TOKEN_TYPE_GUEST_INVITATION {
+	if token.Type != model.TOKEN_TYPE_TEAM_INVITATION && token.Type != model.TOKEN_TYPE_GUEST_INVITATION {
 		return nil, model.NewAppError("CreateUserWithToken", "api.user.create_user.signup_link_invalid.app_error", nil, "", http.StatusBadRequest)
 	}
 
@@ -77,7 +73,7 @@ func (a *App) CreateUserWithToken(user *model.User, token *model.Token) (*model.
 	user.EmailVerified = true
 
 	var ruser *model.User
-	if token.Type == TOKEN_TYPE_TEAM_INVITATION {
+	if token.Type == model.TOKEN_TYPE_TEAM_INVITATION {
 		ruser, err = a.CreateUser(user)
 	} else {
 		ruser, err = a.CreateGuest(user)
@@ -92,7 +88,7 @@ func (a *App) CreateUserWithToken(user *model.User, token *model.Token) (*model.
 
 	a.AddDirectChannels(team.Id, ruser)
 
-	if token.Type == TOKEN_TYPE_GUEST_INVITATION {
+	if token.Type == model.TOKEN_TYPE_GUEST_INVITATION {
 		for _, channel := range channels {
 			_, err := a.AddChannelMember(ruser.Id, channel, "", "")
 			if err != nil {
@@ -139,7 +135,7 @@ func (a *App) CreateUserWithInviteId(user *model.User, inviteId string) (*model.
 
 	a.AddDirectChannels(team.Id, ruser)
 
-	if err := a.Srv().EmailService.sendWelcomeEmail(ruser.Id, ruser.Email, ruser.EmailVerified, ruser.Locale, a.GetSiteURL()); err != nil {
+	if err := a.Srv().EmailService.SendWelcomeEmail(ruser.Id, ruser.Email, ruser.EmailVerified, ruser.Locale, a.GetSiteURL()); err != nil {
 		mlog.Error("Failed to send welcome email on create user with inviteId", mlog.Err(err))
 	}
 
@@ -152,7 +148,7 @@ func (a *App) CreateUserAsAdmin(user *model.User) (*model.User, *model.AppError)
 		return nil, err
 	}
 
-	if err := a.Srv().EmailService.sendWelcomeEmail(ruser.Id, ruser.Email, ruser.EmailVerified, ruser.Locale, a.GetSiteURL()); err != nil {
+	if err := a.Srv().EmailService.SendWelcomeEmail(ruser.Id, ruser.Email, ruser.EmailVerified, ruser.Locale, a.GetSiteURL()); err != nil {
 		mlog.Error("Failed to send welcome email on create admin user", mlog.Err(err))
 	}
 
@@ -176,7 +172,7 @@ func (a *App) CreateUserFromSignup(user *model.User) (*model.User, *model.AppErr
 		return nil, err
 	}
 
-	if err := a.Srv().EmailService.sendWelcomeEmail(ruser.Id, ruser.Email, ruser.EmailVerified, ruser.Locale, a.GetSiteURL()); err != nil {
+	if err := a.Srv().EmailService.SendWelcomeEmail(ruser.Id, ruser.Email, ruser.EmailVerified, ruser.Locale, a.GetSiteURL()); err != nil {
 		mlog.Error("Failed to send welcome email on create user from signup", mlog.Err(err))
 	}
 
@@ -1165,7 +1161,7 @@ func (a *App) UpdateUser(user *model.User, sendNotifications bool) (*model.User,
 				})
 			} else {
 				a.Srv().Go(func() {
-					if err := a.Srv().EmailService.sendEmailChangeEmail(userUpdate.Old.Email, userUpdate.New.Email, userUpdate.New.Locale, a.GetSiteURL()); err != nil {
+					if err := a.Srv().EmailService.SendEmailChangeEmail(userUpdate.Old.Email, userUpdate.New.Email, userUpdate.New.Locale, a.GetSiteURL()); err != nil {
 						mlog.Error("Failed to send email change email", mlog.Err(err))
 					}
 				})
@@ -1174,7 +1170,7 @@ func (a *App) UpdateUser(user *model.User, sendNotifications bool) (*model.User,
 
 		if userUpdate.New.Username != userUpdate.Old.Username {
 			a.Srv().Go(func() {
-				if err := a.Srv().EmailService.sendChangeUsernameEmail(userUpdate.Old.Username, userUpdate.New.Username, userUpdate.New.Email, userUpdate.New.Locale, a.GetSiteURL()); err != nil {
+				if err := a.Srv().EmailService.SendChangeUsernameEmail(userUpdate.Old.Username, userUpdate.New.Username, userUpdate.New.Email, userUpdate.New.Locale, a.GetSiteURL()); err != nil {
 					mlog.Error("Failed to send change username email", mlog.Err(err))
 				}
 			})
@@ -1233,7 +1229,7 @@ func (a *App) UpdateMfa(activate bool, userId, token string) *model.AppError {
 			return
 		}
 
-		if err := a.Srv().EmailService.sendMfaChangeEmail(user.Email, activate, user.Locale, a.GetSiteURL()); err != nil {
+		if err := a.Srv().EmailService.SendMfaChangeEmail(user.Email, activate, user.Locale, a.GetSiteURL()); err != nil {
 			mlog.Error("Failed to send mfa change email", mlog.Err(err))
 		}
 	})
@@ -1272,7 +1268,7 @@ func (a *App) UpdatePasswordSendEmail(user *model.User, newPassword, method stri
 	}
 
 	a.Srv().Go(func() {
-		if err := a.Srv().EmailService.sendPasswordChangeEmail(user.Email, method, user.Locale, a.GetSiteURL()); err != nil {
+		if err := a.Srv().EmailService.SendPasswordChangeEmail(user.Email, method, user.Locale, a.GetSiteURL()); err != nil {
 			mlog.Error("Failed to send password change email", mlog.Err(err))
 		}
 	})
@@ -1358,7 +1354,7 @@ func (a *App) CreatePasswordRecoveryToken(userId, email string) (*model.Token, *
 		return nil, model.NewAppError("CreatePasswordRecoveryToken", "api.user.create_password_token.error", nil, "", http.StatusInternalServerError)
 	}
 
-	token := model.NewToken(TOKEN_TYPE_PASSWORD_RECOVERY, string(jsonData))
+	token := model.NewToken(model.TOKEN_TYPE_PASSWORD_RECOVERY, string(jsonData))
 
 	if err := a.Srv().Store.Token().Save(token); err != nil {
 		return nil, err
@@ -1372,7 +1368,7 @@ func (a *App) GetPasswordRecoveryToken(token string) (*model.Token, *model.AppEr
 	if err != nil {
 		return nil, model.NewAppError("GetPasswordRecoveryToken", "api.user.reset_password.invalid_link.app_error", nil, err.Error(), http.StatusBadRequest)
 	}
-	if rtoken.Type != TOKEN_TYPE_PASSWORD_RECOVERY {
+	if rtoken.Type != model.TOKEN_TYPE_PASSWORD_RECOVERY {
 		return nil, model.NewAppError("GetPasswordRecoveryToken", "api.user.reset_password.broken_token.app_error", nil, "", http.StatusBadRequest)
 	}
 	return rtoken, nil
@@ -1564,9 +1560,9 @@ func (a *App) SendEmailVerification(user *model.User, newEmail string) *model.Ap
 	}
 
 	if _, err := a.GetStatus(user.Id); err != nil {
-		return a.Srv().EmailService.sendVerifyEmail(newEmail, user.Locale, a.GetSiteURL(), token.Token)
+		return a.Srv().EmailService.SendVerifyEmail(newEmail, user.Locale, a.GetSiteURL(), token.Token)
 	}
-	return a.Srv().EmailService.sendEmailChangeVerifyEmail(newEmail, user.Locale, a.GetSiteURL(), token.Token)
+	return a.Srv().EmailService.SendEmailChangeVerifyEmail(newEmail, user.Locale, a.GetSiteURL(), token.Token)
 }
 
 func (a *App) VerifyEmailFromToken(userSuppliedTokenString string) *model.AppError {
@@ -1600,7 +1596,7 @@ func (a *App) VerifyEmailFromToken(userSuppliedTokenString string) *model.AppErr
 
 	if user.Email != tokenData.Email {
 		a.Srv().Go(func() {
-			if err := a.Srv().EmailService.sendEmailChangeEmail(user.Email, tokenData.Email, user.Locale, a.GetSiteURL()); err != nil {
+			if err := a.Srv().EmailService.SendEmailChangeEmail(user.Email, tokenData.Email, user.Locale, a.GetSiteURL()); err != nil {
 				mlog.Error("Failed to send email change email", mlog.Err(err))
 			}
 		})
@@ -1618,7 +1614,7 @@ func (a *App) GetVerifyEmailToken(token string) (*model.Token, *model.AppError) 
 	if err != nil {
 		return nil, model.NewAppError("GetVerifyEmailToken", "api.user.verify_email.bad_link.app_error", nil, err.Error(), http.StatusBadRequest)
 	}
-	if rtoken.Type != TOKEN_TYPE_VERIFY_EMAIL {
+	if rtoken.Type != model.TOKEN_TYPE_VERIFY_EMAIL {
 		return nil, model.NewAppError("GetVerifyEmailToken", "api.user.verify_email.broken_token.app_error", nil, "", http.StatusBadRequest)
 	}
 	return rtoken, nil
