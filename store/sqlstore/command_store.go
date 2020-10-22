@@ -19,7 +19,7 @@ type SqlCommandStore struct {
 	commandsQuery sq.SelectBuilder
 }
 
-func newSqlCommandStore(sqlStore SqlStore) store.CommandStore {
+func newSqlCommandStore(sqlStore SqlStore) *SqlCommandStore {
 	s := &SqlCommandStore{SqlStore: sqlStore}
 
 	s.commandsQuery = s.getQueryBuilder().

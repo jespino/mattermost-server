@@ -23,7 +23,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/einterfaces"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/store"
 	"github.com/mattermost/mattermost-server/v5/utils"
 )
 
@@ -69,40 +68,40 @@ const (
 )
 
 type SqlSupplierStores struct {
-	team                 store.TeamStore
-	channel              store.ChannelStore
-	post                 store.PostStore
-	thread               store.ThreadStore
-	user                 store.UserStore
-	bot                  store.BotStore
-	audit                store.AuditStore
-	cluster              store.ClusterDiscoveryStore
-	compliance           store.ComplianceStore
-	session              store.SessionStore
-	oauth                store.OAuthStore
-	system               store.SystemStore
-	webhook              store.WebhookStore
-	command              store.CommandStore
-	commandWebhook       store.CommandWebhookStore
-	preference           store.PreferenceStore
-	license              store.LicenseStore
-	token                store.TokenStore
-	emoji                store.EmojiStore
-	status               store.StatusStore
-	fileInfo             store.FileInfoStore
-	uploadSession        store.UploadSessionStore
-	reaction             store.ReactionStore
-	job                  store.JobStore
-	userAccessToken      store.UserAccessTokenStore
-	plugin               store.PluginStore
-	channelMemberHistory store.ChannelMemberHistoryStore
-	role                 store.RoleStore
-	scheme               store.SchemeStore
-	TermsOfService       store.TermsOfServiceStore
-	productNotices       store.ProductNoticesStore
-	group                store.GroupStore
-	UserTermsOfService   store.UserTermsOfServiceStore
-	linkMetadata         store.LinkMetadataStore
+	team                 *SqlTeamStore
+	channel              *SqlChannelStore
+	post                 *SqlPostStore
+	thread               *SqlThreadStore
+	user                 *SqlUserStore
+	bot                  *SqlBotStore
+	audit                *SqlAuditStore
+	cluster              *SqlClusterDiscoveryStore
+	compliance           *SqlComplianceStore
+	session              *SqlSessionStore
+	oauth                *SqlOAuthStore
+	system               *SqlSystemStore
+	webhook              *SqlWebhookStore
+	command              *SqlCommandStore
+	commandWebhook       *SqlCommandWebhookStore
+	preference           *SqlPreferenceStore
+	license              *SqlLicenseStore
+	token                *SqlTokenStore
+	emoji                *SqlEmojiStore
+	status               *SqlStatusStore
+	fileInfo             *SqlFileInfoStore
+	uploadSession        *SqlUploadSessionStore
+	reaction             *SqlReactionStore
+	job                  *SqlJobStore
+	userAccessToken      *SqlUserAccessTokenStore
+	plugin               *SqlPluginStore
+	channelMemberHistory *SqlChannelMemberHistoryStore
+	role                 *SqlRoleStore
+	scheme               *SqlSchemeStore
+	TermsOfService       *SqlTermsOfServiceStore
+	productNotices       *SqlProductNoticesStore
+	group                *SqlGroupStore
+	UserTermsOfService   *SqlUserTermsOfServiceStore
+	linkMetadata         *SqlLinkMetadataStore
 }
 
 type SqlSupplier struct {
@@ -188,37 +187,37 @@ func NewSqlSupplier(settings model.SqlSettings, metrics einterfaces.MetricsInter
 		os.Exit(EXIT_GENERIC_FAILURE)
 	}
 
-	supplier.stores.team.(*SqlTeamStore).createIndexesIfNotExists()
-	supplier.stores.channel.(*SqlChannelStore).createIndexesIfNotExists()
-	supplier.stores.post.(*SqlPostStore).createIndexesIfNotExists()
-	supplier.stores.thread.(*SqlThreadStore).createIndexesIfNotExists()
-	supplier.stores.user.(*SqlUserStore).createIndexesIfNotExists()
-	supplier.stores.bot.(*SqlBotStore).createIndexesIfNotExists()
-	supplier.stores.audit.(*SqlAuditStore).createIndexesIfNotExists()
-	supplier.stores.compliance.(*SqlComplianceStore).createIndexesIfNotExists()
-	supplier.stores.session.(*SqlSessionStore).createIndexesIfNotExists()
-	supplier.stores.oauth.(*SqlOAuthStore).createIndexesIfNotExists()
-	supplier.stores.system.(*SqlSystemStore).createIndexesIfNotExists()
-	supplier.stores.webhook.(*SqlWebhookStore).createIndexesIfNotExists()
-	supplier.stores.command.(*SqlCommandStore).createIndexesIfNotExists()
-	supplier.stores.commandWebhook.(*SqlCommandWebhookStore).createIndexesIfNotExists()
-	supplier.stores.preference.(*SqlPreferenceStore).createIndexesIfNotExists()
-	supplier.stores.license.(*SqlLicenseStore).createIndexesIfNotExists()
-	supplier.stores.token.(*SqlTokenStore).createIndexesIfNotExists()
-	supplier.stores.emoji.(*SqlEmojiStore).createIndexesIfNotExists()
-	supplier.stores.status.(*SqlStatusStore).createIndexesIfNotExists()
-	supplier.stores.fileInfo.(*SqlFileInfoStore).createIndexesIfNotExists()
-	supplier.stores.uploadSession.(*SqlUploadSessionStore).createIndexesIfNotExists()
-	supplier.stores.job.(*SqlJobStore).createIndexesIfNotExists()
-	supplier.stores.userAccessToken.(*SqlUserAccessTokenStore).createIndexesIfNotExists()
-	supplier.stores.plugin.(*SqlPluginStore).createIndexesIfNotExists()
-	supplier.stores.TermsOfService.(SqlTermsOfServiceStore).createIndexesIfNotExists()
-	supplier.stores.productNotices.(SqlProductNoticesStore).createIndexesIfNotExists()
-	supplier.stores.UserTermsOfService.(SqlUserTermsOfServiceStore).createIndexesIfNotExists()
-	supplier.stores.linkMetadata.(*SqlLinkMetadataStore).createIndexesIfNotExists()
-	supplier.stores.group.(*SqlGroupStore).createIndexesIfNotExists()
-	supplier.stores.scheme.(*SqlSchemeStore).createIndexesIfNotExists()
-	supplier.stores.preference.(*SqlPreferenceStore).deleteUnusedFeatures()
+	supplier.stores.team.createIndexesIfNotExists()
+	supplier.stores.channel.createIndexesIfNotExists()
+	supplier.stores.post.createIndexesIfNotExists()
+	supplier.stores.thread.createIndexesIfNotExists()
+	supplier.stores.user.createIndexesIfNotExists()
+	supplier.stores.bot.createIndexesIfNotExists()
+	supplier.stores.audit.createIndexesIfNotExists()
+	supplier.stores.compliance.createIndexesIfNotExists()
+	supplier.stores.session.createIndexesIfNotExists()
+	supplier.stores.oauth.createIndexesIfNotExists()
+	supplier.stores.system.createIndexesIfNotExists()
+	supplier.stores.webhook.createIndexesIfNotExists()
+	supplier.stores.command.createIndexesIfNotExists()
+	supplier.stores.commandWebhook.createIndexesIfNotExists()
+	supplier.stores.preference.createIndexesIfNotExists()
+	supplier.stores.license.createIndexesIfNotExists()
+	supplier.stores.token.createIndexesIfNotExists()
+	supplier.stores.emoji.createIndexesIfNotExists()
+	supplier.stores.status.createIndexesIfNotExists()
+	supplier.stores.fileInfo.createIndexesIfNotExists()
+	supplier.stores.uploadSession.createIndexesIfNotExists()
+	supplier.stores.job.createIndexesIfNotExists()
+	supplier.stores.userAccessToken.createIndexesIfNotExists()
+	supplier.stores.plugin.createIndexesIfNotExists()
+	supplier.stores.TermsOfService.createIndexesIfNotExists()
+	supplier.stores.productNotices.createIndexesIfNotExists()
+	supplier.stores.UserTermsOfService.createIndexesIfNotExists()
+	supplier.stores.linkMetadata.createIndexesIfNotExists()
+	supplier.stores.group.createIndexesIfNotExists()
+	supplier.stores.scheme.createIndexesIfNotExists()
+	supplier.stores.preference.deleteUnusedFeatures()
 
 	return supplier
 }
@@ -1062,139 +1061,139 @@ func (ss *SqlSupplier) UnlockFromMaster() {
 	ss.lockedToMaster = false
 }
 
-func (ss *SqlSupplier) Team() store.TeamStore {
+func (ss *SqlSupplier) Team() *SqlTeamStore {
 	return ss.stores.team
 }
 
-func (ss *SqlSupplier) Channel() store.ChannelStore {
+func (ss *SqlSupplier) Channel() *SqlChannelStore {
 	return ss.stores.channel
 }
 
-func (ss *SqlSupplier) Post() store.PostStore {
+func (ss *SqlSupplier) Post() *SqlPostStore {
 	return ss.stores.post
 }
 
-func (ss *SqlSupplier) User() store.UserStore {
+func (ss *SqlSupplier) User() *SqlUserStore {
 	return ss.stores.user
 }
 
-func (ss *SqlSupplier) Bot() store.BotStore {
+func (ss *SqlSupplier) Bot() *SqlBotStore {
 	return ss.stores.bot
 }
 
-func (ss *SqlSupplier) Session() store.SessionStore {
+func (ss *SqlSupplier) Session() *SqlSessionStore {
 	return ss.stores.session
 }
 
-func (ss *SqlSupplier) Audit() store.AuditStore {
+func (ss *SqlSupplier) Audit() *SqlAuditStore {
 	return ss.stores.audit
 }
 
-func (ss *SqlSupplier) ClusterDiscovery() store.ClusterDiscoveryStore {
+func (ss *SqlSupplier) ClusterDiscovery() *SqlClusterDiscoveryStore {
 	return ss.stores.cluster
 }
 
-func (ss *SqlSupplier) Compliance() store.ComplianceStore {
+func (ss *SqlSupplier) Compliance() *SqlComplianceStore {
 	return ss.stores.compliance
 }
 
-func (ss *SqlSupplier) OAuth() store.OAuthStore {
+func (ss *SqlSupplier) OAuth() *SqlOAuthStore {
 	return ss.stores.oauth
 }
 
-func (ss *SqlSupplier) System() store.SystemStore {
+func (ss *SqlSupplier) System() *SqlSystemStore {
 	return ss.stores.system
 }
 
-func (ss *SqlSupplier) Webhook() store.WebhookStore {
+func (ss *SqlSupplier) Webhook() *SqlWebhookStore {
 	return ss.stores.webhook
 }
 
-func (ss *SqlSupplier) Command() store.CommandStore {
+func (ss *SqlSupplier) Command() *SqlCommandStore {
 	return ss.stores.command
 }
 
-func (ss *SqlSupplier) CommandWebhook() store.CommandWebhookStore {
+func (ss *SqlSupplier) CommandWebhook() *SqlCommandWebhookStore {
 	return ss.stores.commandWebhook
 }
 
-func (ss *SqlSupplier) Preference() store.PreferenceStore {
+func (ss *SqlSupplier) Preference() *SqlPreferenceStore {
 	return ss.stores.preference
 }
 
-func (ss *SqlSupplier) License() store.LicenseStore {
+func (ss *SqlSupplier) License() *SqlLicenseStore {
 	return ss.stores.license
 }
 
-func (ss *SqlSupplier) Token() store.TokenStore {
+func (ss *SqlSupplier) Token() *SqlTokenStore {
 	return ss.stores.token
 }
 
-func (ss *SqlSupplier) Emoji() store.EmojiStore {
+func (ss *SqlSupplier) Emoji() *SqlEmojiStore {
 	return ss.stores.emoji
 }
 
-func (ss *SqlSupplier) Status() store.StatusStore {
+func (ss *SqlSupplier) Status() *SqlStatusStore {
 	return ss.stores.status
 }
 
-func (ss *SqlSupplier) FileInfo() store.FileInfoStore {
+func (ss *SqlSupplier) FileInfo() *SqlFileInfoStore {
 	return ss.stores.fileInfo
 }
 
-func (ss *SqlSupplier) UploadSession() store.UploadSessionStore {
+func (ss *SqlSupplier) UploadSession() *SqlUploadSessionStore {
 	return ss.stores.uploadSession
 }
 
-func (ss *SqlSupplier) Reaction() store.ReactionStore {
+func (ss *SqlSupplier) Reaction() *SqlReactionStore {
 	return ss.stores.reaction
 }
 
-func (ss *SqlSupplier) Job() store.JobStore {
+func (ss *SqlSupplier) Job() *SqlJobStore {
 	return ss.stores.job
 }
 
-func (ss *SqlSupplier) UserAccessToken() store.UserAccessTokenStore {
+func (ss *SqlSupplier) UserAccessToken() *SqlUserAccessTokenStore {
 	return ss.stores.userAccessToken
 }
 
-func (ss *SqlSupplier) ChannelMemberHistory() store.ChannelMemberHistoryStore {
+func (ss *SqlSupplier) ChannelMemberHistory() *SqlChannelMemberHistoryStore {
 	return ss.stores.channelMemberHistory
 }
 
-func (ss *SqlSupplier) Plugin() store.PluginStore {
+func (ss *SqlSupplier) Plugin() *SqlPluginStore {
 	return ss.stores.plugin
 }
 
-func (ss *SqlSupplier) Thread() store.ThreadStore {
+func (ss *SqlSupplier) Thread() *SqlThreadStore {
 	return ss.stores.thread
 }
 
-func (ss *SqlSupplier) Role() store.RoleStore {
+func (ss *SqlSupplier) Role() *SqlRoleStore {
 	return ss.stores.role
 }
 
-func (ss *SqlSupplier) TermsOfService() store.TermsOfServiceStore {
+func (ss *SqlSupplier) TermsOfService() *SqlTermsOfServiceStore {
 	return ss.stores.TermsOfService
 }
 
-func (ss *SqlSupplier) ProductNotices() store.ProductNoticesStore {
+func (ss *SqlSupplier) ProductNotices() *SqlProductNoticesStore {
 	return ss.stores.productNotices
 }
 
-func (ss *SqlSupplier) UserTermsOfService() store.UserTermsOfServiceStore {
+func (ss *SqlSupplier) UserTermsOfService() *SqlUserTermsOfServiceStore {
 	return ss.stores.UserTermsOfService
 }
 
-func (ss *SqlSupplier) Scheme() store.SchemeStore {
+func (ss *SqlSupplier) Scheme() *SqlSchemeStore {
 	return ss.stores.scheme
 }
 
-func (ss *SqlSupplier) Group() store.GroupStore {
+func (ss *SqlSupplier) Group() *SqlGroupStore {
 	return ss.stores.group
 }
 
-func (ss *SqlSupplier) LinkMetadata() store.LinkMetadataStore {
+func (ss *SqlSupplier) LinkMetadata() *SqlLinkMetadataStore {
 	return ss.stores.linkMetadata
 }
 

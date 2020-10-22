@@ -356,7 +356,7 @@ func (s SqlChannelStore) ClearCaches() {
 	}
 }
 
-func newSqlChannelStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) store.ChannelStore {
+func newSqlChannelStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) *SqlChannelStore {
 	s := &SqlChannelStore{
 		SqlStore: sqlStore,
 		metrics:  metrics,

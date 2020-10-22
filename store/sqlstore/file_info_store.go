@@ -23,7 +23,7 @@ type SqlFileInfoStore struct {
 func (fs SqlFileInfoStore) ClearCaches() {
 }
 
-func newSqlFileInfoStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) store.FileInfoStore {
+func newSqlFileInfoStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) *SqlFileInfoStore {
 	s := &SqlFileInfoStore{
 		SqlStore: sqlStore,
 		metrics:  metrics,

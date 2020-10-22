@@ -82,7 +82,7 @@ func (role Role) ToModel() *model.Role {
 	}
 }
 
-func newSqlRoleStore(sqlStore SqlStore) store.RoleStore {
+func newSqlRoleStore(sqlStore SqlStore) *SqlRoleStore {
 	s := &SqlRoleStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

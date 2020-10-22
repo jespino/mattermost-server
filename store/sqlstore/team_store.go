@@ -201,7 +201,7 @@ func (db teamMemberWithSchemeRolesList) ToModel() []*model.TeamMember {
 	return tms
 }
 
-func newSqlTeamStore(sqlStore SqlStore) store.TeamStore {
+func newSqlTeamStore(sqlStore SqlStore) *SqlTeamStore {
 	s := &SqlTeamStore{
 		SqlStore: sqlStore,
 	}

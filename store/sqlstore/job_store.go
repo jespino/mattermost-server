@@ -20,7 +20,7 @@ type SqlJobStore struct {
 	SqlStore
 }
 
-func newSqlJobStore(sqlStore SqlStore) store.JobStore {
+func newSqlJobStore(sqlStore SqlStore) *SqlJobStore {
 	s := &SqlJobStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

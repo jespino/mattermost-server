@@ -19,7 +19,7 @@ type SqlCommandWebhookStore struct {
 	SqlStore
 }
 
-func newSqlCommandWebhookStore(sqlStore SqlStore) store.CommandWebhookStore {
+func newSqlCommandWebhookStore(sqlStore SqlStore) *SqlCommandWebhookStore {
 	s := &SqlCommandWebhookStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

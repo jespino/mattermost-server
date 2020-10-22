@@ -8,7 +8,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	"github.com/mattermost/gorp"
-	"github.com/mattermost/mattermost-server/v5/store"
 )
 
 /*type SqlStore struct {
@@ -72,36 +71,36 @@ type SqlStore interface {
 	Close()
 	LockToMaster()
 	UnlockFromMaster()
-	Team() store.TeamStore
-	Channel() store.ChannelStore
-	Post() store.PostStore
-	Thread() store.ThreadStore
-	User() store.UserStore
-	Bot() store.BotStore
-	Audit() store.AuditStore
-	ClusterDiscovery() store.ClusterDiscoveryStore
-	Compliance() store.ComplianceStore
-	Session() store.SessionStore
-	OAuth() store.OAuthStore
-	System() store.SystemStore
-	Webhook() store.WebhookStore
-	Command() store.CommandStore
-	CommandWebhook() store.CommandWebhookStore
-	Preference() store.PreferenceStore
-	License() store.LicenseStore
-	Token() store.TokenStore
-	Emoji() store.EmojiStore
-	Status() store.StatusStore
-	FileInfo() store.FileInfoStore
-	UploadSession() store.UploadSessionStore
-	Reaction() store.ReactionStore
-	Job() store.JobStore
-	Plugin() store.PluginStore
-	UserAccessToken() store.UserAccessTokenStore
-	Role() store.RoleStore
-	Scheme() store.SchemeStore
-	TermsOfService() store.TermsOfServiceStore
-	UserTermsOfService() store.UserTermsOfServiceStore
-	LinkMetadata() store.LinkMetadataStore
+	Team() *SqlTeamStore
+	Channel() *SqlChannelStore
+	Post() *SqlPostStore
+	Thread() *SqlThreadStore
+	User() *SqlUserStore
+	Bot() *SqlBotStore
+	Audit() *SqlAuditStore
+	ClusterDiscovery() *SqlClusterDiscoveryStore
+	Compliance() *SqlComplianceStore
+	Session() *SqlSessionStore
+	OAuth() *SqlOAuthStore
+	System() *SqlSystemStore
+	Webhook() *SqlWebhookStore
+	Command() *SqlCommandStore
+	CommandWebhook() *SqlCommandWebhookStore
+	Preference() *SqlPreferenceStore
+	License() *SqlLicenseStore
+	Token() *SqlTokenStore
+	Emoji() *SqlEmojiStore
+	Status() *SqlStatusStore
+	FileInfo() *SqlFileInfoStore
+	UploadSession() *SqlUploadSessionStore
+	Reaction() *SqlReactionStore
+	Job() *SqlJobStore
+	Plugin() *SqlPluginStore
+	UserAccessToken() *SqlUserAccessTokenStore
+	Role() *SqlRoleStore
+	Scheme() *SqlSchemeStore
+	TermsOfService() *SqlTermsOfServiceStore
+	UserTermsOfService() *SqlUserTermsOfServiceStore
+	LinkMetadata() *SqlLinkMetadataStore
 	getQueryBuilder() sq.StatementBuilderType
 }

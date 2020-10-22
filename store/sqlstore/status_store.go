@@ -19,7 +19,7 @@ type SqlStatusStore struct {
 	SqlStore
 }
 
-func newSqlStatusStore(sqlStore SqlStore) store.StatusStore {
+func newSqlStatusStore(sqlStore SqlStore) *SqlStatusStore {
 	s := &SqlStatusStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

@@ -22,7 +22,7 @@ type SqlWebhookStore struct {
 func (s SqlWebhookStore) ClearCaches() {
 }
 
-func newSqlWebhookStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) store.WebhookStore {
+func newSqlWebhookStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) *SqlWebhookStore {
 	s := &SqlWebhookStore{
 		SqlStore: sqlStore,
 		metrics:  metrics,

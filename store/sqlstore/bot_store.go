@@ -47,7 +47,7 @@ type SqlBotStore struct {
 }
 
 // newSqlBotStore creates an instance of SqlBotStore, registering the table schema in question.
-func newSqlBotStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) store.BotStore {
+func newSqlBotStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) *SqlBotStore {
 	us := &SqlBotStore{
 		SqlStore: sqlStore,
 		metrics:  metrics,

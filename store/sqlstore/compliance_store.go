@@ -17,7 +17,7 @@ type SqlComplianceStore struct {
 	SqlStore
 }
 
-func newSqlComplianceStore(sqlStore SqlStore) store.ComplianceStore {
+func newSqlComplianceStore(sqlStore SqlStore) *SqlComplianceStore {
 	s := &SqlComplianceStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

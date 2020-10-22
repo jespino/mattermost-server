@@ -43,7 +43,7 @@ func (us SqlUserStore) ClearCaches() {}
 
 func (us SqlUserStore) InvalidateProfileCacheForUser(userId string) {}
 
-func newSqlUserStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) store.UserStore {
+func newSqlUserStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) *SqlUserStore {
 	us := &SqlUserStore{
 		SqlStore: sqlStore,
 		metrics:  metrics,

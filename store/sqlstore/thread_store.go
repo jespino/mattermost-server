@@ -5,11 +5,12 @@ package sqlstore
 
 import (
 	"database/sql"
+	"time"
+
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/store"
 	"github.com/mattermost/mattermost-server/v5/utils"
 	"github.com/pkg/errors"
-	"time"
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -21,7 +22,7 @@ type SqlThreadStore struct {
 func (s *SqlThreadStore) ClearCaches() {
 }
 
-func newSqlThreadStore(sqlStore SqlStore) store.ThreadStore {
+func newSqlThreadStore(sqlStore SqlStore) *SqlThreadStore {
 	s := &SqlThreadStore{
 		SqlStore: sqlStore,
 	}

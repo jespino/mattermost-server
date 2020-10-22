@@ -18,7 +18,7 @@ type SqlLicenseStore struct {
 	SqlStore
 }
 
-func newSqlLicenseStore(sqlStore SqlStore) store.LicenseStore {
+func newSqlLicenseStore(sqlStore SqlStore) *SqlLicenseStore {
 	ls := &SqlLicenseStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

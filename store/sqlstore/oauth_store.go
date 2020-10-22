@@ -18,7 +18,7 @@ type SqlOAuthStore struct {
 	SqlStore
 }
 
-func newSqlOAuthStore(sqlStore SqlStore) store.OAuthStore {
+func newSqlOAuthStore(sqlStore SqlStore) *SqlOAuthStore {
 	as := &SqlOAuthStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

@@ -15,7 +15,7 @@ type SqlAuditStore struct {
 	SqlStore
 }
 
-func newSqlAuditStore(sqlStore SqlStore) store.AuditStore {
+func newSqlAuditStore(sqlStore SqlStore) *SqlAuditStore {
 	s := &SqlAuditStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

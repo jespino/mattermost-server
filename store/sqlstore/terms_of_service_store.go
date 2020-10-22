@@ -18,8 +18,8 @@ type SqlTermsOfServiceStore struct {
 	metrics einterfaces.MetricsInterface
 }
 
-func newSqlTermsOfServiceStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) store.TermsOfServiceStore {
-	s := SqlTermsOfServiceStore{sqlStore, metrics}
+func newSqlTermsOfServiceStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) *SqlTermsOfServiceStore {
+	s := &SqlTermsOfServiceStore{sqlStore, metrics}
 
 	for _, db := range sqlStore.GetAllConns() {
 		table := db.AddTableWithName(model.TermsOfService{}, "TermsOfService").SetKeys(false, "Id")
@@ -31,10 +31,10 @@ func newSqlTermsOfServiceStore(sqlStore SqlStore, metrics einterfaces.MetricsInt
 	return s
 }
 
-func (s SqlTermsOfServiceStore) createIndexesIfNotExists() {
+func (s *SqlTermsOfServiceStore) createIndexesIfNotExists() {
 }
 
-func (s SqlTermsOfServiceStore) Save(termsOfService *model.TermsOfService) (*model.TermsOfService, error) {
+func (s *SqlTermsOfServiceStore) Save(termsOfService *model.TermsOfService) (*model.TermsOfService, error) {
 	if len(termsOfService.Id) > 0 {
 		return nil, store.NewErrInvalidInput("TermsOfService", "Id", termsOfService.Id)
 	}
@@ -52,7 +52,7 @@ func (s SqlTermsOfServiceStore) Save(termsOfService *model.TermsOfService) (*mod
 	return termsOfService, nil
 }
 
-func (s SqlTermsOfServiceStore) GetLatest(allowFromCache bool) (*model.TermsOfService, error) {
+func (s *SqlTermsOfServiceStore) GetLatest(allowFromCache bool) (*model.TermsOfService, error) {
 	var termsOfService *model.TermsOfService
 
 	err := s.GetReplica().SelectOne(&termsOfService, "SELECT * FROM TermsOfService ORDER BY CreateAt DESC LIMIT 1")
@@ -66,7 +66,7 @@ func (s SqlTermsOfServiceStore) GetLatest(allowFromCache bool) (*model.TermsOfSe
 	return termsOfService, nil
 }
 
-func (s SqlTermsOfServiceStore) Get(id string, allowFromCache bool) (*model.TermsOfService, error) {
+func (s *SqlTermsOfServiceStore) Get(id string, allowFromCache bool) (*model.TermsOfService, error) {
 	obj, err := s.GetReplica().Get(model.TermsOfService{}, id)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not find TermsOfService with id=%s", id)

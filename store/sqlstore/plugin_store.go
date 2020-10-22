@@ -23,7 +23,7 @@ type SqlPluginStore struct {
 	SqlStore
 }
 
-func newSqlPluginStore(sqlStore SqlStore) store.PluginStore {
+func newSqlPluginStore(sqlStore SqlStore) *SqlPluginStore {
 	s := &SqlPluginStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

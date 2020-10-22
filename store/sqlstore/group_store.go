@@ -52,7 +52,7 @@ type SqlGroupStore struct {
 	SqlStore
 }
 
-func newSqlGroupStore(sqlStore SqlStore) store.GroupStore {
+func newSqlGroupStore(sqlStore SqlStore) *SqlGroupStore {
 	s := &SqlGroupStore{SqlStore: sqlStore}
 	for _, db := range sqlStore.GetAllConns() {
 		groups := db.AddTableWithName(model.Group{}, "UserGroups").SetKeys(false, "Id")

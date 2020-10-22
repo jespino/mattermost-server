@@ -60,7 +60,7 @@ func postToSlice(post *model.Post) []interface{} {
 	}
 }
 
-func newSqlPostStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) store.PostStore {
+func newSqlPostStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface) *SqlPostStore {
 	s := &SqlPostStore{
 		SqlStore:          sqlStore,
 		metrics:           metrics,

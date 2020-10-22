@@ -18,7 +18,7 @@ type SqlUserAccessTokenStore struct {
 	SqlStore
 }
 
-func newSqlUserAccessTokenStore(sqlStore SqlStore) store.UserAccessTokenStore {
+func newSqlUserAccessTokenStore(sqlStore SqlStore) *SqlUserAccessTokenStore {
 	s := &SqlUserAccessTokenStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

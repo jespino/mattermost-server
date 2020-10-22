@@ -18,7 +18,7 @@ type SqlTokenStore struct {
 	SqlStore
 }
 
-func newSqlTokenStore(sqlStore SqlStore) store.TokenStore {
+func newSqlTokenStore(sqlStore SqlStore) *SqlTokenStore {
 	s := &SqlTokenStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

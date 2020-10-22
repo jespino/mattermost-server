@@ -17,7 +17,7 @@ type SqlLinkMetadataStore struct {
 	SqlStore
 }
 
-func newSqlLinkMetadataStore(sqlStore SqlStore) store.LinkMetadataStore {
+func newSqlLinkMetadataStore(sqlStore SqlStore) *SqlLinkMetadataStore {
 	s := &SqlLinkMetadataStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

@@ -11,7 +11,6 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/store"
 
 	"github.com/pkg/errors"
 )
@@ -20,7 +19,7 @@ type SqlChannelMemberHistoryStore struct {
 	SqlStore
 }
 
-func newSqlChannelMemberHistoryStore(sqlStore SqlStore) store.ChannelMemberHistoryStore {
+func newSqlChannelMemberHistoryStore(sqlStore SqlStore) *SqlChannelMemberHistoryStore {
 	s := &SqlChannelMemberHistoryStore{
 		SqlStore: sqlStore,
 	}

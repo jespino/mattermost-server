@@ -18,7 +18,7 @@ type SqlPreferenceStore struct {
 	SqlStore
 }
 
-func newSqlPreferenceStore(sqlStore SqlStore) store.PreferenceStore {
+func newSqlPreferenceStore(sqlStore SqlStore) *SqlPreferenceStore {
 	s := &SqlPreferenceStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

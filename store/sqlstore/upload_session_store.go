@@ -18,7 +18,7 @@ type SqlUploadSessionStore struct {
 	SqlStore
 }
 
-func newSqlUploadSessionStore(sqlStore SqlStore) store.UploadSessionStore {
+func newSqlUploadSessionStore(sqlStore SqlStore) *SqlUploadSessionStore {
 	s := &SqlUploadSessionStore{
 		SqlStore: sqlStore,
 	}

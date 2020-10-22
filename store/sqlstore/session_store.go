@@ -23,7 +23,7 @@ type SqlSessionStore struct {
 	SqlStore
 }
 
-func newSqlSessionStore(sqlStore SqlStore) store.SessionStore {
+func newSqlSessionStore(sqlStore SqlStore) *SqlSessionStore {
 	us := &SqlSessionStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

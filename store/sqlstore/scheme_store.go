@@ -19,7 +19,7 @@ type SqlSchemeStore struct {
 	SqlStore
 }
 
-func newSqlSchemeStore(sqlStore SqlStore) store.SchemeStore {
+func newSqlSchemeStore(sqlStore SqlStore) *SqlSchemeStore {
 	s := &SqlSchemeStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {
@@ -121,7 +121,7 @@ func (s *SqlSchemeStore) createScheme(scheme *model.Scheme, transaction *gorp.Tr
 			SchemeManaged: true,
 		}
 
-		savedRole, err := s.SqlStore.Role().(*SqlRoleStore).createRole(teamAdminRole, transaction)
+		savedRole, err := s.SqlStore.Role().createRole(teamAdminRole, transaction)
 		if err != nil {
 			return nil, err
 		}
@@ -135,7 +135,7 @@ func (s *SqlSchemeStore) createScheme(scheme *model.Scheme, transaction *gorp.Tr
 			SchemeManaged: true,
 		}
 
-		savedRole, err = s.SqlStore.Role().(*SqlRoleStore).createRole(teamUserRole, transaction)
+		savedRole, err = s.SqlStore.Role().createRole(teamUserRole, transaction)
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +149,7 @@ func (s *SqlSchemeStore) createScheme(scheme *model.Scheme, transaction *gorp.Tr
 			SchemeManaged: true,
 		}
 
-		savedRole, err = s.SqlStore.Role().(*SqlRoleStore).createRole(teamGuestRole, transaction)
+		savedRole, err = s.SqlStore.Role().createRole(teamGuestRole, transaction)
 		if err != nil {
 			return nil, err
 		}
@@ -169,7 +169,7 @@ func (s *SqlSchemeStore) createScheme(scheme *model.Scheme, transaction *gorp.Tr
 			channelAdminRole.Permissions = []string{}
 		}
 
-		savedRole, err := s.SqlStore.Role().(*SqlRoleStore).createRole(channelAdminRole, transaction)
+		savedRole, err := s.SqlStore.Role().createRole(channelAdminRole, transaction)
 		if err != nil {
 			return nil, err
 		}
@@ -187,7 +187,7 @@ func (s *SqlSchemeStore) createScheme(scheme *model.Scheme, transaction *gorp.Tr
 			channelUserRole.Permissions = filterModerated(channelUserRole.Permissions)
 		}
 
-		savedRole, err = s.SqlStore.Role().(*SqlRoleStore).createRole(channelUserRole, transaction)
+		savedRole, err = s.SqlStore.Role().createRole(channelUserRole, transaction)
 		if err != nil {
 			return nil, err
 		}
@@ -205,7 +205,7 @@ func (s *SqlSchemeStore) createScheme(scheme *model.Scheme, transaction *gorp.Tr
 			channelGuestRole.Permissions = filterModerated(channelGuestRole.Permissions)
 		}
 
-		savedRole, err = s.SqlStore.Role().(*SqlRoleStore).createRole(channelGuestRole, transaction)
+		savedRole, err = s.SqlStore.Role().createRole(channelGuestRole, transaction)
 		if err != nil {
 			return nil, err
 		}
