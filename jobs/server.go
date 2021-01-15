@@ -27,6 +27,7 @@ type JobServer struct {
 	BleveIndexer            tjobs.IndexerJobInterface
 	ExpiryNotify            tjobs.ExpiryNotifyJobInterface
 	ProductNotices          tjobs.ProductNoticesJobInterface
+	FileContentExtract      tjobs.FileContentExtractJobInterface
 	ActiveUsers             tjobs.ActiveUsersJobInterface
 	ImportProcess           tjobs.ImportProcessInterface
 	Cloud                   ejobs.CloudJobInterface

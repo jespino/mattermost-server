@@ -23,5 +23,8 @@ import (
 	_ "github.com/mattermost/mattermost-server/v5/jobs/product_notices"
 
 	// This is a placeholder so this package can be imported in Team Edition when it will be otherwise empty.
+	_ "github.com/mattermost/mattermost-server/v5/jobs/file_content_extract"
+
+	// This is a placeholder so this package can be imported in Team Edition when it will be otherwise empty.
 	_ "github.com/mattermost/mattermost-server/v5/jobs/import_process"
 )

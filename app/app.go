@@ -116,6 +116,9 @@ func (a *App) initJobs() {
 	if productNoticesJobInterface != nil {
 		a.srv.Jobs.ProductNotices = productNoticesJobInterface(a)
 	}
+	if fileContentExtractJobInterface != nil {
+		a.srv.Jobs.FileContentExtract = fileContentExtractJobInterface(a)
+	}
 	if jobsImportProcessInterface != nil {
 		a.srv.Jobs.ImportProcess = jobsImportProcessInterface(a)
 	}

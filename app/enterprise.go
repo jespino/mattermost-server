@@ -120,6 +120,12 @@ func RegisterProductNoticesJobInterface(f func(*App) tjobs.ProductNoticesJobInte
 	productNoticesJobInterface = f
 }
 
+var fileContentExtractJobInterface func(*App) tjobs.FileContentExtractJobInterface
+
+func RegisterFileContentExtractJobInterface(f func(*App) tjobs.FileContentExtractJobInterface) {
+	fileContentExtractJobInterface = f
+}
+
 var ldapInterface func(*App) einterfaces.LdapInterface
 
 func RegisterLdapInterface(f func(*App) einterfaces.LdapInterface) {

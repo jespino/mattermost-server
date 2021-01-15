@@ -69,8 +69,13 @@ func (srv *JobServer) InitSchedulers() *Schedulers {
 	if activeUsersInterface := srv.ActiveUsers; activeUsersInterface != nil {
 		schedulers.schedulers = append(schedulers.schedulers, activeUsersInterface.MakeScheduler())
 	}
+
 	if productNoticesInterface := srv.ProductNotices; productNoticesInterface != nil {
 		schedulers.schedulers = append(schedulers.schedulers, productNoticesInterface.MakeScheduler())
+	}
+
+	if fileContentExtractInterface := srv.FileContentExtract; fileContentExtractInterface != nil {
+		schedulers.schedulers = append(schedulers.schedulers, fileContentExtractInterface.MakeScheduler())
 	}
 
 	if cloudInterface := srv.Cloud; cloudInterface != nil {
