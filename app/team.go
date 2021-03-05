@@ -354,7 +354,12 @@ func (a *App) GetSchemeRolesForTeam(teamId string) (string, string, string, *mod
 }
 
 func (a *App) UpdateTeamMemberRoles(teamId string, userId string, newRoles string) (*model.TeamMember, *model.AppError) {
-	member, nErr := a.Srv().Store.Team().GetMember(teamId, userId)
+	team, appErr := a.GetTeam(teamId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	member, nErr := a.Srv().Store.Team().GetMember(team.Id, team.SchemeId, userId)
 	if nErr != nil {
 		var nfErr *store.ErrNotFound
 		switch {
@@ -700,7 +705,7 @@ func (a *App) joinUserToTeam(team *model.Team, user *model.User) (*model.TeamMem
 		tm.SchemeAdmin = true
 	}
 
-	rtm, err := a.Srv().Store.Team().GetMember(team.Id, user.Id)
+	rtm, err := a.Srv().Store.Team().GetMember(team.Id, team.SchemeId, user.Id)
 	if err != nil {
 		// Membership appears to be missing. Lets try to add.
 		tmr, nErr := a.Srv().Store.Team().SaveMember(tm, *a.Config().TeamSettings.MaxUsersPerTeam)
@@ -997,7 +1002,12 @@ func (a *App) GetTeamsForUser(userId string) ([]*model.Team, *model.AppError) {
 }
 
 func (a *App) GetTeamMember(teamId, userId string) (*model.TeamMember, *model.AppError) {
-	teamMember, err := a.Srv().Store.Team().GetMember(teamId, userId)
+	team, appErr := a.GetTeam(teamId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	teamMember, err := a.Srv().Store.Team().GetMember(team.Id, team.SchemeId, userId)
 	if err != nil {
 		var nfErr *store.ErrNotFound
 		switch {
@@ -1030,7 +1040,12 @@ func (a *App) GetTeamMembersForUserWithPagination(userId string, page, perPage i
 }
 
 func (a *App) GetTeamMembers(teamId string, offset int, limit int, teamMembersGetOptions *model.TeamMembersGetOptions) ([]*model.TeamMember, *model.AppError) {
-	teamMembers, err := a.Srv().Store.Team().GetMembers(teamId, offset, limit, teamMembersGetOptions)
+	team, appErr := a.GetTeam(teamId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	teamMembers, err := a.Srv().Store.Team().GetMembers(team.Id, team.SchemeId, offset, limit, teamMembersGetOptions)
 	if err != nil {
 		return nil, model.NewAppError("GetTeamMembers", "app.team.get_members.app_error", nil, err.Error(), http.StatusInternalServerError)
 	}
@@ -1039,7 +1054,12 @@ func (a *App) GetTeamMembers(teamId string, offset int, limit int, teamMembersGe
 }
 
 func (a *App) GetTeamMembersByIds(teamId string, userIds []string, restrictions *model.ViewUsersRestrictions) ([]*model.TeamMember, *model.AppError) {
-	teamMembers, err := a.Srv().Store.Team().GetMembersByIds(teamId, userIds, restrictions)
+	team, appErr := a.GetTeam(teamId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	teamMembers, err := a.Srv().Store.Team().GetMembersByIds(team.Id, team.SchemeId, userIds, restrictions)
 	if err != nil {
 		return nil, model.NewAppError("GetTeamMembersByIds", "app.team.get_members_by_ids.app_error", nil, err.Error(), http.StatusInternalServerError)
 	}
@@ -2018,8 +2038,11 @@ func (a *App) ClearTeamMembersCache(teamID string) {
 	perPage := 100
 	page := 0
 
+	team, _ := a.GetTeam(teamID)
+	return
+
 	for {
-		teamMembers, err := a.Srv().Store.Team().GetMembers(teamID, page*perPage, perPage, nil)
+		teamMembers, err := a.Srv().Store.Team().GetMembers(team.Id, team.SchemeId, page*perPage, perPage, nil)
 		if err != nil {
 			a.Log().Warn("error clearing cache for team members", mlog.String("team_id", teamID), mlog.String("err", err.Error()))
 			break

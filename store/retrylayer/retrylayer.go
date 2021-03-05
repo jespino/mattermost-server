@@ -7612,11 +7612,11 @@ func (s *RetryLayerTeamStore) GetChannelUnreadsForTeam(teamId string, userId str
 
 }
 
-func (s *RetryLayerTeamStore) GetMember(teamId string, userId string) (*model.TeamMember, error) {
+func (s *RetryLayerTeamStore) GetMember(teamId string, schemeId *string, userId string) (*model.TeamMember, error) {
 
 	tries := 0
 	for {
-		result, err := s.TeamStore.GetMember(teamId, userId)
+		result, err := s.TeamStore.GetMember(teamId, schemeId, userId)
 		if err == nil {
 			return result, nil
 		}
@@ -7632,11 +7632,11 @@ func (s *RetryLayerTeamStore) GetMember(teamId string, userId string) (*model.Te
 
 }
 
-func (s *RetryLayerTeamStore) GetMembers(teamId string, offset int, limit int, teamMembersGetOptions *model.TeamMembersGetOptions) ([]*model.TeamMember, error) {
+func (s *RetryLayerTeamStore) GetMembers(teamId string, schemeId *string, offset int, limit int, teamMembersGetOptions *model.TeamMembersGetOptions) ([]*model.TeamMember, error) {
 
 	tries := 0
 	for {
-		result, err := s.TeamStore.GetMembers(teamId, offset, limit, teamMembersGetOptions)
+		result, err := s.TeamStore.GetMembers(teamId, schemeId, offset, limit, teamMembersGetOptions)
 		if err == nil {
 			return result, nil
 		}
@@ -7652,11 +7652,11 @@ func (s *RetryLayerTeamStore) GetMembers(teamId string, offset int, limit int, t
 
 }
 
-func (s *RetryLayerTeamStore) GetMembersByIds(teamId string, userIds []string, restrictions *model.ViewUsersRestrictions) ([]*model.TeamMember, error) {
+func (s *RetryLayerTeamStore) GetMembersByIds(teamId string, schemeId *string, userIds []string, restrictions *model.ViewUsersRestrictions) ([]*model.TeamMember, error) {
 
 	tries := 0
 	for {
-		result, err := s.TeamStore.GetMembersByIds(teamId, userIds, restrictions)
+		result, err := s.TeamStore.GetMembersByIds(teamId, schemeId, userIds, restrictions)
 		if err == nil {
 			return result, nil
 		}

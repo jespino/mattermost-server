@@ -6345,10 +6345,10 @@ func (s *TimerLayerTeamStore) GetChannelUnreadsForTeam(teamId string, userId str
 	return result, err
 }
 
-func (s *TimerLayerTeamStore) GetMember(teamId string, userId string) (*model.TeamMember, error) {
+func (s *TimerLayerTeamStore) GetMember(teamId string, schemeId *string, userId string) (*model.TeamMember, error) {
 	start := timemodule.Now()
 
-	result, err := s.TeamStore.GetMember(teamId, userId)
+	result, err := s.TeamStore.GetMember(teamId, schemeId, userId)
 
 	elapsed := float64(timemodule.Since(start)) / float64(timemodule.Second)
 	if s.Root.Metrics != nil {
@@ -6361,10 +6361,10 @@ func (s *TimerLayerTeamStore) GetMember(teamId string, userId string) (*model.Te
 	return result, err
 }
 
-func (s *TimerLayerTeamStore) GetMembers(teamId string, offset int, limit int, teamMembersGetOptions *model.TeamMembersGetOptions) ([]*model.TeamMember, error) {
+func (s *TimerLayerTeamStore) GetMembers(teamId string, schemeId *string, offset int, limit int, teamMembersGetOptions *model.TeamMembersGetOptions) ([]*model.TeamMember, error) {
 	start := timemodule.Now()
 
-	result, err := s.TeamStore.GetMembers(teamId, offset, limit, teamMembersGetOptions)
+	result, err := s.TeamStore.GetMembers(teamId, schemeId, offset, limit, teamMembersGetOptions)
 
 	elapsed := float64(timemodule.Since(start)) / float64(timemodule.Second)
 	if s.Root.Metrics != nil {
@@ -6377,10 +6377,10 @@ func (s *TimerLayerTeamStore) GetMembers(teamId string, offset int, limit int, t
 	return result, err
 }
 
-func (s *TimerLayerTeamStore) GetMembersByIds(teamId string, userIds []string, restrictions *model.ViewUsersRestrictions) ([]*model.TeamMember, error) {
+func (s *TimerLayerTeamStore) GetMembersByIds(teamId string, schemeId *string, userIds []string, restrictions *model.ViewUsersRestrictions) ([]*model.TeamMember, error) {
 	start := timemodule.Now()
 
-	result, err := s.TeamStore.GetMembersByIds(teamId, userIds, restrictions)
+	result, err := s.TeamStore.GetMembersByIds(teamId, schemeId, userIds, restrictions)
 
 	elapsed := float64(timemodule.Since(start)) / float64(timemodule.Second)
 	if s.Root.Metrics != nil {

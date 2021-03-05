@@ -462,13 +462,13 @@ func (_m *TeamStore) GetChannelUnreadsForTeam(teamId string, userId string) ([]*
 	return r0, r1
 }
 
-// GetMember provides a mock function with given fields: teamId, userId
-func (_m *TeamStore) GetMember(teamId string, userId string) (*model.TeamMember, error) {
-	ret := _m.Called(teamId, userId)
+// GetMember provides a mock function with given fields: teamId, schemeId, userId
+func (_m *TeamStore) GetMember(teamId string, schemeId *string, userId string) (*model.TeamMember, error) {
+	ret := _m.Called(teamId, schemeId, userId)
 
 	var r0 *model.TeamMember
-	if rf, ok := ret.Get(0).(func(string, string) *model.TeamMember); ok {
-		r0 = rf(teamId, userId)
+	if rf, ok := ret.Get(0).(func(string, *string, string) *model.TeamMember); ok {
+		r0 = rf(teamId, schemeId, userId)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.TeamMember)
@@ -476,8 +476,8 @@ func (_m *TeamStore) GetMember(teamId string, userId string) (*model.TeamMember,
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(teamId, userId)
+	if rf, ok := ret.Get(1).(func(string, *string, string) error); ok {
+		r1 = rf(teamId, schemeId, userId)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -485,13 +485,13 @@ func (_m *TeamStore) GetMember(teamId string, userId string) (*model.TeamMember,
 	return r0, r1
 }
 
-// GetMembers provides a mock function with given fields: teamId, offset, limit, teamMembersGetOptions
-func (_m *TeamStore) GetMembers(teamId string, offset int, limit int, teamMembersGetOptions *model.TeamMembersGetOptions) ([]*model.TeamMember, error) {
-	ret := _m.Called(teamId, offset, limit, teamMembersGetOptions)
+// GetMembers provides a mock function with given fields: teamId, schemeId, offset, limit, teamMembersGetOptions
+func (_m *TeamStore) GetMembers(teamId string, schemeId *string, offset int, limit int, teamMembersGetOptions *model.TeamMembersGetOptions) ([]*model.TeamMember, error) {
+	ret := _m.Called(teamId, schemeId, offset, limit, teamMembersGetOptions)
 
 	var r0 []*model.TeamMember
-	if rf, ok := ret.Get(0).(func(string, int, int, *model.TeamMembersGetOptions) []*model.TeamMember); ok {
-		r0 = rf(teamId, offset, limit, teamMembersGetOptions)
+	if rf, ok := ret.Get(0).(func(string, *string, int, int, *model.TeamMembersGetOptions) []*model.TeamMember); ok {
+		r0 = rf(teamId, schemeId, offset, limit, teamMembersGetOptions)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*model.TeamMember)
@@ -499,8 +499,8 @@ func (_m *TeamStore) GetMembers(teamId string, offset int, limit int, teamMember
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, int, int, *model.TeamMembersGetOptions) error); ok {
-		r1 = rf(teamId, offset, limit, teamMembersGetOptions)
+	if rf, ok := ret.Get(1).(func(string, *string, int, int, *model.TeamMembersGetOptions) error); ok {
+		r1 = rf(teamId, schemeId, offset, limit, teamMembersGetOptions)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -508,13 +508,13 @@ func (_m *TeamStore) GetMembers(teamId string, offset int, limit int, teamMember
 	return r0, r1
 }
 
-// GetMembersByIds provides a mock function with given fields: teamId, userIds, restrictions
-func (_m *TeamStore) GetMembersByIds(teamId string, userIds []string, restrictions *model.ViewUsersRestrictions) ([]*model.TeamMember, error) {
-	ret := _m.Called(teamId, userIds, restrictions)
+// GetMembersByIds provides a mock function with given fields: teamId, schemeId, userIds, restrictions
+func (_m *TeamStore) GetMembersByIds(teamId string, schemeId *string, userIds []string, restrictions *model.ViewUsersRestrictions) ([]*model.TeamMember, error) {
+	ret := _m.Called(teamId, schemeId, userIds, restrictions)
 
 	var r0 []*model.TeamMember
-	if rf, ok := ret.Get(0).(func(string, []string, *model.ViewUsersRestrictions) []*model.TeamMember); ok {
-		r0 = rf(teamId, userIds, restrictions)
+	if rf, ok := ret.Get(0).(func(string, *string, []string, *model.ViewUsersRestrictions) []*model.TeamMember); ok {
+		r0 = rf(teamId, schemeId, userIds, restrictions)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*model.TeamMember)
@@ -522,8 +522,8 @@ func (_m *TeamStore) GetMembersByIds(teamId string, userIds []string, restrictio
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, []string, *model.ViewUsersRestrictions) error); ok {
-		r1 = rf(teamId, userIds, restrictions)
+	if rf, ok := ret.Get(1).(func(string, *string, []string, *model.ViewUsersRestrictions) error); ok {
+		r1 = rf(teamId, schemeId, userIds, restrictions)
 	} else {
 		r1 = ret.Error(1)
 	}

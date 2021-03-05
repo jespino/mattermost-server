@@ -431,6 +431,9 @@ func (s SqlChannelStore) createIndexesIfNotExists() {
 		s.CreateIndexIfNotExists("idx_publicchannels_name_lower", "PublicChannels", "lower(Name)")
 		s.CreateIndexIfNotExists("idx_publicchannels_displayname_lower", "PublicChannels", "lower(DisplayName)")
 	}
+	if s.DriverName() == model.DATABASE_DRIVER_COCKROACH {
+		s.CreateIndexIfNotExists("idx_sidebar_categories", "SidebarCategories", "Type, UserId, TeamId")
+	}
 	s.CreateFullTextIndexIfNotExists("idx_publicchannels_search_txt", "PublicChannels", "Name, DisplayName, Purpose")
 	s.CreateIndexIfNotExists("idx_channels_scheme_id", "Channels", "SchemeId")
 }

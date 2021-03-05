@@ -781,6 +781,28 @@ func (s SqlTeamStore) getTeamMembersWithSchemeSelectQuery() sq.SelectBuilder {
 		LeftJoin("Schemes TeamScheme ON Teams.SchemeId = TeamScheme.Id")
 }
 
+func (s SqlTeamStore) getTeamMembersWithSchemeSelectQueryWithSchemeId(schemeId *string) sq.SelectBuilder {
+	if schemeId == nil {
+		return s.getQueryBuilder().
+			Select(
+				"TeamMembers.*",
+				"NULL TeamSchemeDefaultGuestRole",
+				"NULL TeamSchemeDefaultUserRole",
+				"NULL TeamSchemeDefaultAdminRole",
+			).
+			From("TeamMembers")
+	}
+	return s.getQueryBuilder().
+		Select(
+			"TeamMembers.*",
+			"TeamScheme.DefaultTeamGuestRole TeamSchemeDefaultGuestRole",
+			"TeamScheme.DefaultTeamUserRole TeamSchemeDefaultUserRole",
+			"TeamScheme.DefaultTeamAdminRole TeamSchemeDefaultAdminRole",
+		).
+		From("TeamMembers").
+		LeftJoin("Schemes TeamScheme ON TeamScheme.Id = ?", schemeId)
+}
+
 func (s SqlTeamStore) SaveMultipleMembers(members []*model.TeamMember, maxUsersPerTeam int) ([]*model.TeamMember, error) {
 	transaction, err := s.GetMaster().Begin()
 	if err != nil {
@@ -1012,8 +1034,8 @@ func (s SqlTeamStore) UpdateMember(member *model.TeamMember) (*model.TeamMember,
 }
 
 // GetMember returns a single member of the team that matches the teamId and userId provided as parameters.
-func (s SqlTeamStore) GetMember(teamId string, userId string) (*model.TeamMember, error) {
-	query := s.getTeamMembersWithSchemeSelectQuery().
+func (s SqlTeamStore) GetMember(teamId string, teamSchemeId *string, userId string) (*model.TeamMember, error) {
+	query := s.getTeamMembersWithSchemeSelectQueryWithSchemeId(teamSchemeId).
 		Where(sq.Eq{"TeamMembers.TeamId": teamId}).
 		Where(sq.Eq{"TeamMembers.UserId": userId})
 
@@ -1041,8 +1063,8 @@ func (s SqlTeamStore) GetMember(teamId string, userId string) (*model.TeamMember
 // 2. Sort through USERNAME [ if provided, which otherwise defaults to ID ] and exclude deleted members.
 // 3. Return all the members but, exclude deleted ones.
 // 4. Apply ViewUsersRestrictions to restrict what is visible to the user.
-func (s SqlTeamStore) GetMembers(teamId string, offset int, limit int, teamMembersGetOptions *model.TeamMembersGetOptions) ([]*model.TeamMember, error) {
-	query := s.getTeamMembersWithSchemeSelectQuery().
+func (s SqlTeamStore) GetMembers(teamId string, teamSchemeId *string, offset int, limit int, teamMembersGetOptions *model.TeamMembersGetOptions) ([]*model.TeamMember, error) {
+	query := s.getTeamMembersWithSchemeSelectQueryWithSchemeId(teamSchemeId).
 		Where(sq.Eq{"TeamMembers.TeamId": teamId}).
 		Where(sq.Eq{"TeamMembers.DeleteAt": 0}).
 		Limit(uint64(limit)).
@@ -1132,13 +1154,13 @@ func (s SqlTeamStore) GetActiveMemberCount(teamId string, restrictions *model.Vi
 
 // GetMembersByIds returns a list of members from the database that matches the teamId and the list of userIds passed as parameters.
 // Expects a restrictions parameter of type ViewUsersRestrictions that defines a set of Teams and Channels that are visible to the caller of the query, and applies restrictions with a filtered result.
-func (s SqlTeamStore) GetMembersByIds(teamId string, userIds []string, restrictions *model.ViewUsersRestrictions) ([]*model.TeamMember, error) {
+func (s SqlTeamStore) GetMembersByIds(teamId string, teamSchemeId *string, userIds []string, restrictions *model.ViewUsersRestrictions) ([]*model.TeamMember, error) {
 	if len(userIds) == 0 {
 		return nil, errors.New("invalid list of user ids")
 	}
 
 	// TODO: Migrate this to use CTE for cockroach
-	query := s.getTeamMembersWithSchemeSelectQuery().
+	query := s.getTeamMembersWithSchemeSelectQueryWithSchemeId(teamSchemeId).
 		Where(sq.Eq{"TeamMembers.TeamId": teamId}).
 		Where(sq.Eq{"TeamMembers.UserId": userIds}).
 		Where(sq.Eq{"TeamMembers.DeleteAt": 0})
