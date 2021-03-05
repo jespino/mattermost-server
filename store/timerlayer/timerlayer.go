@@ -1095,10 +1095,10 @@ func (s *TimerLayerChannelStore) GetGuestCount(channelId string, allowFromCache 
 	return result, err
 }
 
-func (s *TimerLayerChannelStore) GetMember(channelId string, userId string) (*model.ChannelMember, error) {
+func (s *TimerLayerChannelStore) GetMember(channelId string, teamSchemeId *string, channelSchemeId *string, userId string) (*model.ChannelMember, error) {
 	start := timemodule.Now()
 
-	result, err := s.ChannelStore.GetMember(channelId, userId)
+	result, err := s.ChannelStore.GetMember(channelId, teamSchemeId, channelSchemeId, userId)
 
 	elapsed := float64(timemodule.Since(start)) / float64(timemodule.Second)
 	if s.Root.Metrics != nil {
@@ -1175,10 +1175,10 @@ func (s *TimerLayerChannelStore) GetMemberForPost(postId string, userId string) 
 	return result, err
 }
 
-func (s *TimerLayerChannelStore) GetMembers(channelId string, offset int, limit int) (*model.ChannelMembers, error) {
+func (s *TimerLayerChannelStore) GetMembers(channelId string, teamSchemeId *string, channelSchemeId *string, offset int, limit int) (*model.ChannelMembers, error) {
 	start := timemodule.Now()
 
-	result, err := s.ChannelStore.GetMembers(channelId, offset, limit)
+	result, err := s.ChannelStore.GetMembers(channelId, teamSchemeId, channelSchemeId, offset, limit)
 
 	elapsed := float64(timemodule.Since(start)) / float64(timemodule.Second)
 	if s.Root.Metrics != nil {

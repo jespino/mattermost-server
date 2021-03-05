@@ -201,7 +201,7 @@ func testChannelStoreSaveDirectChannel(t *testing.T, ss store.Store, s SqlStore)
 	_, nErr = ss.Channel().SaveDirectChannel(&o1, &m1, &m2)
 	require.Nil(t, nErr, "couldn't save direct channel", nErr)
 
-	members, nErr := ss.Channel().GetMembers(o1.Id, 0, 100)
+	members, nErr := ss.Channel().GetMembers(o1.Id, nil, nil, 0, 100)
 	require.Nil(t, nErr)
 	require.Len(t, *members, 2, "should have saved 2 members")
 
@@ -237,7 +237,7 @@ func testChannelStoreSaveDirectChannel(t *testing.T, ss store.Store, s SqlStore)
 	_, nErr = ss.Channel().SaveDirectChannel(&o1, &m1, &m1)
 	require.Nil(t, nErr, "couldn't save direct channel", nErr)
 
-	members, nErr = ss.Channel().GetMembers(o1.Id, 0, 100)
+	members, nErr = ss.Channel().GetMembers(o1.Id, nil, nil, 0, 100)
 	require.Nil(t, nErr)
 	require.Len(t, *members, 1, "should have saved just 1 member")
 
@@ -269,7 +269,7 @@ func testChannelStoreCreateDirectChannel(t *testing.T, ss store.Store) {
 		ss.Channel().PermanentDelete(c1.Id)
 	}()
 
-	members, nErr := ss.Channel().GetMembers(c1.Id, 0, 100)
+	members, nErr := ss.Channel().GetMembers(c1.Id, nil, nil, 0, 100)
 	require.Nil(t, nErr)
 	require.Len(t, *members, 2, "should have saved 2 members")
 }
@@ -887,7 +887,7 @@ func testChannelMemberStore(t *testing.T, ss store.Store) {
 	c1t3, _ := ss.Channel().Get(c1.Id, false)
 	assert.EqualValues(t, 0, c1t3.ExtraUpdateAt, "ExtraUpdateAt should be 0")
 
-	member, _ := ss.Channel().GetMember(o1.ChannelId, o1.UserId)
+	member, _ := ss.Channel().GetMember(o1.ChannelId, nil, nil, o1.UserId)
 	require.Equal(t, o1.ChannelId, member.ChannelId, "should have go member")
 
 	_, nErr = ss.Channel().SaveMember(&o1)
@@ -4166,13 +4166,13 @@ func testChannelStoreUpdateLastViewedAt(t *testing.T, ss store.Store) {
 	require.Nil(t, err, "failed to update ", err)
 	require.Equal(t, o2.LastPostAt, times[o2.Id], "last viewed at time incorrect")
 
-	rm1, err := ss.Channel().GetMember(m1.ChannelId, m1.UserId)
+	rm1, err := ss.Channel().GetMember(m1.ChannelId, nil, nil, m1.UserId)
 	assert.Nil(t, err)
 	assert.Equal(t, o1.LastPostAt, rm1.LastViewedAt)
 	assert.Equal(t, o1.LastPostAt, rm1.LastUpdateAt)
 	assert.Equal(t, o1.TotalMsgCount, rm1.MsgCount)
 
-	rm2, err := ss.Channel().GetMember(m2.ChannelId, m2.UserId)
+	rm2, err := ss.Channel().GetMember(m2.ChannelId, nil, nil, m2.UserId)
 	assert.Nil(t, err)
 	assert.Equal(t, o2.LastPostAt, rm2.LastViewedAt)
 	assert.Equal(t, o2.LastPostAt, rm2.LastUpdateAt)
@@ -4278,18 +4278,18 @@ func testGetMember(t *testing.T, ss store.Store) {
 	_, err = ss.Channel().SaveMember(m2)
 	require.Nil(t, err)
 
-	_, err = ss.Channel().GetMember(model.NewId(), userId)
+	_, err = ss.Channel().GetMember(model.NewId(), nil, nil, userId)
 	require.NotNil(t, err, "should've failed to get member for non-existent channel")
 
-	_, err = ss.Channel().GetMember(c1.Id, model.NewId())
+	_, err = ss.Channel().GetMember(c1.Id, nil, nil, model.NewId())
 	require.NotNil(t, err, "should've failed to get member for non-existent user")
 
-	member, err := ss.Channel().GetMember(c1.Id, userId)
+	member, err := ss.Channel().GetMember(c1.Id, nil, nil, userId)
 	require.Nil(t, err, "shouldn't have errored when getting member", err)
 	require.Equal(t, c1.Id, member.ChannelId, "should've gotten member of channel 1")
 	require.Equal(t, userId, member.UserId, "should've have gotten member for user")
 
-	member, err = ss.Channel().GetMember(c2.Id, userId)
+	member, err = ss.Channel().GetMember(c2.Id, nil, nil, userId)
 	require.Nil(t, err, "should'nt have errored when getting member", err)
 	require.Equal(t, c2.Id, member.ChannelId, "should've gotten member of channel 2")
 	require.Equal(t, userId, member.UserId, "should've gotten member for user")
@@ -6132,21 +6132,21 @@ func testChannelStoreMigrateChannelMembers(t *testing.T, ss store.Store) {
 
 	ss.Channel().ClearCaches()
 
-	cm1b, err := ss.Channel().GetMember(cm1.ChannelId, cm1.UserId)
+	cm1b, err := ss.Channel().GetMember(cm1.ChannelId, nil, nil, cm1.UserId)
 	assert.Nil(t, err)
 	assert.Equal(t, "", cm1b.ExplicitRoles)
 	assert.False(t, cm1b.SchemeGuest)
 	assert.True(t, cm1b.SchemeUser)
 	assert.True(t, cm1b.SchemeAdmin)
 
-	cm2b, err := ss.Channel().GetMember(cm2.ChannelId, cm2.UserId)
+	cm2b, err := ss.Channel().GetMember(cm2.ChannelId, nil, nil, cm2.UserId)
 	assert.Nil(t, err)
 	assert.Equal(t, "", cm2b.ExplicitRoles)
 	assert.False(t, cm1b.SchemeGuest)
 	assert.True(t, cm2b.SchemeUser)
 	assert.False(t, cm2b.SchemeAdmin)
 
-	cm3b, err := ss.Channel().GetMember(cm3.ChannelId, cm3.UserId)
+	cm3b, err := ss.Channel().GetMember(cm3.ChannelId, nil, nil, cm3.UserId)
 	assert.Nil(t, err)
 	assert.Equal(t, "something_else", cm3b.ExplicitRoles)
 	assert.False(t, cm1b.SchemeGuest)
@@ -6242,19 +6242,19 @@ func testChannelStoreClearAllCustomRoleAssignments(t *testing.T, ss store.Store)
 
 	require.Nil(t, ss.Channel().ClearAllCustomRoleAssignments())
 
-	member, err := ss.Channel().GetMember(m1.ChannelId, m1.UserId)
+	member, err := ss.Channel().GetMember(m1.ChannelId, nil, nil, m1.UserId)
 	require.Nil(t, err)
 	assert.Equal(t, m1.ExplicitRoles, member.Roles)
 
-	member, err = ss.Channel().GetMember(m2.ChannelId, m2.UserId)
+	member, err = ss.Channel().GetMember(m2.ChannelId, nil, nil, m2.UserId)
 	require.Nil(t, err)
 	assert.Equal(t, "channel_user channel_admin", member.Roles)
 
-	member, err = ss.Channel().GetMember(m3.ChannelId, m3.UserId)
+	member, err = ss.Channel().GetMember(m3.ChannelId, nil, nil, m3.UserId)
 	require.Nil(t, err)
 	assert.Equal(t, m3.ExplicitRoles, member.Roles)
 
-	member, err = ss.Channel().GetMember(m4.ChannelId, m4.UserId)
+	member, err = ss.Channel().GetMember(m4.ChannelId, nil, nil, m4.UserId)
 	require.Nil(t, err)
 	assert.Equal(t, "", member.Roles)
 }
@@ -6564,7 +6564,7 @@ func testChannelStoreRemoveAllDeactivatedMembers(t *testing.T, ss store.Store, s
 	require.Nil(t, err)
 
 	// Get all the channel members. Check there are 3.
-	d1, err := ss.Channel().GetMembers(c1.Id, 0, 1000)
+	d1, err := ss.Channel().GetMembers(c1.Id, nil, nil, 0, 1000)
 	assert.Nil(t, err)
 	assert.Len(t, *d1, 3)
 
@@ -6580,7 +6580,7 @@ func testChannelStoreRemoveAllDeactivatedMembers(t *testing.T, ss store.Store, s
 	assert.Nil(t, ss.Channel().RemoveAllDeactivatedMembers(c1.Id))
 
 	// Get all the channel members. Check there is now only 1: m3.
-	d2, err := ss.Channel().GetMembers(c1.Id, 0, 1000)
+	d2, err := ss.Channel().GetMembers(c1.Id, nil, nil, 0, 1000)
 	assert.Nil(t, err)
 	assert.Len(t, *d2, 1)
 	assert.Equal(t, u3.Id, (*d2)[0].UserId)

@@ -1284,11 +1284,11 @@ func (s *RetryLayerChannelStore) GetGuestCount(channelId string, allowFromCache 
 
 }
 
-func (s *RetryLayerChannelStore) GetMember(channelId string, userId string) (*model.ChannelMember, error) {
+func (s *RetryLayerChannelStore) GetMember(channelId string, teamSchemeId *string, channelSchemeId *string, userId string) (*model.ChannelMember, error) {
 
 	tries := 0
 	for {
-		result, err := s.ChannelStore.GetMember(channelId, userId)
+		result, err := s.ChannelStore.GetMember(channelId, teamSchemeId, channelSchemeId, userId)
 		if err == nil {
 			return result, nil
 		}
@@ -1370,11 +1370,11 @@ func (s *RetryLayerChannelStore) GetMemberForPost(postId string, userId string) 
 
 }
 
-func (s *RetryLayerChannelStore) GetMembers(channelId string, offset int, limit int) (*model.ChannelMembers, error) {
+func (s *RetryLayerChannelStore) GetMembers(channelId string, teamSchemeId *string, channelSchemeId *string, offset int, limit int) (*model.ChannelMembers, error) {
 
 	tries := 0
 	for {
-		result, err := s.ChannelStore.GetMembers(channelId, offset, limit)
+		result, err := s.ChannelStore.GetMembers(channelId, teamSchemeId, channelSchemeId, offset, limit)
 		if err == nil {
 			return result, nil
 		}

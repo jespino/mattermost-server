@@ -1183,7 +1183,7 @@ func (s *OpenTracingLayerChannelStore) GetGuestCount(channelId string, allowFrom
 	return result, err
 }
 
-func (s *OpenTracingLayerChannelStore) GetMember(channelId string, userId string) (*model.ChannelMember, error) {
+func (s *OpenTracingLayerChannelStore) GetMember(channelId string, teamSchemeId *string, channelSchemeId *string, userId string) (*model.ChannelMember, error) {
 	origCtx := s.Root.Store.Context()
 	span, newCtx := tracing.StartSpanWithParentByContext(s.Root.Store.Context(), "ChannelStore.GetMember")
 	s.Root.Store.SetContext(newCtx)
@@ -1192,7 +1192,7 @@ func (s *OpenTracingLayerChannelStore) GetMember(channelId string, userId string
 	}()
 
 	defer span.Finish()
-	result, err := s.ChannelStore.GetMember(channelId, userId)
+	result, err := s.ChannelStore.GetMember(channelId, teamSchemeId, channelSchemeId, userId)
 	if err != nil {
 		span.LogFields(spanlog.Error(err))
 		ext.Error.Set(span, true)
@@ -1268,7 +1268,7 @@ func (s *OpenTracingLayerChannelStore) GetMemberForPost(postId string, userId st
 	return result, err
 }
 
-func (s *OpenTracingLayerChannelStore) GetMembers(channelId string, offset int, limit int) (*model.ChannelMembers, error) {
+func (s *OpenTracingLayerChannelStore) GetMembers(channelId string, teamSchemeId *string, channelSchemeId *string, offset int, limit int) (*model.ChannelMembers, error) {
 	origCtx := s.Root.Store.Context()
 	span, newCtx := tracing.StartSpanWithParentByContext(s.Root.Store.Context(), "ChannelStore.GetMembers")
 	s.Root.Store.SetContext(newCtx)
@@ -1277,7 +1277,7 @@ func (s *OpenTracingLayerChannelStore) GetMembers(channelId string, offset int, 
 	}()
 
 	defer span.Finish()
-	result, err := s.ChannelStore.GetMembers(channelId, offset, limit)
+	result, err := s.ChannelStore.GetMembers(channelId, teamSchemeId, channelSchemeId, offset, limit)
 	if err != nil {
 		span.LogFields(spanlog.Error(err))
 		ext.Error.Set(span, true)

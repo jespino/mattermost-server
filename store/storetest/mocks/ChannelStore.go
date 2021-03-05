@@ -807,13 +807,13 @@ func (_m *ChannelStore) GetGuestCount(channelId string, allowFromCache bool) (in
 	return r0, r1
 }
 
-// GetMember provides a mock function with given fields: channelId, userId
-func (_m *ChannelStore) GetMember(channelId string, userId string) (*model.ChannelMember, error) {
-	ret := _m.Called(channelId, userId)
+// GetMember provides a mock function with given fields: channelId, teamSchemeId, channelSchemeId, userId
+func (_m *ChannelStore) GetMember(channelId string, teamSchemeId *string, channelSchemeId *string, userId string) (*model.ChannelMember, error) {
+	ret := _m.Called(channelId, teamSchemeId, channelSchemeId, userId)
 
 	var r0 *model.ChannelMember
-	if rf, ok := ret.Get(0).(func(string, string) *model.ChannelMember); ok {
-		r0 = rf(channelId, userId)
+	if rf, ok := ret.Get(0).(func(string, *string, *string, string) *model.ChannelMember); ok {
+		r0 = rf(channelId, teamSchemeId, channelSchemeId, userId)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.ChannelMember)
@@ -821,8 +821,8 @@ func (_m *ChannelStore) GetMember(channelId string, userId string) (*model.Chann
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(channelId, userId)
+	if rf, ok := ret.Get(1).(func(string, *string, *string, string) error); ok {
+		r1 = rf(channelId, teamSchemeId, channelSchemeId, userId)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -911,13 +911,13 @@ func (_m *ChannelStore) GetMemberForPost(postId string, userId string) (*model.C
 	return r0, r1
 }
 
-// GetMembers provides a mock function with given fields: channelId, offset, limit
-func (_m *ChannelStore) GetMembers(channelId string, offset int, limit int) (*model.ChannelMembers, error) {
-	ret := _m.Called(channelId, offset, limit)
+// GetMembers provides a mock function with given fields: channelId, teamSchemeId, channelSchemeId, offset, limit
+func (_m *ChannelStore) GetMembers(channelId string, teamSchemeId *string, channelSchemeId *string, offset int, limit int) (*model.ChannelMembers, error) {
+	ret := _m.Called(channelId, teamSchemeId, channelSchemeId, offset, limit)
 
 	var r0 *model.ChannelMembers
-	if rf, ok := ret.Get(0).(func(string, int, int) *model.ChannelMembers); ok {
-		r0 = rf(channelId, offset, limit)
+	if rf, ok := ret.Get(0).(func(string, *string, *string, int, int) *model.ChannelMembers); ok {
+		r0 = rf(channelId, teamSchemeId, channelSchemeId, offset, limit)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.ChannelMembers)
@@ -925,8 +925,8 @@ func (_m *ChannelStore) GetMembers(channelId string, offset int, limit int) (*mo
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, int, int) error); ok {
-		r1 = rf(channelId, offset, limit)
+	if rf, ok := ret.Get(1).(func(string, *string, *string, int, int) error); ok {
+		r1 = rf(channelId, teamSchemeId, channelSchemeId, offset, limit)
 	} else {
 		r1 = ret.Error(1)
 	}

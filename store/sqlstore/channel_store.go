@@ -1381,6 +1381,22 @@ func (s SqlChannelStore) GetDeleted(teamId string, offset int, limit int, userId
 	return channels, nil
 }
 
+func (s SqlChannelStore) channelMembersWithSchemeSelectQueryWithSchemeIds(teamSchemeId *string, channelSchemeId *string) sq.SelectBuilder {
+	return s.getQueryBuilder().
+		Select(
+			"ChannelMembers.*",
+			"TeamScheme.DefaultTeamGuestRole TeamSchemeDefaultGuestRole",
+			"TeamScheme.DefaultTeamUserRole TeamSchemeDefaultUserRole",
+			"TeamScheme.DefaultTeamAdminRole TeamSchemeDefaultAdminRole",
+			"ChannelScheme.DefaultChannelGuestRole ChannelSchemeDefaultGuestRole",
+			"ChannelScheme.DefaultChannelUserRole ChannelSchemeDefaultUserRole",
+			"ChannelScheme.DefaultChannelAdminRole ChannelSchemeDefaultAdminRole",
+		).
+		From("ChannelMembers").
+		LeftJoin("Schemes TeamScheme ON TeamScheme.Id = ?", teamSchemeId).
+		LeftJoin("Schemes ChannelScheme ON ChannelScheme.Id = ?", channelSchemeId)
+}
+
 var CHANNEL_MEMBERS_WITH_SCHEME_SELECT_QUERY = `
 	SELECT
 		ChannelMembers.*,
@@ -1658,9 +1674,19 @@ func (s SqlChannelStore) UpdateMember(member *model.ChannelMember) (*model.Chann
 	return updatedMembers[0], nil
 }
 
-func (s SqlChannelStore) GetMembers(channelId string, offset, limit int) (*model.ChannelMembers, error) {
+func (s SqlChannelStore) GetMembers(channelId string, teamSchemeId *string, channelSchemeId *string, offset, limit int) (*model.ChannelMembers, error) {
+	query := s.channelMembersWithSchemeSelectQueryWithSchemeIds(teamSchemeId, channelSchemeId).
+		Where(sq.Eq{"ChannelId": channelId}).
+		Limit(uint64(limit)).
+		Offset(uint64(offset))
+
+	queryString, args, err := query.ToSql()
+	if err != nil {
+		return nil, errors.Wrap(err, "channel_tosql")
+	}
+
 	var dbMembers channelMemberWithSchemeRolesList
-	_, err := s.GetReplica().Select(&dbMembers, CHANNEL_MEMBERS_WITH_SCHEME_SELECT_QUERY+"WHERE ChannelId = :ChannelId LIMIT :Limit OFFSET :Offset", map[string]interface{}{"ChannelId": channelId, "Limit": limit, "Offset": offset})
+	_, err = s.GetReplica().Select(&dbMembers, queryString, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get ChannelMembers with channelId=%s", channelId)
 	}
@@ -1687,10 +1713,19 @@ func (s SqlChannelStore) GetChannelMembersTimezones(channelId string) ([]model.S
 	return dbMembersTimezone, nil
 }
 
-func (s SqlChannelStore) GetMember(channelId string, userId string) (*model.ChannelMember, error) {
+func (s SqlChannelStore) GetMember(channelId string, teamSchemeId *string, channelSchemeId *string, userId string) (*model.ChannelMember, error) {
+	query := s.channelMembersWithSchemeSelectQueryWithSchemeIds(teamSchemeId, channelSchemeId).
+		Where(sq.Eq{"ChannelId": channelId}).
+		Where(sq.Eq{"UserId": userId})
+
+	queryString, args, err := query.ToSql()
+	if err != nil {
+		return nil, errors.Wrap(err, "channel_tosql")
+	}
+
 	var dbMember channelMemberWithSchemeRoles
 
-	if err := s.GetReplica().SelectOne(&dbMember, CHANNEL_MEMBERS_WITH_SCHEME_SELECT_QUERY+"WHERE ChannelMembers.ChannelId = :ChannelId AND ChannelMembers.UserId = :UserId", map[string]interface{}{"ChannelId": channelId, "UserId": userId}); err != nil {
+	if err := s.GetReplica().SelectOne(&dbMember, queryString, args...); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, store.NewErrNotFound("ChannelMember", fmt.Sprintf("channelId=%s, userId=%s", channelId, userId))
 		}

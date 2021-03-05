@@ -4372,7 +4372,7 @@ func groupTestpUpdateMembersRoleChannel(t *testing.T, ss store.Store) {
 			err = ss.Channel().UpdateMembersRole(channel.Id, tt.inUserIDs)
 			require.Nil(t, err)
 
-			members, err := ss.Channel().GetMembers(channel.Id, 0, 100)
+			members, err := ss.Channel().GetMembers(channel.Id, channel.SchemeId, nil, 0, 100)
 			require.Nil(t, err)
 
 			require.GreaterOrEqual(t, len(*members), 4) // sanity check for channel membership
