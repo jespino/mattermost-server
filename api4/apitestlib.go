@@ -966,8 +966,12 @@ func (th *TestHelper) cleanupTestFile(info *model.FileInfo) error {
 
 func (th *TestHelper) MakeUserChannelAdmin(user *model.User, channel *model.Channel) {
 	utils.DisableDebugLogForTest()
+	team, appErr := th.App.GetTeam(channel.TeamId)
+	if appErr != nil {
+		panic(appErr)
+	}
 
-	if cm, err := th.App.Srv().Store.Channel().GetMember(channel.Id, user.Id); err == nil {
+	if cm, err := th.App.Srv().Store.Channel().GetMember(channel.Id, team.SchemeId, channel.SchemeId, user.Id); err == nil {
 		cm.SchemeAdmin = true
 		if _, err = th.App.Srv().Store.Channel().UpdateMember(cm); err != nil {
 			utils.EnableDebugLogForTest()
@@ -984,7 +988,7 @@ func (th *TestHelper) MakeUserChannelAdmin(user *model.User, channel *model.Chan
 func (th *TestHelper) UpdateUserToTeamAdmin(user *model.User, team *model.Team) {
 	utils.DisableDebugLogForTest()
 
-	if tm, err := th.App.Srv().Store.Team().GetMember(team.Id, user.Id); err == nil {
+	if tm, err := th.App.Srv().Store.Team().GetMember(team.Id, team.SchemeId, user.Id); err == nil {
 		tm.SchemeAdmin = true
 		if _, err = th.App.Srv().Store.Team().UpdateMember(tm); err != nil {
 			utils.EnableDebugLogForTest()
@@ -1004,7 +1008,7 @@ func (th *TestHelper) UpdateUserToTeamAdmin(user *model.User, team *model.Team) 
 func (th *TestHelper) UpdateUserToNonTeamAdmin(user *model.User, team *model.Team) {
 	utils.DisableDebugLogForTest()
 
-	if tm, err := th.App.Srv().Store.Team().GetMember(team.Id, user.Id); err == nil {
+	if tm, err := th.App.Srv().Store.Team().GetMember(team.Id, team.SchemeId, user.Id); err == nil {
 		tm.SchemeAdmin = false
 		if _, err = th.App.Srv().Store.Team().UpdateMember(tm); err != nil {
 			utils.EnableDebugLogForTest()

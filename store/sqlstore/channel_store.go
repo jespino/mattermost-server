@@ -1382,19 +1382,46 @@ func (s SqlChannelStore) GetDeleted(teamId string, offset int, limit int, userId
 }
 
 func (s SqlChannelStore) channelMembersWithSchemeSelectQueryWithSchemeIds(teamSchemeId *string, channelSchemeId *string) sq.SelectBuilder {
-	return s.getQueryBuilder().
-		Select(
-			"ChannelMembers.*",
+	columns := []string{"ChannelMembers.*"}
+	if teamSchemeId == nil || *teamSchemeId == "" {
+		columns = append(columns, []string{
+			"NULL as TeamSchemeDefaultGuestRole",
+			"NULL as TeamSchemeDefaultUserRole",
+			"NULL as TeamSchemeDefaultAdminRole",
+		}...)
+	} else {
+		columns = append(columns, []string{
 			"TeamScheme.DefaultTeamGuestRole TeamSchemeDefaultGuestRole",
 			"TeamScheme.DefaultTeamUserRole TeamSchemeDefaultUserRole",
 			"TeamScheme.DefaultTeamAdminRole TeamSchemeDefaultAdminRole",
+		}...)
+	}
+
+	if channelSchemeId == nil || *channelSchemeId == "" {
+		columns = append(columns, []string{
+			"NULL as ChannelSchemeDefaultGuestRole",
+			"NULL as ChannelSchemeDefaultUserRole",
+			"NULL as ChannelSchemeDefaultAdminRole",
+		}...)
+	} else {
+		columns = append(columns, []string{
 			"ChannelScheme.DefaultChannelGuestRole ChannelSchemeDefaultGuestRole",
 			"ChannelScheme.DefaultChannelUserRole ChannelSchemeDefaultUserRole",
 			"ChannelScheme.DefaultChannelAdminRole ChannelSchemeDefaultAdminRole",
-		).
-		From("ChannelMembers").
-		LeftJoin("Schemes TeamScheme ON TeamScheme.Id = ?", teamSchemeId).
-		LeftJoin("Schemes ChannelScheme ON ChannelScheme.Id = ?", channelSchemeId)
+		}...)
+	}
+	query := s.getQueryBuilder().
+		Select(columns...).
+		From("ChannelMembers")
+
+	if teamSchemeId != nil && *teamSchemeId != "" {
+		query = query.LeftJoin("Schemes TeamScheme ON TeamScheme.Id = ?", teamSchemeId)
+	}
+	if channelSchemeId != nil && *channelSchemeId != "" {
+		query = query.LeftJoin("Schemes ChannelScheme ON ChannelScheme.Id = ?", channelSchemeId)
+	}
+
+	return query
 }
 
 var CHANNEL_MEMBERS_WITH_SCHEME_SELECT_QUERY = `

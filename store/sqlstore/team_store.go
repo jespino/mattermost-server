@@ -782,7 +782,7 @@ func (s SqlTeamStore) getTeamMembersWithSchemeSelectQuery() sq.SelectBuilder {
 }
 
 func (s SqlTeamStore) getTeamMembersWithSchemeSelectQueryWithSchemeId(schemeId *string) sq.SelectBuilder {
-	if schemeId == nil {
+	if schemeId == nil || *schemeId == "" {
 		return s.getQueryBuilder().
 			Select(
 				"TeamMembers.*",

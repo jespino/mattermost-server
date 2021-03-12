@@ -441,7 +441,7 @@ func (a *App) WaitForChannelMembership(channelId string, userId string) {
 
 		time.Sleep(100 * time.Millisecond)
 
-		_, err := a.Srv().Store.Channel().GetMember(channelId, userId)
+		_, err := a.Srv().Store.Channel().GetMember(channelId, nil, nil, userId)
 
 		// If the membership was found then return
 		if err == nil {
@@ -1291,7 +1291,12 @@ func (a *App) addUserToChannel(user *model.User, channel *model.Channel, teamMem
 		return nil, model.NewAppError("AddUserToChannel", "api.channel.add_user_to_channel.type.app_error", nil, "", http.StatusBadRequest)
 	}
 
-	channelMember, nErr := a.Srv().Store.Channel().GetMember(channel.Id, user.Id)
+	team, err := a.GetTeam(channel.TeamId)
+	if err != nil {
+		return nil, err
+	}
+
+	channelMember, nErr := a.Srv().Store.Channel().GetMember(channel.Id, team.SchemeId, channel.SchemeId, user.Id)
 	if nErr != nil {
 		var nfErr *store.ErrNotFound
 		if !errors.As(nErr, &nfErr) {
@@ -1347,7 +1352,7 @@ func (a *App) addUserToChannel(user *model.User, channel *model.Channel, teamMem
 }
 
 func (a *App) AddUserToChannel(user *model.User, channel *model.Channel) (*model.ChannelMember, *model.AppError) {
-	teamMember, nErr := a.Srv().Store.Team().GetMember(channel.TeamId, user.Id)
+	teamMember, nErr := a.Srv().Store.Team().GetMember(channel.TeamId, nil, user.Id)
 	if nErr != nil {
 		var nfErr *store.ErrNotFound
 		switch {
@@ -1376,7 +1381,12 @@ func (a *App) AddUserToChannel(user *model.User, channel *model.Channel) (*model
 }
 
 func (a *App) AddChannelMember(userId string, channel *model.Channel, userRequestorId string, postRootId string) (*model.ChannelMember, *model.AppError) {
-	if member, err := a.Srv().Store.Channel().GetMember(channel.Id, userId); err != nil {
+	team, appErr := a.GetTeam(channel.TeamId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	if member, err := a.Srv().Store.Channel().GetMember(channel.Id, team.SchemeId, channel.SchemeId, userId); err != nil {
 		var nfErr *store.ErrNotFound
 		if !errors.As(err, &nfErr) {
 			return nil, model.NewAppError("AddChannelMember", "app.channel.get_member.app_error", nil, err.Error(), http.StatusInternalServerError)
@@ -1386,22 +1396,20 @@ func (a *App) AddChannelMember(userId string, channel *model.Channel, userReques
 	}
 
 	var user *model.User
-	var err *model.AppError
-
-	if user, err = a.GetUser(userId); err != nil {
-		return nil, err
+	if user, appErr = a.GetUser(userId); appErr != nil {
+		return nil, appErr
 	}
 
 	var userRequestor *model.User
 	if userRequestorId != "" {
-		if userRequestor, err = a.GetUser(userRequestorId); err != nil {
-			return nil, err
+		if userRequestor, appErr = a.GetUser(userRequestorId); appErr != nil {
+			return nil, appErr
 		}
 	}
 
-	cm, err := a.AddUserToChannel(user, channel)
-	if err != nil {
-		return nil, err
+	cm, appErr := a.AddUserToChannel(user, channel)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	if pluginsEnvironment := a.GetPluginsEnvironment(); pluginsEnvironment != nil {
@@ -1742,7 +1750,17 @@ func (a *App) GetPrivateChannelsForTeam(teamId string, offset int, limit int) (*
 }
 
 func (a *App) GetChannelMember(channelId string, userId string) (*model.ChannelMember, *model.AppError) {
-	channelMember, err := a.Srv().Store.Channel().GetMember(channelId, userId)
+	channel, appErr := a.GetChannel(channelId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	team, appErr := a.GetTeam(channel.TeamId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	channelMember, err := a.Srv().Store.Channel().GetMember(channelId, team.SchemeId, channel.SchemeId, userId)
 	if err != nil {
 		var nfErr *store.ErrNotFound
 		switch {
@@ -1757,7 +1775,17 @@ func (a *App) GetChannelMember(channelId string, userId string) (*model.ChannelM
 }
 
 func (a *App) GetChannelMembersPage(channelId string, page, perPage int) (*model.ChannelMembers, *model.AppError) {
-	channelMembers, err := a.Srv().Store.Channel().GetMembers(channelId, page*perPage, perPage)
+	channel, appErr := a.GetChannel(channelId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	team, appErr := a.GetTeam(channel.TeamId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	channelMembers, err := a.Srv().Store.Channel().GetMembers(channelId, team.SchemeId, channel.SchemeId, page*perPage, perPage)
 	if err != nil {
 		return nil, model.NewAppError("GetChannelMembersPage", "app.channel.get_members.app_error", nil, err.Error(), http.StatusInternalServerError)
 	}
@@ -1880,7 +1908,7 @@ func (a *App) JoinChannel(channel *model.Channel, userId string) *model.AppError
 		close(userChan)
 	}()
 	go func() {
-		member, err := a.Srv().Store.Channel().GetMember(channel.Id, userId)
+		member, err := a.Srv().Store.Channel().GetMember(channel.Id, nil, nil, userId)
 		memberChan <- store.StoreResult{Data: member, NErr: err}
 		close(memberChan)
 	}()
@@ -2496,7 +2524,7 @@ func (a *App) MarkChannelsAsViewed(channelIds []string, userId string, currentSe
 				continue
 			}
 
-			member, err := a.Srv().Store.Channel().GetMember(channelId, userId)
+			member, err := a.Srv().Store.Channel().GetMember(channelId, nil, nil, userId)
 			if err != nil {
 				mlog.Warn("Failed to get membership", mlog.Err(err))
 				continue
@@ -2784,7 +2812,17 @@ func (a *App) GetPinnedPosts(channelId string) (*model.PostList, *model.AppError
 }
 
 func (a *App) ToggleMuteChannel(channelId, userId string) (*model.ChannelMember, *model.AppError) {
-	member, nErr := a.Srv().Store.Channel().GetMember(channelId, userId)
+	channel, appErr := a.GetChannel(channelId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	team, appErr := a.GetTeam(channel.TeamId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	member, nErr := a.Srv().Store.Channel().GetMember(channelId, team.SchemeId, channel.SchemeId, userId)
 	if nErr != nil {
 		var appErr *model.AppError
 		var nfErr *store.ErrNotFound
@@ -2932,7 +2970,7 @@ func (a *App) ClearChannelMembersCache(channelID string) {
 	page := 0
 
 	for {
-		channelMembers, err := a.Srv().Store.Channel().GetMembers(channelID, page*perPage, perPage)
+		channelMembers, err := a.Srv().Store.Channel().GetMembers(channelID, nil, nil, page*perPage, perPage)
 		if err != nil {
 			a.Log().Warn("error clearing cache for channel members", mlog.String("channel_id", channelID))
 			break
