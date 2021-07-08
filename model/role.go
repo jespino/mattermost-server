@@ -364,6 +364,11 @@ const (
 	CHANNEL_USER_ROLE_ID  = "channel_user"
 	CHANNEL_ADMIN_ROLE_ID = "channel_admin"
 
+	WORKSPACE_VIEWER_ROLE_ID    = "workspace_vieiwer"
+	WORKSPACE_COMMENTER_ROLE_ID = "workspace_commenter"
+	WORKSPACE_EDITOR_ROLE_ID    = "workspace_editor"
+	WORKSPACE_ADMIN_ROLE_ID     = "workspace_admin"
+
 	ROLE_NAME_MAX_LENGTH         = 64
 	ROLE_DISPLAY_NAME_MAX_LENGTH = 128
 	ROLE_DESCRIPTION_MAX_LENGTH  = 1024

@@ -4,9 +4,10 @@
 package model
 
 const (
-	PermissionScopeSystem  = "system_scope"
-	PermissionScopeTeam    = "team_scope"
-	PermissionScopeChannel = "channel_scope"
+	PermissionScopeSystem    = "system_scope"
+	PermissionScopeTeam      = "team_scope"
+	PermissionScopeChannel   = "channel_scope"
+	PermissionScopeWorkspace = "workspace_scope"
 )
 
 type Permission struct {
@@ -330,6 +331,25 @@ var PERMISSION_SYSCONSOLE_WRITE_EXPERIMENTAL_FEATURE_FLAGS *Permission
 
 var PERMISSION_SYSCONSOLE_READ_EXPERIMENTAL_BLEVE *Permission
 var PERMISSION_SYSCONSOLE_WRITE_EXPERIMENTAL_BLEVE *Permission
+
+// TODO: This is going to be way more granular and probably is going to be
+// workspace related permissions and board related permissions
+var PERMISSION_FOCALBOARD_WORKSPACE_CREATE_CARDS *Permission
+var PERMISSION_FOCALBOARD_WORKSPACE_CREATE_BOARDS *Permission
+
+// var PERMISSION_FOCALBOARD_WORKSPACE_EDIT_CARDS *Permission
+// var PERMISSION_FOCALBOARD_WORKSPACE_EDIT_OTHERS_CARDS *Permission
+// var PERMISSION_FOCALBOARD_WORKSPACE_DELETE_CARDS *Permission
+// var PERMISSION_FOCALBOARD_WORKSPACE_DELETE_OTHERS_CARDS *Permission
+// var PERMISSION_FOCALBOARD_WORKSPACE_READ_CARDS *Permission
+// var PERMISSION_FOCALBOARD_WORKSPACE_EDIT_BOARDS *Permission
+// var PERMISSION_FOCALBOARD_WORKSPACE_EDIT_OTHERS_BOARDS *Permission
+// var PERMISSION_FOCALBOARD_WORKSPACE_DELETE_BOARDS *Permission
+// var PERMISSION_FOCALBOARD_WORKSPACE_DELETE_OTHERS_BOARDS *Permission
+// var PERMISSION_FOCALBOARD_WORKSPACE_READ_BOARDS *Permission
+// var PERMISSION_FOCALBOARD_WORKSPACE_COMMENT *Permission
+// var PERMISSION_FOCALBOARD_WORKSPACE_SHARE *Permission
+// var PERMISSION_FOCALBOARD_WORKSPACE_UNSHARE *Permission
 
 // General permission that encompasses all system admin functions
 // in the future this could be broken up to allow access to some
@@ -1895,6 +1915,20 @@ func initializePermissions() {
 		PermissionScopeSystem,
 	}
 
+	// Focalboard
+	PERMISSION_FOCALBOARD_WORKSPACE_CREATE_CARDS = &Permission{
+		"focalboard_workspace_create_cards",
+		"",
+		"",
+		PermissionScopeWorkspace,
+	}
+	PERMISSION_FOCALBOARD_WORKSPACE_CREATE_BOARDS = &Permission{
+		"focalboard_workspace_create_boards",
+		"",
+		"",
+		PermissionScopeWorkspace,
+	}
+
 	SysconsoleReadPermissions = []*Permission{
 		PERMISSION_SYSCONSOLE_READ_ABOUT_EDITION_AND_LICENSE,
 		PERMISSION_SYSCONSOLE_READ_BILLING,
@@ -2139,6 +2173,11 @@ func initializePermissions() {
 		PERMISSION_USE_GROUP_MENTIONS,
 	}
 
+	WorkspaceScopedPermissions := []*Permission{
+		PERMISSION_FOCALBOARD_WORKSPACE_CREATE_CARDS,
+		PERMISSION_FOCALBOARD_WORKSPACE_CREATE_BOARDS,
+	}
+
 	DeprecatedPermissions = []*Permission{
 		PERMISSION_PERMANENT_DELETE_USER,
 		PERMISSION_MANAGE_WEBHOOKS,
@@ -2169,6 +2208,7 @@ func initializePermissions() {
 	AllPermissions = append(AllPermissions, ChannelScopedPermissions...)
 	AllPermissions = append(AllPermissions, SysconsoleReadPermissions...)
 	AllPermissions = append(AllPermissions, SysconsoleWritePermissions...)
+	AllPermissions = append(AllPermissions, WorkspaceScopedPermissions...)
 
 	ChannelModeratedPermissions = []string{
 		PERMISSION_CREATE_POST.Id,

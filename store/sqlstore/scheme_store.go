@@ -35,6 +35,10 @@ func newSqlSchemeStore(sqlStore *SqlStore) store.SchemeStore {
 		table.ColMap("DefaultChannelAdminRole").SetMaxSize(64)
 		table.ColMap("DefaultChannelUserRole").SetMaxSize(64)
 		table.ColMap("DefaultChannelGuestRole").SetMaxSize(64)
+		table.ColMap("DefaultWorkspaceAdminRole").SetMaxSize(64)
+		table.ColMap("DefaultWorkspaceEditorRole").SetMaxSize(64)
+		table.ColMap("DefaultWorkspaceCommenterRole").SetMaxSize(64)
+		table.ColMap("DefaultWorkspaceViewerRole").SetMaxSize(64)
 	}
 
 	return s
@@ -83,7 +87,18 @@ func (s *SqlSchemeStore) Save(scheme *model.Scheme) (*model.Scheme, error) {
 
 func (s *SqlSchemeStore) createScheme(scheme *model.Scheme, transaction *gorp.Transaction) (*model.Scheme, error) {
 	// Fetch the default system scheme roles to populate default permissions.
-	defaultRoleNames := []string{model.TEAM_ADMIN_ROLE_ID, model.TEAM_USER_ROLE_ID, model.TEAM_GUEST_ROLE_ID, model.CHANNEL_ADMIN_ROLE_ID, model.CHANNEL_USER_ROLE_ID, model.CHANNEL_GUEST_ROLE_ID}
+	defaultRoleNames := []string{
+		model.TEAM_ADMIN_ROLE_ID,
+		model.TEAM_USER_ROLE_ID,
+		model.TEAM_GUEST_ROLE_ID,
+		model.CHANNEL_ADMIN_ROLE_ID,
+		model.CHANNEL_USER_ROLE_ID,
+		model.CHANNEL_GUEST_ROLE_ID,
+		model.WORKSPACE_ADMIN_ROLE_ID,
+		model.WORKSPACE_EDITOR_ROLE_ID,
+		model.WORKSPACE_COMMENTER_ROLE_ID,
+		model.WORKSPACE_VIEWER_ROLE_ID,
+	}
 	defaultRoles := make(map[string]*model.Role)
 	roles, err := s.SqlStore.Role().GetByNames(defaultRoleNames)
 	if err != nil {
@@ -104,11 +119,74 @@ func (s *SqlSchemeStore) createScheme(scheme *model.Scheme, transaction *gorp.Tr
 			defaultRoles[model.CHANNEL_USER_ROLE_ID] = role
 		case model.CHANNEL_GUEST_ROLE_ID:
 			defaultRoles[model.CHANNEL_GUEST_ROLE_ID] = role
+		case model.WORKSPACE_ADMIN_ROLE_ID:
+			defaultRoles[model.WORKSPACE_ADMIN_ROLE_ID] = role
+		case model.WORKSPACE_EDITOR_ROLE_ID:
+			defaultRoles[model.WORKSPACE_EDITOR_ROLE_ID] = role
+		case model.WORKSPACE_COMMENTER_ROLE_ID:
+			defaultRoles[model.WORKSPACE_COMMENTER_ROLE_ID] = role
+		case model.WORKSPACE_VIEWER_ROLE_ID:
+			defaultRoles[model.WORKSPACE_VIEWER_ROLE_ID] = role
 		}
 	}
 
 	if len(defaultRoles) != 6 {
 		return nil, errors.New("createScheme: unable to retrieve default scheme roles")
+	}
+
+	// Create the appropriate default roles for the scheme.
+	if scheme.Scope == model.SCHEME_SCOPE_WORKSPACE {
+		// Workspace Admin Role
+		workspaceAdminRole := &model.Role{
+			Name:          model.NewId(),
+			DisplayName:   fmt.Sprintf("Workspace Admin Role for Scheme %s", scheme.Name),
+			Permissions:   defaultRoles[model.WORKSPACE_ADMIN_ROLE_ID].Permissions,
+			SchemeManaged: true,
+		}
+		savedRole, err := s.SqlStore.Role().(*SqlRoleStore).createRole(workspaceAdminRole, transaction)
+		if err != nil {
+			return nil, err
+		}
+		scheme.DefaultWorkspaceAdminRole = savedRole.Name
+
+		// Workspace Editor Role
+		workspaceEditorRole := &model.Role{
+			Name:          model.NewId(),
+			DisplayName:   fmt.Sprintf("Workspace Editor Role for Scheme %s", scheme.Name),
+			Permissions:   defaultRoles[model.WORKSPACE_EDITOR_ROLE_ID].Permissions,
+			SchemeManaged: true,
+		}
+		savedRole, err = s.SqlStore.Role().(*SqlRoleStore).createRole(workspaceEditorRole, transaction)
+		if err != nil {
+			return nil, err
+		}
+		scheme.DefaultWorkspaceEditorRole = savedRole.Name
+
+		// Workspace Commenter Role
+		workspaceCommenterRole := &model.Role{
+			Name:          model.NewId(),
+			DisplayName:   fmt.Sprintf("Workspace Commenter Role for Scheme %s", scheme.Name),
+			Permissions:   defaultRoles[model.WORKSPACE_VIEWER_ROLE_ID].Permissions,
+			SchemeManaged: true,
+		}
+		savedRole, err = s.SqlStore.Role().(*SqlRoleStore).createRole(workspaceCommenterRole, transaction)
+		if err != nil {
+			return nil, err
+		}
+		scheme.DefaultWorkspaceCommenterRole = savedRole.Name
+
+		// Workspace Viewer Role
+		workspaceViewerRole := &model.Role{
+			Name:          model.NewId(),
+			DisplayName:   fmt.Sprintf("Workspace Viewer Role for Scheme %s", scheme.Name),
+			Permissions:   defaultRoles[model.WORKSPACE_COMMENTER_ROLE_ID].Permissions,
+			SchemeManaged: true,
+		}
+		savedRole, err = s.SqlStore.Role().(*SqlRoleStore).createRole(workspaceViewerRole, transaction)
+		if err != nil {
+			return nil, err
+		}
+		scheme.DefaultWorkspaceViewerRole = savedRole.Name
 	}
 
 	// Create the appropriate default roles for the scheme.
@@ -292,10 +370,15 @@ func (s *SqlSchemeStore) Delete(schemeId string) (*model.Scheme, error) {
 	// Blow away the channel caches.
 	s.Channel().ClearCaches()
 
+	roleNames := []string{}
 	// Delete the roles belonging to the scheme.
-	roleNames := []string{scheme.DefaultChannelGuestRole, scheme.DefaultChannelUserRole, scheme.DefaultChannelAdminRole}
-	if scheme.Scope == model.SCHEME_SCOPE_TEAM {
-		roleNames = append(roleNames, scheme.DefaultTeamGuestRole, scheme.DefaultTeamUserRole, scheme.DefaultTeamAdminRole)
+	if scheme.Scope == model.SCHEME_SCOPE_WORKSPACE {
+		roleNames = append(roleNames, scheme.DefaultWorkspaceViewerRole, scheme.DefaultWorkspaceCommenterRole, scheme.DefaultWorkspaceEditorRole, scheme.DefaultWorkspaceAdminRole)
+	} else {
+		roleNames = append(roleNames, scheme.DefaultChannelGuestRole, scheme.DefaultChannelUserRole, scheme.DefaultChannelAdminRole)
+		if scheme.Scope == model.SCHEME_SCOPE_TEAM {
+			roleNames = append(roleNames, scheme.DefaultTeamGuestRole, scheme.DefaultTeamUserRole, scheme.DefaultTeamAdminRole)
+		}
 	}
 
 	var inQueryList []string

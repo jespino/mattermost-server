@@ -16,23 +16,28 @@ const (
 	SCHEME_DESCRIPTION_MAX_LENGTH  = 1024
 	SCHEME_SCOPE_TEAM              = "team"
 	SCHEME_SCOPE_CHANNEL           = "channel"
+	SCHEME_SCOPE_WORKSPACE         = "workspace"
 )
 
 type Scheme struct {
-	Id                      string `json:"id"`
-	Name                    string `json:"name"`
-	DisplayName             string `json:"display_name"`
-	Description             string `json:"description"`
-	CreateAt                int64  `json:"create_at"`
-	UpdateAt                int64  `json:"update_at"`
-	DeleteAt                int64  `json:"delete_at"`
-	Scope                   string `json:"scope"`
-	DefaultTeamAdminRole    string `json:"default_team_admin_role"`
-	DefaultTeamUserRole     string `json:"default_team_user_role"`
-	DefaultChannelAdminRole string `json:"default_channel_admin_role"`
-	DefaultChannelUserRole  string `json:"default_channel_user_role"`
-	DefaultTeamGuestRole    string `json:"default_team_guest_role"`
-	DefaultChannelGuestRole string `json:"default_channel_guest_role"`
+	Id                            string `json:"id"`
+	Name                          string `json:"name"`
+	DisplayName                   string `json:"display_name"`
+	Description                   string `json:"description"`
+	CreateAt                      int64  `json:"create_at"`
+	UpdateAt                      int64  `json:"update_at"`
+	DeleteAt                      int64  `json:"delete_at"`
+	Scope                         string `json:"scope"`
+	DefaultTeamAdminRole          string `json:"default_team_admin_role"`
+	DefaultTeamUserRole           string `json:"default_team_user_role"`
+	DefaultChannelAdminRole       string `json:"default_channel_admin_role"`
+	DefaultChannelUserRole        string `json:"default_channel_user_role"`
+	DefaultTeamGuestRole          string `json:"default_team_guest_role"`
+	DefaultChannelGuestRole       string `json:"default_channel_guest_role"`
+	DefaultWorkspaceAdminRole     string `json:"default_workspace_admin_role"`
+	DefaultWorkspaceEditorRole    string `json:"default_workspace_editor_role"`
+	DefaultWorkspaceCommenterRole string `json:"default_workspace_commenter_role"`
+	DefaultWorkspaceViewerRole    string `json:"default_workspace_viewer_role"`
 }
 
 type SchemePatch struct {
@@ -47,31 +52,39 @@ type SchemeIDPatch struct {
 
 // SchemeConveyor is used for importing and exporting a Scheme and its associated Roles.
 type SchemeConveyor struct {
-	Name         string  `json:"name"`
-	DisplayName  string  `json:"display_name"`
-	Description  string  `json:"description"`
-	Scope        string  `json:"scope"`
-	TeamAdmin    string  `json:"default_team_admin_role"`
-	TeamUser     string  `json:"default_team_user_role"`
-	TeamGuest    string  `json:"default_team_guest_role"`
-	ChannelAdmin string  `json:"default_channel_admin_role"`
-	ChannelUser  string  `json:"default_channel_user_role"`
-	ChannelGuest string  `json:"default_channel_guest_role"`
-	Roles        []*Role `json:"roles"`
+	Name               string  `json:"name"`
+	DisplayName        string  `json:"display_name"`
+	Description        string  `json:"description"`
+	Scope              string  `json:"scope"`
+	TeamAdmin          string  `json:"default_team_admin_role"`
+	TeamUser           string  `json:"default_team_user_role"`
+	TeamGuest          string  `json:"default_team_guest_role"`
+	ChannelAdmin       string  `json:"default_channel_admin_role"`
+	ChannelUser        string  `json:"default_channel_user_role"`
+	ChannelGuest       string  `json:"default_channel_guest_role"`
+	WorkspaceAdmin     string  `json:"default_workspace_admin_role"`
+	WorkspaceEditor    string  `json:"default_workspace_editor_role"`
+	WorkspaceCommenter string  `json:"default_workspace_commenter_role"`
+	WorkspaceViewer    string  `json:"default_workspace_viewer_role"`
+	Roles              []*Role `json:"roles"`
 }
 
 func (sc *SchemeConveyor) Scheme() *Scheme {
 	return &Scheme{
-		DisplayName:             sc.DisplayName,
-		Name:                    sc.Name,
-		Description:             sc.Description,
-		Scope:                   sc.Scope,
-		DefaultTeamAdminRole:    sc.TeamAdmin,
-		DefaultTeamUserRole:     sc.TeamUser,
-		DefaultTeamGuestRole:    sc.TeamGuest,
-		DefaultChannelAdminRole: sc.ChannelAdmin,
-		DefaultChannelUserRole:  sc.ChannelUser,
-		DefaultChannelGuestRole: sc.ChannelGuest,
+		DisplayName:                   sc.DisplayName,
+		Name:                          sc.Name,
+		Description:                   sc.Description,
+		Scope:                         sc.Scope,
+		DefaultTeamAdminRole:          sc.TeamAdmin,
+		DefaultTeamUserRole:           sc.TeamUser,
+		DefaultTeamGuestRole:          sc.TeamGuest,
+		DefaultChannelAdminRole:       sc.ChannelAdmin,
+		DefaultChannelUserRole:        sc.ChannelUser,
+		DefaultChannelGuestRole:       sc.ChannelGuest,
+		DefaultWorkspaceAdminRole:     sc.WorkspaceAdmin,
+		DefaultWorkspaceEditorRole:    sc.WorkspaceEditor,
+		DefaultWorkspaceCommenterRole: sc.WorkspaceCommenter,
+		DefaultWorkspaceViewerRole:    sc.WorkspaceViewer,
 	}
 }
 
@@ -127,7 +140,7 @@ func (scheme *Scheme) IsValidForCreate() bool {
 	}
 
 	switch scheme.Scope {
-	case SCHEME_SCOPE_TEAM, SCHEME_SCOPE_CHANNEL:
+	case SCHEME_SCOPE_TEAM, SCHEME_SCOPE_CHANNEL, SCHEME_SCOPE_WORKSPACE:
 	default:
 		return false
 	}
@@ -142,6 +155,23 @@ func (scheme *Scheme) IsValidForCreate() bool {
 
 	if !IsValidRoleName(scheme.DefaultChannelGuestRole) {
 		return false
+	}
+
+	if scheme.Scope == SCHEME_SCOPE_WORKSPACE {
+		if !IsValidRoleName(scheme.DefaultWorkspaceAdminRole) {
+			return false
+		}
+
+		if !IsValidRoleName(scheme.DefaultWorkspaceEditorRole) {
+			return false
+		}
+
+		if !IsValidRoleName(scheme.DefaultWorkspaceCommenterRole) {
+			return false
+		}
+		if !IsValidRoleName(scheme.DefaultWorkspaceViewerRole) {
+			return false
+		}
 	}
 
 	if scheme.Scope == SCHEME_SCOPE_TEAM {

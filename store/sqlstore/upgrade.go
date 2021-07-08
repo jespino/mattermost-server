@@ -1208,6 +1208,10 @@ func upgradeDatabaseToVersion537(sqlStore *SqlStore) {
 	sqlStore.CreateColumnIfNotExistsNoDefault("Status", "DNDEndTime", "bigint", "bigint")
 	sqlStore.CreateColumnIfNotExistsNoDefault("Status", "PrevStatus", "VARCHAR(32)", "VARCHAR(32)")
 
+	sqlStore.CreateColumnIfNotExistsNoDefault("Schemes", "DefaultWorkspaceAdminRole", "text", "VARCHAR(64)")
+	sqlStore.CreateColumnIfNotExistsNoDefault("Schemes", "DefaultWorkspaceEditorRole", "text", "VARCHAR(64)")
+	sqlStore.CreateColumnIfNotExistsNoDefault("Schemes", "DefaultWorkspaceCommenterRole", "text", "VARCHAR(64)")
+	sqlStore.CreateColumnIfNotExistsNoDefault("Schemes", "DefaultWorkspaceViewerRole", "text", "VARCHAR(64)")
 	// saveSchemaVersion(sqlStore, Version5370)
 	// }
 }
