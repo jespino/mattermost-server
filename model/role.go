@@ -43,6 +43,11 @@ func init() {
 		CHANNEL_GUEST_ROLE_ID,
 		CHANNEL_USER_ROLE_ID,
 		CHANNEL_ADMIN_ROLE_ID,
+
+		WORKSPACE_VIEWER_ROLE_ID,
+		WORKSPACE_COMMENTER_ROLE_ID,
+		WORKSPACE_EDITOR_ROLE_ID,
+		WORKSPACE_ADMIN_ROLE_ID,
 	}, NewSystemRoleIDs...)
 
 	// When updating the values here, the values in mattermost-redux must also be updated.
@@ -829,6 +834,47 @@ func MakeDefaultRoles() map[string]*Role {
 			PERMISSION_MANAGE_OUTGOING_WEBHOOKS.Id,
 			PERMISSION_CONVERT_PUBLIC_CHANNEL_TO_PRIVATE.Id,
 			PERMISSION_CONVERT_PRIVATE_CHANNEL_TO_PUBLIC.Id,
+		},
+		SchemeManaged: true,
+		BuiltIn:       true,
+	}
+
+	roles[WORKSPACE_VIEWER_ROLE_ID] = &Role{
+		Name:          "workspace_viewer",
+		DisplayName:   "authentication.roles.workspace_viewer.name",
+		Description:   "authentication.roles.workspace_viewer.description",
+		Permissions:   []string{},
+		SchemeManaged: true,
+		BuiltIn:       true,
+	}
+
+	roles[WORKSPACE_COMMENTER_ROLE_ID] = &Role{
+		Name:          "workspace_commenter",
+		DisplayName:   "authentication.roles.workspace_commenter.name",
+		Description:   "authentication.roles.workspace_commenter.description",
+		Permissions:   []string{},
+		SchemeManaged: true,
+		BuiltIn:       true,
+	}
+
+	roles[WORKSPACE_EDITOR_ROLE_ID] = &Role{
+		Name:        "workspace_editor",
+		DisplayName: "authentication.roles.workspace_editor.name",
+		Description: "authentication.roles.workspace_editor.description",
+		Permissions: []string{
+			PERMISSION_FOCALBOARD_WORKSPACE_CREATE_CARDS.Id,
+		},
+		SchemeManaged: true,
+		BuiltIn:       true,
+	}
+
+	roles[WORKSPACE_ADMIN_ROLE_ID] = &Role{
+		Name:        "workspace_admin",
+		DisplayName: "authentication.roles.workspace_admin.name",
+		Description: "authentication.roles.workspace_admin.description",
+		Permissions: []string{
+			PERMISSION_FOCALBOARD_WORKSPACE_CREATE_BOARDS.Id,
+			PERMISSION_FOCALBOARD_WORKSPACE_CREATE_CARDS.Id,
 		},
 		SchemeManaged: true,
 		BuiltIn:       true,

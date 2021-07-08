@@ -876,6 +876,10 @@ func (api *PluginAPI) HasPermissionToChannel(userID, channelID string, permissio
 	return api.app.HasPermissionToChannel(userID, channelID, permission)
 }
 
+func (api *PluginAPI) RolesGrantPermission(roleNames []string, permissionId string) bool {
+	return api.app.RolesGrantPermission(roleNames, permissionId)
+}
+
 func (api *PluginAPI) LogDebug(msg string, keyValuePairs ...interface{}) {
 	api.logger.Debug(msg, keyValuePairs...)
 }

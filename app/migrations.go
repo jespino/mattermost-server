@@ -15,6 +15,7 @@ import (
 
 const EmojisPermissionsMigrationKey = "EmojisPermissionsMigrationComplete"
 const GuestRolesCreationMigrationKey = "GuestRolesCreationMigrationComplete"
+const WorkspaceRolesCreationMigrationKey = "WorkspaceRolesCreationMigrationComplete"
 const SystemConsoleRolesCreationMigrationKey = "SystemConsoleRolesCreationMigrationComplete"
 const ContentExtractionConfigDefaultTrueMigrationKey = "ContentExtractionConfigDefaultTrueMigrationComplete"
 
@@ -257,6 +258,54 @@ func (s *Server) doGuestRolesCreationMigration() {
 	}
 }
 
+func (s *Server) doWorkspaceRolesCreationMigration() {
+	// If the migration is already marked as completed, don't do it again.
+	if _, err := s.Store.System().GetByName(WorkspaceRolesCreationMigrationKey); err == nil {
+		return
+	}
+
+	roles := model.MakeDefaultRoles()
+
+	allSucceeded := true
+	if _, err := s.Store.Role().GetByName(context.Background(), model.WORKSPACE_ADMIN_ROLE_ID); err != nil {
+		if _, err := s.Store.Role().Save(roles[model.WORKSPACE_ADMIN_ROLE_ID]); err != nil {
+			mlog.Critical("Failed to create new workspace admin role to database.", mlog.Err(err))
+			allSucceeded = false
+		}
+	}
+	if _, err := s.Store.Role().GetByName(context.Background(), model.WORKSPACE_EDITOR_ROLE_ID); err != nil {
+		if _, err := s.Store.Role().Save(roles[model.WORKSPACE_EDITOR_ROLE_ID]); err != nil {
+			mlog.Critical("Failed to create new workspace editor role to database.", mlog.Err(err))
+			allSucceeded = false
+		}
+	}
+	if _, err := s.Store.Role().GetByName(context.Background(), model.WORKSPACE_COMMENTER_ROLE_ID); err != nil {
+		if _, err := s.Store.Role().Save(roles[model.WORKSPACE_COMMENTER_ROLE_ID]); err != nil {
+			mlog.Critical("Failed to create new workspace commenter role to database.", mlog.Err(err))
+			allSucceeded = false
+		}
+	}
+	if _, err := s.Store.Role().GetByName(context.Background(), model.WORKSPACE_VIEWER_ROLE_ID); err != nil {
+		if _, err := s.Store.Role().Save(roles[model.WORKSPACE_VIEWER_ROLE_ID]); err != nil {
+			mlog.Critical("Failed to create new workspace viwer role to database.", mlog.Err(err))
+			allSucceeded = false
+		}
+	}
+
+	if !allSucceeded {
+		return
+	}
+
+	system := model.System{
+		Name:  WorkspaceRolesCreationMigrationKey,
+		Value: "true",
+	}
+
+	if err := s.Store.System().Save(&system); err != nil {
+		mlog.Critical("Failed to mark workspace roles creation migration as completed.", mlog.Err(err))
+	}
+}
+
 func (a *App) DoSystemConsoleRolesCreationMigration() {
 	a.Srv().doSystemConsoleRolesCreationMigration()
 }
@@ -339,4 +388,5 @@ func (s *Server) doAppMigrations() {
 		mlog.Critical("(app.App).DoPermissionsMigrations failed", mlog.Err(err))
 	}
 	s.doContentExtractionConfigDefaultTrueMigration()
+	s.doWorkspaceRolesCreationMigration()
 }

@@ -55,6 +55,24 @@ func (a *App) SessionHasPermissionToTeam(session model.Session, teamID string, p
 	return a.RolesGrantPermission(session.GetUserRoles(), permission.Id)
 }
 
+func (a *App) SessionHasPermissionToWorkspace(session model.Session, workspaceID string, permission *model.Permission) bool {
+	if workspaceID == "" {
+		return false
+	}
+	if session.IsUnrestricted() {
+		return true
+	}
+
+	teamMember := session.GetTeamByTeamId(workspaceID)
+	if teamMember != nil {
+		if a.RolesGrantPermission(teamMember.GetRoles(), permission.Id) {
+			return true
+		}
+	}
+
+	return a.RolesGrantPermission(session.GetUserRoles(), permission.Id)
+}
+
 func (a *App) SessionHasPermissionToChannel(session model.Session, channelID string, permission *model.Permission) bool {
 	if channelID == "" {
 		return false
