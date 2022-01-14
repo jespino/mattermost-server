@@ -342,6 +342,7 @@ func testWebhookStoreGetOutgoingList(t *testing.T, ss store.Store) {
 	o1.CallbackURLs = []string{"http://nowhere.com/"}
 
 	o1, _ = ss.Webhook().SaveOutgoing(o1)
+	time.Sleep(5 * time.Millisecond)
 
 	o2 := &model.OutgoingWebhook{}
 	o2.ChannelId = model.NewId()

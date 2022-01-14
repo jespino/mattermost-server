@@ -11,14 +11,12 @@ import (
 )
 
 type MemCommandStore struct {
-	*MemStore
 	commands []*model.Command
 	mutex    sync.RWMutex
 }
 
-func newMemCommandStore(memStore *MemStore) store.CommandStore {
-	s := &MemCommandStore{MemStore: memStore}
-	return s
+func newMemCommandStore() store.CommandStore {
+	return &MemCommandStore{}
 }
 
 func (s *MemCommandStore) Save(command *model.Command) (*model.Command, error) {

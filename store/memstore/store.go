@@ -107,9 +107,9 @@ func New() *MemStore {
 	store.stores.compliance = nil
 	store.stores.session = nil
 	store.stores.oauth = nil
-	store.stores.system = nil
+	store.stores.system = newMemSystemStore()
 	store.stores.webhook = newMemWebhookStore()
-	store.stores.command = newMemCommandStore(store)
+	store.stores.command = newMemCommandStore()
 	store.stores.commandWebhook = nil
 	store.stores.preference = nil
 	store.stores.license = nil
