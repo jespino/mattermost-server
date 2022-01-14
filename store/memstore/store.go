@@ -1,7 +1,7 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-package sqlstore
+package memstore
 
 import (
 	"context"
@@ -99,14 +99,14 @@ func New() *MemStore {
 	store.stores.channel = nil
 	store.stores.post = nil
 	store.stores.retentionPolicy = nil
-	store.stores.user = nil
+	store.stores.user = newMemUserStore()
 	store.stores.bot = nil
 	store.stores.audit = nil
 	store.stores.cluster = nil
 	store.stores.remoteCluster = nil
 	store.stores.compliance = nil
-	store.stores.session = nil
-	store.stores.oauth = nil
+	store.stores.session = newMemSessionStore()
+	store.stores.oauth = newMemOAuthStore()
 	store.stores.system = newMemSystemStore()
 	store.stores.webhook = newMemWebhookStore()
 	store.stores.command = newMemCommandStore()

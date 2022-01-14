@@ -9,6 +9,6 @@ import (
 	"github.com/mattermost/mattermost-server/v6/store/storetest"
 )
 
-func TestWebhookStore(t *testing.T) {
-	storetest.TestWebhookStore(t, New())
+func TestUserStore(t *testing.T) {
+	storetest.TestUserStore(t, New(), nil)
 }

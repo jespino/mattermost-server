@@ -23,6 +23,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"github.com/mattermost/mattermost-server/v6/store"
 	"github.com/mattermost/mattermost-server/v6/store/localcachelayer"
+	"github.com/mattermost/mattermost-server/v6/store/memstore"
 	"github.com/mattermost/mattermost-server/v6/store/sqlstore"
 	"github.com/mattermost/mattermost-server/v6/store/storetest/mocks"
 	"github.com/mattermost/mattermost-server/v6/testlib"
@@ -155,6 +156,17 @@ func Setup(tb testing.TB) *TestHelper {
 	dbStore.DropAllTables()
 	dbStore.MarkSystemRanUnitTests()
 	mainHelper.PreloadMigrations()
+
+	return setupTestHelper(dbStore, false, true, tb)
+}
+
+func SetupWithMemStore(tb testing.TB) *TestHelper {
+	if testing.Short() {
+		tb.SkipNow()
+	}
+	dbStore := memstore.New()
+	dbStore.DropAllTables()
+	dbStore.MarkSystemRanUnitTests()
 
 	return setupTestHelper(dbStore, false, true, tb)
 }
