@@ -12,7 +12,9 @@ import (
 	"github.com/mattermost/mattermost-server/v6/store"
 )
 
-type MemUserStore struct{}
+type MemUserStore struct {
+	users []*model.User
+}
 
 func (us *MemUserStore) ClearCaches() {}
 
@@ -27,7 +29,16 @@ func (us *MemUserStore) Save(user *model.User) (*model.User, error) {
 }
 
 func (us *MemUserStore) DeactivateGuests() ([]string, error) {
-	panic("not implemented")
+	deletedUsers := []string{}
+	curTime := model.GetMillis()
+	for _, u := range us.users {
+		if u.Roles == "system_guest" && u.DeleteAt != 0 {
+			u.UpdateAt = curTime
+			u.DeleteAt = curTime
+			deletedUsers = append(deletedUsers, u.Id)
+		}
+	}
+	return deletedUsers, nil
 }
 
 func (us *MemUserStore) Update(user *model.User, trustedUpdateData bool) (*model.UserUpdate, error) {

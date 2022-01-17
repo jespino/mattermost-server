@@ -95,8 +95,8 @@ type ColumnInfo struct {
 
 func New() *MemStore {
 	store := &MemStore{}
-	store.stores.team = nil
-	store.stores.channel = nil
+	store.stores.team = newMemTeamStore()
+	store.stores.channel = newMemChannelStore()
 	store.stores.post = nil
 	store.stores.retentionPolicy = nil
 	store.stores.user = newMemUserStore()
@@ -128,9 +128,9 @@ func New() *MemStore {
 	store.stores.linkMetadata = nil
 	store.stores.sharedchannel = nil
 	store.stores.reaction = nil
-	store.stores.role = nil
+	store.stores.role = newMemRoleStore()
 	store.stores.scheme = nil
-	store.stores.group = nil
+	store.stores.group = newMemGroupStore()
 	store.stores.productNotices = nil
 
 	return store
