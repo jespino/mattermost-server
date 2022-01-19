@@ -97,10 +97,10 @@ func New() *MemStore {
 	store := &MemStore{}
 	store.stores.team = newMemTeamStore()
 	store.stores.channel = newMemChannelStore()
-	store.stores.post = nil
+	store.stores.post = newMemPostStore(store)
 	store.stores.retentionPolicy = nil
-	store.stores.user = newMemUserStore()
-	store.stores.bot = nil
+	store.stores.user = newMemUserStore(store)
+	store.stores.bot = newMemBotStore()
 	store.stores.audit = nil
 	store.stores.cluster = nil
 	store.stores.remoteCluster = nil
@@ -111,17 +111,17 @@ func New() *MemStore {
 	store.stores.webhook = newMemWebhookStore()
 	store.stores.command = newMemCommandStore()
 	store.stores.commandWebhook = nil
-	store.stores.preference = nil
-	store.stores.license = nil
+	store.stores.preference = newMemPreferenceStore()
+	store.stores.license = newMemLicenseStore()
 	store.stores.token = nil
 	store.stores.emoji = nil
-	store.stores.status = nil
+	store.stores.status = newMemStatusStore()
 	store.stores.fileInfo = nil
 	store.stores.uploadSession = nil
 	store.stores.thread = nil
 	store.stores.job = nil
 	store.stores.userAccessToken = nil
-	store.stores.channelMemberHistory = nil
+	store.stores.channelMemberHistory = newMemChannelMemberHistoryStore()
 	store.stores.plugin = nil
 	store.stores.TermsOfService = nil
 	store.stores.UserTermsOfService = nil
@@ -129,9 +129,9 @@ func New() *MemStore {
 	store.stores.sharedchannel = nil
 	store.stores.reaction = nil
 	store.stores.role = newMemRoleStore()
-	store.stores.scheme = nil
+	store.stores.scheme = newMemSchemeStore(store)
 	store.stores.group = newMemGroupStore()
-	store.stores.productNotices = nil
+	store.stores.productNotices = newMemProductNoticesStore()
 
 	return store
 }

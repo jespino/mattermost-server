@@ -5,12 +5,17 @@ package memstore
 
 import (
 	"context"
+	"fmt"
+	"sync"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
 )
 
-type MemSessionStore struct{}
+type MemSessionStore struct {
+	sessions []*model.Session
+	mutex    sync.RWMutex
+}
 
 func newMemSessionStore() store.SessionStore {
 	return &MemSessionStore{}
@@ -61,7 +66,17 @@ func (me *MemSessionStore) UpdateLastActivityAt(sessionId string, time int64) er
 }
 
 func (me *MemSessionStore) UpdateRoles(userId, roles string) (string, error) {
-	panic("not implemented")
+	if len(roles) > model.UserRolesMaxLength {
+		return "", fmt.Errorf("given session roles length (%d) exceeds max storage limit (%d)", len(roles), model.UserRolesMaxLength)
+	}
+
+	for _, s := range me.sessions {
+		if s.UserId == userId {
+			s.Roles = roles
+			return userId, nil
+		}
+	}
+	return userId, nil
 }
 
 func (me *MemSessionStore) UpdateDeviceId(id string, deviceId string, expiresAt int64) (string, error) {

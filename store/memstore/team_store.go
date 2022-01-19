@@ -5,18 +5,38 @@ package memstore
 
 import (
 	"context"
+	"sync"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
 )
 
-type MemTeamStore struct{}
+type MemTeamStore struct {
+	teams   []*model.Team
+	members []*model.TeamMember
+	mutex   sync.RWMutex
+}
 
 func newMemTeamStore() store.TeamStore {
 	return &MemTeamStore{}
 }
 func (s *MemTeamStore) Save(team *model.Team) (*model.Team, error) {
-	panic("not implemented")
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if team.Id != "" {
+		return nil, store.NewErrInvalidInput("Team", "id", team.Id)
+	}
+
+	team.PreSave()
+
+	if err := team.IsValid(); err != nil {
+		return nil, err
+	}
+
+	s.teams = append(s.teams, team)
+
+	return team, nil
 }
 
 func (s *MemTeamStore) Update(team *model.Team) (*model.Team, error) {
@@ -24,7 +44,15 @@ func (s *MemTeamStore) Update(team *model.Team) (*model.Team, error) {
 }
 
 func (s *MemTeamStore) Get(id string) (*model.Team, error) {
-	panic("not implemented")
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	for _, t := range s.teams {
+		if t.Id == id {
+			return t, nil
+		}
+	}
+	return nil, store.NewErrNotFound("Team", id)
 }
 
 func (s *MemTeamStore) GetByInviteId(inviteId string) (*model.Team, error) {
@@ -76,7 +104,18 @@ func (s *MemTeamStore) GetAllTeamListing() ([]*model.Team, error) {
 }
 
 func (s *MemTeamStore) PermanentDelete(teamId string) error {
-	panic("not implemented")
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	result := []*model.Team{}
+	for _, t := range s.teams {
+		if t.Id != teamId {
+			result = append(result, t)
+		}
+	}
+	s.teams = result
+
+	return nil
 }
 
 func (s *MemTeamStore) AnalyticsTeamCount(opts *model.TeamSearch) (int64, error) {
@@ -84,11 +123,32 @@ func (s *MemTeamStore) AnalyticsTeamCount(opts *model.TeamSearch) (int64, error)
 }
 
 func (s *MemTeamStore) SaveMultipleMembers(members []*model.TeamMember, maxUsersPerTeam int) ([]*model.TeamMember, error) {
-	panic("not implemented")
+	newTeamMembers := map[string]int{}
+	users := map[string]bool{}
+	for _, member := range members {
+		newTeamMembers[member.TeamId] = 0
+	}
+
+	for _, member := range members {
+		newTeamMembers[member.TeamId]++
+		users[member.UserId] = true
+
+		if err := member.IsValid(); err != nil {
+			return nil, err
+		}
+	}
+
+	s.members = append(s.members, members...)
+
+	return members, nil
 }
 
 func (s *MemTeamStore) SaveMember(member *model.TeamMember, maxUsersPerTeam int) (*model.TeamMember, error) {
-	panic("not implemented")
+	members, err := s.SaveMultipleMembers([]*model.TeamMember{member}, maxUsersPerTeam)
+	if err != nil {
+		return nil, err
+	}
+	return members[0], nil
 }
 
 func (s *MemTeamStore) UpdateMultipleMembers(members []*model.TeamMember) ([]*model.TeamMember, error) {
@@ -100,7 +160,12 @@ func (s *MemTeamStore) UpdateMember(member *model.TeamMember) (*model.TeamMember
 }
 
 func (s *MemTeamStore) GetMember(ctx context.Context, teamId string, userId string) (*model.TeamMember, error) {
-	panic("not implemented")
+	for _, m := range s.members {
+		if m.TeamId == teamId && m.UserId == userId {
+			return m, nil
+		}
+	}
+	return nil, store.NewErrNotFound("Team", teamId+"-"+userId)
 }
 
 func (s *MemTeamStore) GetMembers(teamId string, offset int, limit int, teamMembersGetOptions *model.TeamMembersGetOptions) ([]*model.TeamMember, error) {

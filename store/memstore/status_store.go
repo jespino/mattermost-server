@@ -1,0 +1,51 @@
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
+
+package memstore
+
+import (
+	"sync"
+
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/store"
+)
+
+type MemStatusStore struct {
+	status []*model.Status
+	mutex  sync.RWMutex
+}
+
+func newMemStatusStore() store.StatusStore {
+	return &MemStatusStore{}
+}
+
+func (s *MemStatusStore) SaveOrUpdate(st *model.Status) error {
+	panic("not implemented")
+}
+
+func (s *MemStatusStore) Get(userId string) (*model.Status, error) {
+	panic("not implemented")
+}
+
+func (s *MemStatusStore) GetByIds(userIds []string) ([]*model.Status, error) {
+	panic("not implemented")
+}
+
+func (s *MemStatusStore) UpdateExpiredDNDStatuses() ([]*model.Status, error) {
+	panic("not implemented")
+}
+
+func (s *MemStatusStore) ResetAll() error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.status = []*model.Status{}
+	return nil
+}
+
+func (s *MemStatusStore) GetTotalActiveUsersCount() (int64, error) {
+	panic("not implemented")
+}
+
+func (s *MemStatusStore) UpdateLastActivityAt(userId string, lastActivityAt int64) error {
+	panic("not implemented")
+}

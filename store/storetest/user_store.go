@@ -23,8 +23,10 @@ const (
 )
 
 func cleanupStatusStore(t *testing.T, s SqlStore) {
-	_, execerr := s.GetMaster().ExecNoTimeout(` DELETE FROM Status `)
-	require.NoError(t, execerr)
+	if s != nil {
+		_, execerr := s.GetMaster().ExecNoTimeout(` DELETE FROM Status `)
+		require.NoError(t, execerr)
+	}
 }
 
 func TestUserStore(t *testing.T, ss store.Store, s SqlStore) {

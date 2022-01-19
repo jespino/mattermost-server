@@ -5,12 +5,17 @@ package memstore
 
 import (
 	"context"
+	"sync"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
 )
 
-type MemChannelStore struct{}
+type MemChannelStore struct {
+	channels []*model.Channel
+	members  []*model.ChannelMember
+	mutex    sync.RWMutex
+}
 
 func (s *MemChannelStore) ClearCaches() {}
 
@@ -22,7 +27,8 @@ func (s *MemChannelStore) ClearSidebarOnTeamLeave(userId, teamId string) error {
 }
 
 func (s *MemChannelStore) CreateInitialSidebarCategories(userId, teamId string) (*model.OrderedSidebarCategories, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.OrderedSidebarCategories{}, nil
 }
 
 func (s *MemChannelStore) MigrateFavoritesToSidebarChannels(lastUserId string, runningOrder int64) (map[string]interface{}, error) {
@@ -70,7 +76,39 @@ func (s *MemChannelStore) DeleteSidebarCategory(categoryId string) error {
 }
 
 func (s *MemChannelStore) Save(channel *model.Channel, maxChannelsPerTeam int64) (*model.Channel, error) {
-	panic("not implemented")
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if channel.DeleteAt != 0 {
+		return nil, store.NewErrInvalidInput("Channel", "DeleteAt", channel.DeleteAt)
+	}
+
+	if channel.Type == model.ChannelTypeDirect {
+		return nil, store.NewErrInvalidInput("Channel", "Type", channel.Type)
+	}
+
+	if channel.Id != "" && !channel.IsShared() {
+		return nil, store.NewErrInvalidInput("Channel", "Id", channel.Id)
+	}
+
+	channel.PreSave()
+	if err := channel.IsValid(); err != nil { // TODO: this needs to return plain error in v6.
+		return nil, err // we just pass through the error as-is for now.
+	}
+
+	if channel.Type != model.ChannelTypeDirect && channel.Type != model.ChannelTypeGroup && maxChannelsPerTeam >= 0 {
+		var count int64 = 0
+		for _, c := range s.channels {
+			if c.DeleteAt == 0 {
+				count++
+			}
+		}
+		if count >= maxChannelsPerTeam {
+			return nil, store.NewErrLimitExceeded("channels_per_team", int(count), "teamId="+channel.TeamId)
+		}
+	}
+
+	return channel, nil
 }
 
 func (s *MemChannelStore) CreateDirectChannel(user *model.User, otherUser *model.User, channelOptions ...model.ChannelOption) (*model.Channel, error) {
@@ -89,16 +127,20 @@ func (s *MemChannelStore) GetChannelUnread(channelId, userId string) (*model.Cha
 	panic("not implemented")
 }
 
-func (s *MemChannelStore) InvalidateChannel(id string) {
-	panic("not implemented")
-}
+func (s *MemChannelStore) InvalidateChannel(id string) {}
 
-func (s *MemChannelStore) InvalidateChannelByName(teamId, name string) {
-	panic("not implemented")
-}
+func (s *MemChannelStore) InvalidateChannelByName(teamId, name string) {}
 
 func (s *MemChannelStore) Get(id string, allowFromCache bool) (*model.Channel, error) {
-	panic("not implemented")
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	for _, c := range s.channels {
+		if c.Id == id {
+			return c, nil
+		}
+	}
+	return nil, store.NewErrNotFound("Channel", id)
 }
 
 func (s *MemChannelStore) GetPinnedPosts(channelId string) (*model.PostList, error) {
@@ -110,7 +152,15 @@ func (s *MemChannelStore) GetFromMaster(id string) (*model.Channel, error) {
 }
 
 func (s *MemChannelStore) Delete(channelId string, time int64) error {
-	panic("not implemented")
+	c, _ := s.Get(channelId, false)
+	if c != nil && c.DeleteAt == 0 {
+		s.mutex.Lock()
+		defer s.mutex.Unlock()
+
+		c.DeleteAt = time
+		c.UpdateAt = time
+	}
+	return store.NewErrNotFound("Channel", channelId)
 }
 
 func (s *MemChannelStore) Restore(channelId string, time int64) error {
@@ -178,19 +228,56 @@ func (s *MemChannelStore) GetTeamChannels(teamId string) (model.ChannelList, err
 }
 
 func (s *MemChannelStore) GetByName(teamId string, name string, allowFromCache bool) (*model.Channel, error) {
-	panic("not implemented")
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	for _, c := range s.channels {
+		if c.DeleteAt == 0 && c.TeamId == teamId && c.Name == name {
+			return c, nil
+		}
+	}
+	return nil, store.NewErrNotFound("Channel", teamId+"-"+name)
 }
 
 func (s *MemChannelStore) GetByNames(teamId string, names []string, allowFromCache bool) ([]*model.Channel, error) {
-	panic("not implemented")
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	result := []*model.Channel{}
+	for _, c := range s.channels {
+		if c.TeamId == teamId {
+			for _, n := range names {
+				if c.Name == n {
+					result = append(result, c)
+				}
+			}
+		}
+	}
+	return result, nil
 }
 
 func (s *MemChannelStore) GetByNameIncludeDeleted(teamId string, name string, allowFromCache bool) (*model.Channel, error) {
-	panic("not implemented")
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	for _, c := range s.channels {
+		if c.TeamId == teamId && c.Name == name {
+			return c, nil
+		}
+	}
+	return nil, store.NewErrNotFound("Channel", teamId+"-"+name)
 }
 
 func (s *MemChannelStore) GetDeletedByName(teamId string, name string) (*model.Channel, error) {
-	panic("not implemented")
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	for _, c := range s.channels {
+		if c.DeleteAt != 0 && c.TeamId == teamId && c.Name == name {
+			return c, nil
+		}
+	}
+	return nil, store.NewErrNotFound("Channel", teamId+"-"+name)
 }
 
 func (s *MemChannelStore) GetDeleted(teamId string, offset int, limit int, userId string) (model.ChannelList, error) {
@@ -198,11 +285,36 @@ func (s *MemChannelStore) GetDeleted(teamId string, offset int, limit int, userI
 }
 
 func (s *MemChannelStore) SaveMultipleMembers(members []*model.ChannelMember) ([]*model.ChannelMember, error) {
-	panic("not implemented")
+	for _, member := range members {
+		defer s.InvalidateAllChannelMembersForUser(member.UserId)
+	}
+
+	newChannelMembers := map[string]int{}
+	users := map[string]bool{}
+	for _, member := range members {
+		newChannelMembers[member.ChannelId] = 0
+	}
+
+	for _, member := range members {
+		newChannelMembers[member.ChannelId]++
+		users[member.UserId] = true
+
+		if err := member.IsValid(); err != nil {
+			return nil, err
+		}
+	}
+
+	s.members = append(s.members, members...)
+
+	return members, nil
 }
 
 func (s *MemChannelStore) SaveMember(member *model.ChannelMember) (*model.ChannelMember, error) {
-	panic("not implemented")
+	newMembers, err := s.SaveMultipleMembers([]*model.ChannelMember{member})
+	if err != nil {
+		return nil, err
+	}
+	return newMembers[0], nil
 }
 
 func (s *MemChannelStore) UpdateMultipleMembers(members []*model.ChannelMember) ([]*model.ChannelMember, error) {
@@ -226,12 +338,18 @@ func (s *MemChannelStore) GetChannelMembersTimezones(channelId string) ([]model.
 }
 
 func (s *MemChannelStore) GetMember(ctx context.Context, channelId string, userId string) (*model.ChannelMember, error) {
-	panic("not implemented")
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	for _, m := range s.members {
+		if m.ChannelId == channelId && m.UserId == userId {
+			return m, nil
+		}
+	}
+	return nil, store.NewErrNotFound("ChannelMember", channelId+"-"+userId)
 }
 
-func (s *MemChannelStore) InvalidateAllChannelMembersForUser(userId string) {
-	panic("not implemented")
-}
+func (s *MemChannelStore) InvalidateAllChannelMembersForUser(userId string) {}
 
 func (s *MemChannelStore) IsUserInChannelUseCache(userId string, channelId string) bool {
 	panic("not implemented")
@@ -250,12 +368,11 @@ func (s *MemChannelStore) InvalidateCacheForChannelMembersNotifyProps(channelId 
 }
 
 func (s *MemChannelStore) GetAllChannelMembersNotifyPropsForChannel(channelId string, allowFromCache bool) (map[string]model.StringMap, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return map[string]model.StringMap{}, nil
 }
 
-func (s *MemChannelStore) InvalidateMemberCount(channelId string) {
-	panic("not implemented")
-}
+func (s *MemChannelStore) InvalidateMemberCount(channelId string) {}
 
 func (s *MemChannelStore) GetMemberCountFromCache(channelId string) int64 {
 	panic("not implemented")

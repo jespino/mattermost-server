@@ -163,7 +163,8 @@ func (s *MemGroupStore) CountChannelMembersMinusGroupMembers(channelID string, g
 }
 
 func (s *MemGroupStore) AdminRoleGroupsForSyncableMember(userID, syncableID string, syncableType model.GroupSyncableType) ([]string, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []string{}, nil
 }
 
 func (s *MemGroupStore) PermittedSyncableAdmins(syncableID string, syncableType model.GroupSyncableType) ([]string, error) {
