@@ -123,18 +123,26 @@ func (s *MemTeamStore) AnalyticsTeamCount(opts *model.TeamSearch) (int64, error)
 }
 
 func (s *MemTeamStore) SaveMultipleMembers(members []*model.TeamMember, maxUsersPerTeam int) ([]*model.TeamMember, error) {
-	newTeamMembers := map[string]int{}
-	users := map[string]bool{}
+	totalTeamMembers := map[string]int{}
 	for _, member := range members {
-		newTeamMembers[member.TeamId] = 0
+		totalTeamMembers[member.TeamId] = 0
 	}
 
 	for _, member := range members {
-		newTeamMembers[member.TeamId]++
-		users[member.UserId] = true
+		totalTeamMembers[member.TeamId]++
 
 		if err := member.IsValid(); err != nil {
 			return nil, err
+		}
+	}
+
+	for _, m := range s.members {
+		totalTeamMembers[m.TeamId]++
+	}
+
+	for _, numMembers := range totalTeamMembers {
+		if numMembers > maxUsersPerTeam {
+			return nil, store.NewErrLimitExceeded("TeamMember", numMembers, "team members limit exceeded")
 		}
 	}
 

@@ -20,7 +20,16 @@ func newMemStatusStore() store.StatusStore {
 }
 
 func (s *MemStatusStore) SaveOrUpdate(st *model.Status) error {
-	panic("not implemented")
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	for _, item := range s.status {
+		if item.UserId == st.UserId {
+			*item = *st
+			return nil
+		}
+	}
+	s.status = append(s.status, st)
+	return nil
 }
 
 func (s *MemStatusStore) Get(userId string) (*model.Status, error) {

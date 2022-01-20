@@ -409,11 +409,41 @@ func (us *MemUserStore) Count(options model.UserCountOptions) (int64, error) {
 }
 
 func (us *MemUserStore) AnalyticsActiveCount(timePeriod int64, options model.UserCountOptions) (int64, error) {
-	panic("not implemented")
+	us.mutex.RLock()
+	defer us.mutex.RUnlock()
+
+	var counter int64 = 0
+	for _, u := range us.users {
+		if u.LastActivityAt > timePeriod {
+			if !options.IncludeDeleted && u.DeleteAt != 0 {
+				continue
+			}
+			if !options.IncludeBotAccounts && u.IsBot {
+				continue
+			}
+			counter++
+		}
+	}
+	return counter, nil
 }
 
 func (us *MemUserStore) AnalyticsActiveCountForPeriod(startTime int64, endTime int64, options model.UserCountOptions) (int64, error) {
-	panic("not implemented")
+	us.mutex.RLock()
+	defer us.mutex.RUnlock()
+
+	var counter int64 = 0
+	for _, u := range us.users {
+		if u.LastActivityAt > startTime && u.LastActivityAt <= endTime {
+			if !options.IncludeDeleted && u.DeleteAt != 0 {
+				continue
+			}
+			if !options.IncludeBotAccounts && u.IsBot {
+				continue
+			}
+			counter++
+		}
+	}
+	return counter, nil
 }
 
 func (us *MemUserStore) GetUnreadCount(userId string) (int64, error) {
