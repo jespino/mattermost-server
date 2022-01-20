@@ -4,15 +4,12 @@
 package memstore
 
 import (
-	"sync"
-
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
 )
 
 type MemChannelMemberHistoryStore struct {
 	membersHistory []*model.ChannelMemberHistory
-	mutex          sync.RWMutex
 }
 
 func newMemChannelMemberHistoryStore() store.ChannelMemberHistoryStore {
@@ -20,17 +17,11 @@ func newMemChannelMemberHistoryStore() store.ChannelMemberHistoryStore {
 }
 
 func (s *MemChannelMemberHistoryStore) LogJoinEvent(userId string, channelId string, joinTime int64) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	s.membersHistory = append(s.membersHistory, &model.ChannelMemberHistory{UserId: userId, ChannelId: channelId, JoinTime: joinTime})
 	return nil
 }
 
 func (s *MemChannelMemberHistoryStore) LogLeaveEvent(userId string, channelId string, leaveTime int64) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	for _, h := range s.membersHistory {
 		if h.UserId == userId && h.ChannelId == channelId {
 			h.LeaveTime = &leaveTime

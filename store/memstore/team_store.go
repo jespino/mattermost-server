@@ -5,7 +5,6 @@ package memstore
 
 import (
 	"context"
-	"sync"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
@@ -14,16 +13,12 @@ import (
 type MemTeamStore struct {
 	teams   []*model.Team
 	members []*model.TeamMember
-	mutex   sync.RWMutex
 }
 
 func newMemTeamStore() store.TeamStore {
 	return &MemTeamStore{}
 }
 func (s *MemTeamStore) Save(team *model.Team) (*model.Team, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	if team.Id != "" {
 		return nil, store.NewErrInvalidInput("Team", "id", team.Id)
 	}
@@ -44,9 +39,6 @@ func (s *MemTeamStore) Update(team *model.Team) (*model.Team, error) {
 }
 
 func (s *MemTeamStore) Get(id string) (*model.Team, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	for _, t := range s.teams {
 		if t.Id == id {
 			return t, nil
@@ -104,9 +96,6 @@ func (s *MemTeamStore) GetAllTeamListing() ([]*model.Team, error) {
 }
 
 func (s *MemTeamStore) PermanentDelete(teamId string) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	result := []*model.Team{}
 	for _, t := range s.teams {
 		if t.Id != teamId {

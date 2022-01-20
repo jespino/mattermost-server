@@ -6,7 +6,6 @@ package memstore
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
@@ -14,7 +13,6 @@ import (
 
 type MemSessionStore struct {
 	sessions []*model.Session
-	mutex    sync.RWMutex
 }
 
 func newMemSessionStore() store.SessionStore {

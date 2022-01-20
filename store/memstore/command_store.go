@@ -4,15 +4,12 @@
 package memstore
 
 import (
-	"sync"
-
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
 )
 
 type MemCommandStore struct {
 	commands []*model.Command
-	mutex    sync.RWMutex
 }
 
 func newMemCommandStore() store.CommandStore {
@@ -20,9 +17,6 @@ func newMemCommandStore() store.CommandStore {
 }
 
 func (s *MemCommandStore) Save(command *model.Command) (*model.Command, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	if command.Id != "" {
 		return nil, store.NewErrInvalidInput("Command", "CommandId", command.Id)
 	}
@@ -38,9 +32,6 @@ func (s *MemCommandStore) Save(command *model.Command) (*model.Command, error) {
 }
 
 func (s *MemCommandStore) Get(id string) (*model.Command, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	for _, command := range s.commands {
 		if command.Id == id && command.DeleteAt == 0 {
 			return command, nil
@@ -51,8 +42,6 @@ func (s *MemCommandStore) Get(id string) (*model.Command, error) {
 }
 
 func (s *MemCommandStore) GetByTeam(teamId string) ([]*model.Command, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
 	result := []*model.Command{}
 	for _, command := range s.commands {
 		if command.TeamId == teamId && command.DeleteAt == 0 {
@@ -64,8 +53,6 @@ func (s *MemCommandStore) GetByTeam(teamId string) ([]*model.Command, error) {
 }
 
 func (s *MemCommandStore) GetByTrigger(teamId string, trigger string) (*model.Command, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
 	for _, command := range s.commands {
 		if command.TeamId == teamId && command.Trigger == trigger && command.DeleteAt == 0 {
 			return command, nil
@@ -76,8 +63,6 @@ func (s *MemCommandStore) GetByTrigger(teamId string, trigger string) (*model.Co
 }
 
 func (s *MemCommandStore) Delete(commandId string, time int64) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	for _, command := range s.commands {
 		if command.Id == commandId {
 			command.DeleteAt = time
@@ -88,8 +73,6 @@ func (s *MemCommandStore) Delete(commandId string, time int64) error {
 }
 
 func (s *MemCommandStore) PermanentDeleteByTeam(teamId string) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	result := []*model.Command{}
 	for _, command := range s.commands {
 		if command.TeamId != teamId {
@@ -101,8 +84,6 @@ func (s *MemCommandStore) PermanentDeleteByTeam(teamId string) error {
 }
 
 func (s *MemCommandStore) PermanentDeleteByUser(userId string) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	result := []*model.Command{}
 	for _, command := range s.commands {
 		if command.CreatorId != userId {
@@ -114,8 +95,6 @@ func (s *MemCommandStore) PermanentDeleteByUser(userId string) error {
 }
 
 func (s *MemCommandStore) Update(cmd *model.Command) (*model.Command, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	cmd.UpdateAt = model.GetMillis()
 
 	if err := cmd.IsValid(); err != nil {
@@ -131,8 +110,6 @@ func (s *MemCommandStore) Update(cmd *model.Command) (*model.Command, error) {
 }
 
 func (s *MemCommandStore) AnalyticsCommandCount(teamId string) (int64, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
 	counter := int64(0)
 	for _, command := range s.commands {
 		if command.DeleteAt == 0 {

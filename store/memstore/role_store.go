@@ -6,7 +6,6 @@ package memstore
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
@@ -15,7 +14,6 @@ import (
 
 type MemRoleStore struct {
 	roles []*model.Role
-	mutex sync.RWMutex
 }
 
 func newMemRoleStore() store.RoleStore {
@@ -28,9 +26,6 @@ func (s *MemRoleStore) Save(role *model.Role) (*model.Role, error) {
 	}
 
 	if role.Id == "" {
-		s.mutex.Lock()
-		defer s.mutex.Unlock()
-
 		return s.createRole(role)
 	}
 
@@ -46,9 +41,6 @@ func (s *MemRoleStore) Save(role *model.Role) (*model.Role, error) {
 }
 
 func (s *MemRoleStore) Get(roleId string) (*model.Role, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	for _, r := range s.roles {
 		if r.Id == roleId {
 			return r, nil
@@ -58,9 +50,6 @@ func (s *MemRoleStore) Get(roleId string) (*model.Role, error) {
 }
 
 func (s *MemRoleStore) GetAll() ([]*model.Role, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	result := []*model.Role{}
 	for _, r := range s.roles {
 		if r.DeleteAt == 0 {
@@ -71,9 +60,6 @@ func (s *MemRoleStore) GetAll() ([]*model.Role, error) {
 }
 
 func (s *MemRoleStore) GetByName(ctx context.Context, name string) (*model.Role, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	for _, r := range s.roles {
 		if r.Name == name {
 			return r, nil
@@ -83,9 +69,6 @@ func (s *MemRoleStore) GetByName(ctx context.Context, name string) (*model.Role,
 }
 
 func (s *MemRoleStore) GetByNames(names []string) ([]*model.Role, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	result := []*model.Role{}
 	for _, r := range s.roles {
 		for _, name := range names {
@@ -100,9 +83,6 @@ func (s *MemRoleStore) GetByNames(names []string) ([]*model.Role, error) {
 func (s *MemRoleStore) Delete(roleId string) (*model.Role, error) {
 	r, _ := s.Get(roleId)
 	if r != nil && r.DeleteAt == 0 {
-		s.mutex.Lock()
-		defer s.mutex.Unlock()
-
 		now := model.GetMillis()
 		r.DeleteAt = now
 		r.UpdateAt = now
@@ -111,34 +91,22 @@ func (s *MemRoleStore) Delete(roleId string) (*model.Role, error) {
 }
 
 func (s *MemRoleStore) PermanentDeleteAll() error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	s.roles = []*model.Role{}
 	return nil
 }
 
 func (s *MemRoleStore) ChannelHigherScopedPermissions(roleNames []string) (map[string]*model.RolePermissions, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	// TODO: not implemented
 	roleNameHigherScopedPermissions := map[string]*model.RolePermissions{}
 	return roleNameHigherScopedPermissions, nil
 }
 
 func (s *MemRoleStore) AllChannelSchemeRoles() ([]*model.Role, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	// TODO: Implement this
 	return []*model.Role{}, nil
 }
 
 func (s *MemRoleStore) ChannelRolesUnderTeamRole(roleName string) ([]*model.Role, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	// TODO: Implement this
 	return []*model.Role{}, nil
 }

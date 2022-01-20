@@ -5,7 +5,6 @@ package memstore
 
 import (
 	"context"
-	"sync"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -16,7 +15,6 @@ import (
 type MemPostStore struct {
 	MemStore *MemStore
 	posts    []*model.Post
-	mutex    sync.RWMutex
 }
 
 func newMemPostStore(memStore *MemStore) store.PostStore {

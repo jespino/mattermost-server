@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"sync"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/pkg/errors"
@@ -20,7 +19,6 @@ import (
 type MemUserStore struct {
 	MemStore *MemStore
 	users    []*model.User
-	mutex    sync.RWMutex
 }
 
 func (us *MemUserStore) ClearCaches() {}
@@ -31,10 +29,11 @@ func newMemUserStore(memStore *MemStore) store.UserStore {
 	return &MemUserStore{MemStore: memStore}
 }
 
-func (us *MemUserStore) Save(user *model.User) (*model.User, error) {
-	us.mutex.Lock()
-	defer us.mutex.Unlock()
+func (us *MemUserStore) SaveWithoutChecks(user *model.User) {
+	us.users = append(us.users, user)
+}
 
+func (us *MemUserStore) Save(user *model.User) (*model.User, error) {
 	if user.Id != "" && !user.IsRemote() {
 		return nil, store.NewErrInvalidInput("User", "id", user.Id)
 	}
@@ -201,10 +200,6 @@ func (us *MemUserStore) GetMany(ctx context.Context, ids []string) ([]*model.Use
 }
 
 func (us *MemUserStore) Get(ctx context.Context, id string) (*model.User, error) {
-	us.mutex.RLock()
-	defer us.mutex.RUnlock()
-	fmt.Println(us.users)
-
 	for _, u := range us.users {
 		if u.Id == id {
 			return u, nil
@@ -349,9 +344,6 @@ func (us *MemUserStore) GetForLogin(loginId string, allowSignInWithUsername, all
 }
 
 func (us *MemUserStore) VerifyEmail(userId, email string) (string, error) {
-	us.mutex.RLock()
-	defer us.mutex.RUnlock()
-
 	for _, u := range us.users {
 		if u.Id == userId {
 			u.EmailVerified = true
@@ -364,9 +356,6 @@ func (us *MemUserStore) VerifyEmail(userId, email string) (string, error) {
 }
 
 func (us *MemUserStore) PermanentDelete(userId string) error {
-	us.mutex.Lock()
-	defer us.mutex.Unlock()
-
 	result := []*model.User{}
 	for _, u := range us.users {
 		if u.Id != userId {
@@ -378,9 +367,6 @@ func (us *MemUserStore) PermanentDelete(userId string) error {
 }
 
 func (us *MemUserStore) Count(options model.UserCountOptions) (int64, error) {
-	us.mutex.RLock()
-	defer us.mutex.RUnlock()
-
 	var counter int64 = 0
 
 	for _, u := range us.users {
@@ -409,9 +395,6 @@ func (us *MemUserStore) Count(options model.UserCountOptions) (int64, error) {
 }
 
 func (us *MemUserStore) AnalyticsActiveCount(timePeriod int64, options model.UserCountOptions) (int64, error) {
-	us.mutex.RLock()
-	defer us.mutex.RUnlock()
-
 	var counter int64 = 0
 	for _, u := range us.users {
 		if u.LastActivityAt > timePeriod {
@@ -428,9 +411,6 @@ func (us *MemUserStore) AnalyticsActiveCount(timePeriod int64, options model.Use
 }
 
 func (us *MemUserStore) AnalyticsActiveCountForPeriod(startTime int64, endTime int64, options model.UserCountOptions) (int64, error) {
-	us.mutex.RLock()
-	defer us.mutex.RUnlock()
-
 	var counter int64 = 0
 	for _, u := range us.users {
 		if u.LastActivityAt > startTime && u.LastActivityAt <= endTime {

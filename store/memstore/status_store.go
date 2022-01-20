@@ -4,15 +4,12 @@
 package memstore
 
 import (
-	"sync"
-
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
 )
 
 type MemStatusStore struct {
 	status []*model.Status
-	mutex  sync.RWMutex
 }
 
 func newMemStatusStore() store.StatusStore {
@@ -20,8 +17,6 @@ func newMemStatusStore() store.StatusStore {
 }
 
 func (s *MemStatusStore) SaveOrUpdate(st *model.Status) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	for _, item := range s.status {
 		if item.UserId == st.UserId {
 			*item = *st
@@ -45,8 +40,6 @@ func (s *MemStatusStore) UpdateExpiredDNDStatuses() ([]*model.Status, error) {
 }
 
 func (s *MemStatusStore) ResetAll() error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	s.status = []*model.Status{}
 	return nil
 }

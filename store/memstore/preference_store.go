@@ -4,15 +4,12 @@
 package memstore
 
 import (
-	"sync"
-
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
 )
 
 type MemPreferenceStore struct {
 	preferences []*model.Preference
-	mutex       sync.RWMutex
 }
 
 func newMemPreferenceStore() store.PreferenceStore {
@@ -20,9 +17,6 @@ func newMemPreferenceStore() store.PreferenceStore {
 }
 
 func (s *MemPreferenceStore) Save(preferences model.Preferences) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	for _, preference := range preferences {
 		preference.PreUpdate()
 		if err := preference.IsValid(); err != nil {

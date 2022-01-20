@@ -5,7 +5,6 @@ package memstore
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
@@ -15,7 +14,6 @@ import (
 type MemSchemeStore struct {
 	MemStore *MemStore
 	schemes  []*model.Scheme
-	mutex    sync.RWMutex
 }
 
 func newMemSchemeStore(memStore *MemStore) store.SchemeStore {
@@ -24,9 +22,6 @@ func newMemSchemeStore(memStore *MemStore) store.SchemeStore {
 
 func (s *MemSchemeStore) Save(scheme *model.Scheme) (*model.Scheme, error) {
 	if scheme.Id == "" {
-		s.mutex.Lock()
-		defer s.mutex.Unlock()
-
 		for _, r := range s.schemes {
 			if r.Name == scheme.Name {
 				return nil, errors.New("duplicated name")
@@ -56,9 +51,6 @@ func (s *MemSchemeStore) Save(scheme *model.Scheme) (*model.Scheme, error) {
 }
 
 func (s *MemSchemeStore) Get(schemeId string) (*model.Scheme, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	for _, r := range s.schemes {
 		if r.Id == schemeId {
 			return r, nil
@@ -68,9 +60,6 @@ func (s *MemSchemeStore) Get(schemeId string) (*model.Scheme, error) {
 }
 
 func (s *MemSchemeStore) GetByName(schemeName string) (*model.Scheme, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	for _, r := range s.schemes {
 		if r.Name == schemeName {
 			return r, nil
@@ -82,9 +71,6 @@ func (s *MemSchemeStore) GetByName(schemeName string) (*model.Scheme, error) {
 func (s *MemSchemeStore) Delete(schemeId string) (*model.Scheme, error) {
 	sch, _ := s.Get(schemeId)
 	if sch != nil && sch.DeleteAt == 0 {
-		s.mutex.Lock()
-		defer s.mutex.Unlock()
-
 		now := model.GetMillis()
 		sch.DeleteAt = now
 		sch.UpdateAt = now
@@ -93,8 +79,6 @@ func (s *MemSchemeStore) Delete(schemeId string) (*model.Scheme, error) {
 }
 
 func (s *MemSchemeStore) GetAllPage(scope string, offset int, limit int) ([]*model.Scheme, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
 	schemes := []*model.Scheme{}
 	counter := 0
 	for _, sch := range s.schemes {
@@ -113,16 +97,11 @@ func (s *MemSchemeStore) GetAllPage(scope string, offset int, limit int) ([]*mod
 }
 
 func (s *MemSchemeStore) PermanentDeleteAll() error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	s.schemes = []*model.Scheme{}
 	return nil
 }
 
 func (s *MemSchemeStore) CountByScope(scope string) (int64, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	var counter int64 = 0
 	for _, sch := range s.schemes {
 		if sch.DeleteAt == 0 && sch.Scope == scope {

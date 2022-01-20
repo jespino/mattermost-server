@@ -5,7 +5,6 @@ package memstore
 
 import (
 	"context"
-	"sync"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
@@ -14,7 +13,6 @@ import (
 type MemChannelStore struct {
 	channels []*model.Channel
 	members  []*model.ChannelMember
-	mutex    sync.RWMutex
 }
 
 func (s *MemChannelStore) ClearCaches() {}
@@ -76,9 +74,6 @@ func (s *MemChannelStore) DeleteSidebarCategory(categoryId string) error {
 }
 
 func (s *MemChannelStore) Save(channel *model.Channel, maxChannelsPerTeam int64) (*model.Channel, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	if channel.DeleteAt != 0 {
 		return nil, store.NewErrInvalidInput("Channel", "DeleteAt", channel.DeleteAt)
 	}
@@ -132,9 +127,6 @@ func (s *MemChannelStore) InvalidateChannel(id string) {}
 func (s *MemChannelStore) InvalidateChannelByName(teamId, name string) {}
 
 func (s *MemChannelStore) Get(id string, allowFromCache bool) (*model.Channel, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	for _, c := range s.channels {
 		if c.Id == id {
 			return c, nil
@@ -154,9 +146,6 @@ func (s *MemChannelStore) GetFromMaster(id string) (*model.Channel, error) {
 func (s *MemChannelStore) Delete(channelId string, time int64) error {
 	c, _ := s.Get(channelId, false)
 	if c != nil && c.DeleteAt == 0 {
-		s.mutex.Lock()
-		defer s.mutex.Unlock()
-
 		c.DeleteAt = time
 		c.UpdateAt = time
 	}
@@ -228,9 +217,6 @@ func (s *MemChannelStore) GetTeamChannels(teamId string) (model.ChannelList, err
 }
 
 func (s *MemChannelStore) GetByName(teamId string, name string, allowFromCache bool) (*model.Channel, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	for _, c := range s.channels {
 		if c.DeleteAt == 0 && c.TeamId == teamId && c.Name == name {
 			return c, nil
@@ -240,9 +226,6 @@ func (s *MemChannelStore) GetByName(teamId string, name string, allowFromCache b
 }
 
 func (s *MemChannelStore) GetByNames(teamId string, names []string, allowFromCache bool) ([]*model.Channel, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	result := []*model.Channel{}
 	for _, c := range s.channels {
 		if c.TeamId == teamId {
@@ -257,9 +240,6 @@ func (s *MemChannelStore) GetByNames(teamId string, names []string, allowFromCac
 }
 
 func (s *MemChannelStore) GetByNameIncludeDeleted(teamId string, name string, allowFromCache bool) (*model.Channel, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	for _, c := range s.channels {
 		if c.TeamId == teamId && c.Name == name {
 			return c, nil
@@ -269,9 +249,6 @@ func (s *MemChannelStore) GetByNameIncludeDeleted(teamId string, name string, al
 }
 
 func (s *MemChannelStore) GetDeletedByName(teamId string, name string) (*model.Channel, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	for _, c := range s.channels {
 		if c.DeleteAt != 0 && c.TeamId == teamId && c.Name == name {
 			return c, nil
@@ -338,9 +315,6 @@ func (s *MemChannelStore) GetChannelMembersTimezones(channelId string) ([]model.
 }
 
 func (s *MemChannelStore) GetMember(ctx context.Context, channelId string, userId string) (*model.ChannelMember, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	for _, m := range s.members {
 		if m.ChannelId == channelId && m.UserId == userId {
 			return m, nil

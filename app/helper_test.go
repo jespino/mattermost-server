@@ -152,10 +152,13 @@ func Setup(tb testing.TB) *TestHelper {
 	if testing.Short() {
 		tb.SkipNow()
 	}
-	dbStore := mainHelper.GetStore()
+	// dbStore := mainHelper.GetStore()
+	// dbStore.DropAllTables()
+	// dbStore.MarkSystemRanUnitTests()
+	dbStore := memstore.New()
 	dbStore.DropAllTables()
 	dbStore.MarkSystemRanUnitTests()
-	mainHelper.PreloadMigrations()
+	// mainHelper.PreloadMigrations()
 
 	return setupTestHelper(dbStore, false, true, tb)
 }
@@ -222,25 +225,27 @@ var userCache struct {
 func (th *TestHelper) InitBasic() *TestHelper {
 	// create users once and cache them because password hashing is slow
 	// TODO: Run this only once on SQL databases
-	// initBasicOnce.Do(func() {
-	th.SystemAdminUser = th.CreateUser()
-	th.App.UpdateUserRoles(th.SystemAdminUser.Id, model.SystemUserRoleId+" "+model.SystemAdminRoleId, false)
-	th.SystemAdminUser, _ = th.App.GetUser(th.SystemAdminUser.Id)
-	userCache.SystemAdminUser = th.SystemAdminUser.DeepCopy()
+	initBasicOnce.Do(func() {
+		th.SystemAdminUser = th.CreateUser()
+		th.App.UpdateUserRoles(th.SystemAdminUser.Id, model.SystemUserRoleId+" "+model.SystemAdminRoleId, false)
+		th.SystemAdminUser, _ = th.App.GetUser(th.SystemAdminUser.Id)
+		userCache.SystemAdminUser = th.SystemAdminUser.DeepCopy()
 
-	th.BasicUser = th.CreateUser()
-	th.BasicUser, _ = th.App.GetUser(th.BasicUser.Id)
-	userCache.BasicUser = th.BasicUser.DeepCopy()
+		th.BasicUser = th.CreateUser()
+		th.BasicUser, _ = th.App.GetUser(th.BasicUser.Id)
+		userCache.BasicUser = th.BasicUser.DeepCopy()
 
-	th.BasicUser2 = th.CreateUser()
-	th.BasicUser2, _ = th.App.GetUser(th.BasicUser2.Id)
-	userCache.BasicUser2 = th.BasicUser2.DeepCopy()
-	// })
+		th.BasicUser2 = th.CreateUser()
+		th.BasicUser2, _ = th.App.GetUser(th.BasicUser2.Id)
+		userCache.BasicUser2 = th.BasicUser2.DeepCopy()
+	})
 	// restore cached users
 	th.SystemAdminUser = userCache.SystemAdminUser.DeepCopy()
 	th.BasicUser = userCache.BasicUser.DeepCopy()
 	th.BasicUser2 = userCache.BasicUser2.DeepCopy()
-	mainHelper.GetSQLStore().GetMaster().Insert(th.SystemAdminUser, th.BasicUser, th.BasicUser2)
+	mainHelper.Store.Store.User().(*memstore.MemUserStore).SaveWithoutChecks(th.SystemAdminUser)
+	mainHelper.Store.Store.User().(*memstore.MemUserStore).SaveWithoutChecks(th.BasicUser)
+	mainHelper.Store.Store.User().(*memstore.MemUserStore).SaveWithoutChecks(th.BasicUser2)
 
 	th.BasicTeam = th.CreateTeam()
 
