@@ -4594,7 +4594,7 @@ func testUserStoreGetUsersBatchForIndexing(t *testing.T, ss store.Store) {
 	res1List, err := ss.User().GetUsersBatchForIndexing(startTime, endTime, 100)
 	require.NoError(t, err)
 
-	assert.Len(t, res1List, 1)
+	require.Len(t, res1List, 1)
 	assert.Equal(t, res1List[0].Username, u2.Username)
 	assert.ElementsMatch(t, res1List[0].TeamsIds, []string{t1.Id})
 	assert.ElementsMatch(t, res1List[0].ChannelsIds, []string{cPub1.Id, cPub2.Id})

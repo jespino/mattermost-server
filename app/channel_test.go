@@ -650,6 +650,7 @@ func TestSetChannelsMuted(t *testing.T) {
 		// Mute both channels
 		updated, err := th.App.setChannelsMuted([]string{channel1.Id, channel2.Id}, th.BasicUser.Id, true)
 		require.Nil(t, err)
+		require.Len(t, updated, 2)
 		assert.True(t, updated[0].IsChannelMuted())
 		assert.True(t, updated[1].IsChannelMuted())
 

@@ -143,15 +143,18 @@ func (us *MemUserStore) Update(user *model.User, trustedUpdateData bool) (*model
 }
 
 func (us *MemUserStore) UpdateNotifyProps(userID string, props map[string]string) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (us *MemUserStore) UpdateLastPictureUpdate(userId string) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (us *MemUserStore) ResetLastPictureUpdate(userId string) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (us *MemUserStore) UpdateUpdateAt(userId string) (int64, error) {
@@ -166,15 +169,18 @@ func (us *MemUserStore) UpdateUpdateAt(userId string) (int64, error) {
 }
 
 func (us *MemUserStore) UpdatePassword(userId, hashedPassword string) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (us *MemUserStore) UpdateFailedPasswordAttempts(userId string, attempts int) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (us *MemUserStore) UpdateAuthData(userId string, service string, authData *string, email string, resetMfa bool) (string, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return "", nil
 }
 
 // ResetAuthDataToEmailForUsers resets the AuthData of users whose AuthService
@@ -183,15 +189,18 @@ func (us *MemUserStore) UpdateAuthData(userId string, service string, authData *
 // of users who *would* be affected is returned; otherwise, the number of
 // users who actually were affected is returned.
 func (us *MemUserStore) ResetAuthDataToEmailForUsers(service string, userIDs []string, includeDeleted bool, dryRun bool) (int, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (us *MemUserStore) UpdateMfaSecret(userId, secret string) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (us *MemUserStore) UpdateMfaActive(userId string, active bool) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 // GetMany returns a list of users for the provided list of ids
@@ -241,19 +250,23 @@ func (us *MemUserStore) GetAllAfter(limit int, afterId string) ([]*model.User, e
 }
 
 func (us *MemUserStore) GetEtagForAllProfiles() string {
-	panic("not implemented")
+	// TODO: Implement this
+	return ""
 }
 
 func (us *MemUserStore) GetAllProfiles(options *model.UserGetOptions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) GetEtagForProfiles(teamId string) string {
-	panic("not implemented")
+	// TODO: Implement this
+	return ""
 }
 
 func (us *MemUserStore) GetProfiles(options *model.UserGetOptions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) InvalidateProfilesInChannelCacheByUser(userId string) {}
@@ -261,11 +274,13 @@ func (us *MemUserStore) InvalidateProfilesInChannelCacheByUser(userId string) {}
 func (us *MemUserStore) InvalidateProfilesInChannelCache(channelId string) {}
 
 func (us *MemUserStore) GetProfilesInChannel(options *model.UserGetOptions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) GetProfilesInChannelByStatus(options *model.UserGetOptions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) GetAllProfilesInChannel(ctx context.Context, channelID string, allowFromCache bool) (map[string]*model.User, error) {
@@ -300,19 +315,23 @@ func (us *MemUserStore) GetProfilesNotInChannel(teamId string, channelId string,
 }
 
 func (us *MemUserStore) GetProfilesWithoutTeam(options *model.UserGetOptions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) GetProfilesByUsernames(usernames []string, viewRestrictions *model.ViewUsersRestrictions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) GetRecentlyActiveUsersForTeam(teamId string, offset, limit int, viewRestrictions *model.ViewUsersRestrictions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) GetNewUsersForTeam(teamId string, offset, limit int, viewRestrictions *model.ViewUsersRestrictions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) GetProfileByIds(ctx context.Context, userIds []string, options *store.UserGetByIdsOpts, allowFromCache bool) ([]*model.User, error) {
@@ -338,35 +357,43 @@ func (us *MemUserStore) GetProfileByIds(ctx context.Context, userIds []string, o
 }
 
 func (us *MemUserStore) GetProfileByGroupChannelIdsForUser(userId string, channelIds []string) (map[string][]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return map[string][]*model.User{}, nil
 }
 
 func (us *MemUserStore) GetSystemAdminProfiles() (map[string]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return map[string]*model.User{}, nil
 }
 
 func (us *MemUserStore) GetByEmail(email string) (*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.User{}, nil
 }
 
 func (us *MemUserStore) GetByAuth(authData *string, authService string) (*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.User{}, nil
 }
 
 func (us *MemUserStore) GetAllUsingAuthService(authService string) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) GetAllNotInAuthService(authServices []string) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) GetByUsername(username string) (*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.User{}, nil
 }
 
 func (us *MemUserStore) GetForLogin(loginId string, allowSignInWithUsername, allowSignInWithEmail bool) (*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.User{}, nil
 }
 
 func (us *MemUserStore) VerifyEmail(userId, email string) (string, error) {
@@ -453,71 +480,88 @@ func (us *MemUserStore) AnalyticsActiveCountForPeriod(startTime int64, endTime i
 }
 
 func (us *MemUserStore) GetUnreadCount(userId string) (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (us *MemUserStore) GetUnreadCountForChannel(userId string, channelId string) (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (us *MemUserStore) GetAnyUnreadPostCountForChannel(userId string, channelId string) (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (us *MemUserStore) Search(teamId string, term string, options *model.UserSearchOptions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) SearchWithoutTeam(term string, options *model.UserSearchOptions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) SearchNotInTeam(notInTeamId string, term string, options *model.UserSearchOptions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) SearchNotInChannel(teamId string, channelId string, term string, options *model.UserSearchOptions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) SearchInChannel(channelId string, term string, options *model.UserSearchOptions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) SearchInGroup(groupID string, term string, options *model.UserSearchOptions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) performSearch(query sq.SelectBuilder, term string, options *model.UserSearchOptions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) AnalyticsGetInactiveUsersCount() (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (us *MemUserStore) AnalyticsGetExternalUsers(hostDomain string) (bool, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return true, nil
 }
 
 func (us *MemUserStore) AnalyticsGetGuestCount() (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (us *MemUserStore) AnalyticsGetSystemAdminCount() (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (us *MemUserStore) GetProfilesNotInTeam(teamId string, groupConstrained bool, offset int, limit int, viewRestrictions *model.ViewUsersRestrictions) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) GetEtagForProfilesNotInTeam(teamId string) string {
-	panic("not implemented")
+	// TODO: Implement this
+	return ""
 }
 
 func (us *MemUserStore) ClearAllCustomRoleAssignments() error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (us *MemUserStore) InferSystemInstallDate() (int64, error) {
@@ -525,38 +569,41 @@ func (us *MemUserStore) InferSystemInstallDate() (int64, error) {
 }
 
 func (us *MemUserStore) GetUsersBatchForIndexing(startTime, endTime int64, limit int) ([]*model.UserForIndexing, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.UserForIndexing{}, nil
 }
 
 func (us *MemUserStore) GetTeamGroupUsers(teamID string) ([]*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) GetChannelGroupUsers(channelID string) ([]*model.User, error) {
-	panic("not implemented")
-}
-
-func applyViewRestrictionsFilter(query sq.SelectBuilder, restrictions *model.ViewUsersRestrictions, distinct bool) sq.SelectBuilder {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.User{}, nil
 }
 
 func (us *MemUserStore) PromoteGuestToUser(userId string) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (us *MemUserStore) DemoteUserToGuest(userID string) (*model.User, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.User{}, nil
 }
 
 func (us *MemUserStore) AutocompleteUsersInChannel(teamId, channelId, term string, options *model.UserSearchOptions) (*model.UserAutocompleteInChannel, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.UserAutocompleteInChannel{}, nil
 }
 
 // GetKnownUsers returns the list of user ids of users with any direct
 // relationship with a user. That means any user sharing any channel, including
 // direct and group channels.
 func (us *MemUserStore) GetKnownUsers(userId string) ([]string, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []string{}, nil
 }
 
 // IsEmpty returns whether or not the Users table is empty.

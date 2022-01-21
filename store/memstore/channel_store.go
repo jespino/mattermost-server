@@ -283,7 +283,8 @@ func (s *MemChannelStore) Update(channel *model.Channel) (*model.Channel, error)
 }
 
 func (s *MemChannelStore) GetChannelUnread(channelId, userId string) (*model.ChannelUnread, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.ChannelUnread{}, nil
 }
 
 func (s *MemChannelStore) InvalidateChannel(id string) {}
@@ -300,11 +301,12 @@ func (s *MemChannelStore) Get(id string, allowFromCache bool) (*model.Channel, e
 }
 
 func (s *MemChannelStore) GetPinnedPosts(channelId string) (*model.PostList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.PostList{}, nil
 }
 
 func (s *MemChannelStore) GetFromMaster(id string) (*model.Channel, error) {
-	panic("not implemented")
+	return s.Get(id, false)
 }
 
 func (s *MemChannelStore) Delete(channelId string, time int64) error {
@@ -317,11 +319,13 @@ func (s *MemChannelStore) Delete(channelId string, time int64) error {
 }
 
 func (s *MemChannelStore) Restore(channelId string, time int64) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) SetDeleteAt(channelId string, deleteAt, updateAt int64) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) PermanentDeleteByTeam(teamId string) error {
@@ -382,39 +386,48 @@ func (s *MemChannelStore) GetChannels(teamId string, userId string, includeDelet
 }
 
 func (s *MemChannelStore) GetChannelsByUser(userId string, includeDeleted bool, lastDeleteAt, pageSize int, fromChannelID string) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) GetAllChannelMembersById(channelID string) ([]string, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []string{}, nil
 }
 
 func (s *MemChannelStore) GetAllChannels(offset, limit int, opts store.ChannelSearchOpts) (model.ChannelListWithTeamData, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelListWithTeamData{}, nil
 }
 
 func (s *MemChannelStore) GetAllChannelsCount(opts store.ChannelSearchOpts) (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (s *MemChannelStore) GetMoreChannels(teamId string, userId string, offset int, limit int) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) GetPrivateChannelsForTeam(teamId string, offset int, limit int) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) GetPublicChannelsForTeam(teamId string, offset int, limit int) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) GetPublicChannelsByIdsForTeam(teamId string, channelIds []string) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) GetChannelCounts(teamId string, userId string) (*model.ChannelCounts, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.ChannelCounts{}, nil
 }
 
 func (s *MemChannelStore) GetTeamChannels(teamId string) (model.ChannelList, error) {
@@ -469,7 +482,8 @@ func (s *MemChannelStore) GetDeletedByName(teamId string, name string) (*model.C
 }
 
 func (s *MemChannelStore) GetDeleted(teamId string, offset int, limit int, userId string) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) SaveMultipleMembers(members []*model.ChannelMember) ([]*model.ChannelMember, error) {
@@ -506,15 +520,18 @@ func (s *MemChannelStore) SaveMember(member *model.ChannelMember) (*model.Channe
 }
 
 func (s *MemChannelStore) UpdateMultipleMembers(members []*model.ChannelMember) ([]*model.ChannelMember, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.ChannelMember{}, nil
 }
 
 func (s *MemChannelStore) UpdateMember(member *model.ChannelMember) (*model.ChannelMember, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.ChannelMember{}, nil
 }
 
 func (s *MemChannelStore) UpdateMemberNotifyProps(channelID, userID string, props map[string]string) (*model.ChannelMember, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.ChannelMember{}, nil
 }
 
 func (s *MemChannelStore) GetMembers(channelId string, offset, limit int) (model.ChannelMembers, error) {
@@ -532,7 +549,8 @@ func (s *MemChannelStore) GetMembers(channelId string, offset, limit int) (model
 }
 
 func (s *MemChannelStore) GetChannelMembersTimezones(channelId string) ([]model.StringMap, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []model.StringMap{}, nil
 }
 
 func (s *MemChannelStore) GetMember(ctx context.Context, channelId string, userId string) (*model.ChannelMember, error) {
@@ -547,11 +565,13 @@ func (s *MemChannelStore) GetMember(ctx context.Context, channelId string, userI
 func (s *MemChannelStore) InvalidateAllChannelMembersForUser(userId string) {}
 
 func (s *MemChannelStore) IsUserInChannelUseCache(userId string, channelId string) bool {
-	panic("not implemented")
+	// TODO: Implement this
+	return false
 }
 
 func (s *MemChannelStore) GetMemberForPost(postId string, userId string) (*model.ChannelMember, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.ChannelMember{}, nil
 }
 
 func (s *MemChannelStore) GetAllChannelMembersForUser(userId string, allowFromCache bool, includeDeleted bool) (map[string]string, error) {
@@ -632,19 +652,22 @@ func (s *MemChannelStore) GetMemberCount(channelId string, allowFromCache bool) 
 }
 
 func (s *MemChannelStore) GetMemberCountsByGroup(ctx context.Context, channelID string, includeTimezones bool) ([]*model.ChannelMemberCountByGroup, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.ChannelMemberCountByGroup{}, nil
 }
 
 func (s *MemChannelStore) InvalidatePinnedPostCount(channelId string) {}
 
 func (s *MemChannelStore) GetPinnedPostCount(channelId string, allowFromCache bool) (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (s *MemChannelStore) InvalidateGuestCount(channelId string) {}
 
 func (s *MemChannelStore) GetGuestCount(channelId string, allowFromCache bool) (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (s *MemChannelStore) RemoveMembers(channelId string, userIds []string) error {
@@ -699,47 +722,58 @@ func (s *MemChannelStore) RemoveAllDeactivatedMembers(channelId string) error {
 }
 
 func (s *MemChannelStore) PermanentDeleteMembersByUser(userId string) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) UpdateLastViewedAt(channelIds []string, userId string, updateThreads bool) (map[string]int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return map[string]int64{}, nil
 }
 
 func (s *MemChannelStore) CountPostsAfter(channelId string, timestamp int64, userId string) (int, int, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, 0, nil
 }
 
 func (s *MemChannelStore) UpdateLastViewedAtPost(unreadPost *model.Post, userID string, mentionCount, mentionCountRoot int, updateThreads bool, setUnreadCountRoot bool) (*model.ChannelUnreadAt, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.ChannelUnreadAt{}, nil
 }
 
 func (s *MemChannelStore) IncrementMentionCount(channelId string, userId string, updateThreads, isRoot bool) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) GetAll(teamId string) ([]*model.Channel, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.Channel{}, nil
 }
 
 func (s *MemChannelStore) GetChannelsByIds(channelIds []string, includeDeleted bool) ([]*model.Channel, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.Channel{}, nil
 }
 
 func (s *MemChannelStore) GetChannelsWithTeamDataByIds(channelIDs []string, includeDeleted bool) ([]*model.ChannelWithTeamData, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.ChannelWithTeamData{}, nil
 }
 
 func (s *MemChannelStore) GetForPost(postId string) (*model.Channel, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.Channel{}, nil
 }
 
 func (s *MemChannelStore) AnalyticsTypeCount(teamId string, channelType model.ChannelType) (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (s *MemChannelStore) AnalyticsDeletedTypeCount(teamId string, channelType string) (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (s *MemChannelStore) GetMembersForUser(teamId string, userId string) (model.ChannelMembers, error) {
@@ -788,47 +822,58 @@ func (s *MemChannelStore) GetMembersForUserWithPagination(userId string, page, p
 }
 
 func (s *MemChannelStore) GetTeamMembersForChannel(channelID string) ([]string, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []string{}, nil
 }
 
 func (s *MemChannelStore) Autocomplete(userID, term string, includeDeleted bool) (model.ChannelListWithTeamData, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelListWithTeamData{}, nil
 }
 
 func (s *MemChannelStore) AutocompleteInTeam(teamID, userID, term string, includeDeleted bool) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) AutocompleteInTeamForSearch(teamId string, userId string, term string, includeDeleted bool) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) SearchInTeam(teamId string, term string, includeDeleted bool) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) SearchArchivedInTeam(teamId string, term string, userId string) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) SearchForUserInTeam(userId string, teamId string, term string, includeDeleted bool) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) SearchAllChannels(term string, opts store.ChannelSearchOpts) (model.ChannelListWithTeamData, int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelListWithTeamData{}, 0, nil
 }
 
 func (s *MemChannelStore) SearchMore(userId string, teamId string, term string) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) SearchGroupChannels(userId, term string) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) GetMembersByIds(channelId string, userIds []string) (model.ChannelMembers, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelMembers{}, nil
 }
 
 func (s *MemChannelStore) GetMembersByChannelIds(channelIds []string, userId string) (model.ChannelMembers, error) {
@@ -847,53 +892,66 @@ func (s *MemChannelStore) GetMembersByChannelIds(channelIds []string, userId str
 }
 
 func (s *MemChannelStore) GetChannelsByScheme(schemeId string, offset int, limit int) (model.ChannelList, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return model.ChannelList{}, nil
 }
 
 func (s *MemChannelStore) MigrateChannelMembers(fromChannelId string, fromUserId string) (map[string]string, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return map[string]string{}, nil
 }
 
 func (s *MemChannelStore) ResetAllChannelSchemes() error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) ClearAllCustomRoleAssignments() error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) GetAllChannelsForExportAfter(limit int, afterId string) ([]*model.ChannelForExport, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.ChannelForExport{}, nil
 }
 
 func (s *MemChannelStore) GetChannelMembersForExport(userId string, teamId string) ([]*model.ChannelMemberForExport, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.ChannelMemberForExport{}, nil
 }
 
 func (s *MemChannelStore) GetAllDirectChannelsForExportAfter(limit int, afterId string) ([]*model.DirectChannelForExport, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.DirectChannelForExport{}, nil
 }
 
 func (s *MemChannelStore) GetChannelsBatchForIndexing(startTime, endTime int64, limit int) ([]*model.Channel, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.Channel{}, nil
 }
 
 func (s *MemChannelStore) UserBelongsToChannels(userId string, channelIds []string) (bool, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return true, nil
 }
 
 func (s *MemChannelStore) UpdateMembersRole(channelID string, userIDs []string) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) GroupSyncedChannelCount() (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (s *MemChannelStore) SetShared(channelId string, shared bool) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) GetTeamForChannel(channelID string) (*model.Team, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.Team{}, nil
 }
