@@ -308,7 +308,25 @@ func (us *MemUserStore) GetNewUsersForTeam(teamId string, offset, limit int, vie
 }
 
 func (us *MemUserStore) GetProfileByIds(ctx context.Context, userIds []string, options *store.UserGetByIdsOpts, allowFromCache bool) ([]*model.User, error) {
-	panic("not implemented")
+	if options == nil {
+		options = &store.UserGetByIdsOpts{}
+	}
+
+	result := []*model.User{}
+	for _, u := range us.users {
+		if options.Since > 0 && u.UpdateAt <= options.Since {
+			continue
+		}
+		// TODO: Implement this to filter by the view restructions
+		// query = applyViewRestrictionsFilter(query, options.ViewRestrictions, true)
+		for _, id := range userIds {
+			if u.Id == id {
+				result = append(result, u)
+				break
+			}
+		}
+	}
+	return result, nil
 }
 
 func (us *MemUserStore) GetProfileByGroupChannelIdsForUser(userId string, channelIds []string) (map[string][]*model.User, error) {

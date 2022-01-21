@@ -103,6 +103,8 @@ func (s *MemChannelStore) Save(channel *model.Channel, maxChannelsPerTeam int64)
 		}
 	}
 
+	s.channels = append(s.channels, channel)
+
 	return channel, nil
 }
 

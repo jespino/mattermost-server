@@ -683,7 +683,7 @@ func TestTriggerOutGoingWebhookWithUsernameAndIconURL(t *testing.T) {
 
 			channel := th.CreateChannel(th.BasicTeam)
 			hook, err := createOutgoingWebhook(channel, ts.URL, th)
-			require.NoError(t, err)
+			require.Nil(t, err)
 			payload := getPayload(hook, th, channel)
 
 			th.App.TriggerWebhook(th.Context, payload, hook, th.BasicPost, channel)

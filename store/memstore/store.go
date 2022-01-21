@@ -114,7 +114,7 @@ func New() *MemStore {
 	store.stores.preference = newMemPreferenceStore()
 	store.stores.license = newMemLicenseStore()
 	store.stores.token = nil
-	store.stores.emoji = nil
+	store.stores.emoji = newMemEmojiStore()
 	store.stores.status = newMemStatusStore()
 	store.stores.fileInfo = nil
 	store.stores.uploadSession = nil

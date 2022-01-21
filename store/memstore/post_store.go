@@ -5,6 +5,7 @@ package memstore
 
 import (
 	"context"
+	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -169,7 +170,41 @@ func (s *MemPostStore) PermanentDeleteByChannel(channelId string) error {
 }
 
 func (s *MemPostStore) GetPosts(options model.GetPostsOptions, _ bool) (*model.PostList, error) {
-	panic("not implemented")
+	if options.PerPage > 1000 {
+		return nil, store.NewErrInvalidInput("Post", "<options.PerPage>", options.PerPage)
+	}
+	offset := options.PerPage * options.Page
+	list := model.NewPostList()
+
+	counter := 0
+	posts := []*model.Post{}
+	for _, p := range s.posts {
+		if p.ChannelId == options.ChannelId && p.DeleteAt == 0 {
+			if counter >= offset && counter < offset+options.PerPage {
+				posts = append(posts, p)
+			}
+			counter++
+		}
+	}
+
+	for _, p := range posts {
+		list.AddPost(p)
+		list.AddOrder(p.Id)
+	}
+
+	for _, p := range posts {
+		for _, candidate := range s.posts {
+			if p.RootId == candidate.Id {
+				list.AddPost(candidate)
+				break
+			}
+		}
+	}
+
+	list.MakeNonNil()
+	fmt.Println(list)
+
+	return list, nil
 }
 
 func (s *MemPostStore) GetPostsSince(options model.GetPostsSinceOptions, allowFromCache bool) (*model.PostList, error) {
