@@ -5,23 +5,101 @@ package memstore
 
 import (
 	"context"
+	"strings"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
 )
 
+type allChannelMember struct {
+	ChannelId                     string
+	Roles                         string
+	SchemeGuest                   bool
+	SchemeUser                    bool
+	SchemeAdmin                   bool
+	TeamSchemeDefaultGuestRole    string
+	TeamSchemeDefaultUserRole     string
+	TeamSchemeDefaultAdminRole    string
+	ChannelSchemeDefaultGuestRole string
+	ChannelSchemeDefaultUserRole  string
+	ChannelSchemeDefaultAdminRole string
+}
+
+type allChannelMembers []allChannelMember
+
+func (db allChannelMember) Process() (string, string) {
+	roles := strings.Fields(db.Roles)
+
+	// Add any scheme derived roles that are not in the Roles field due to being Implicit from the Scheme, and add
+	// them to the Roles field for backwards compatibility reasons.
+	var schemeImpliedRoles []string
+	if db.SchemeGuest {
+		if db.ChannelSchemeDefaultGuestRole != "" {
+			schemeImpliedRoles = append(schemeImpliedRoles, db.ChannelSchemeDefaultGuestRole)
+		} else if db.TeamSchemeDefaultGuestRole != "" {
+			schemeImpliedRoles = append(schemeImpliedRoles, db.TeamSchemeDefaultGuestRole)
+		} else {
+			schemeImpliedRoles = append(schemeImpliedRoles, model.ChannelGuestRoleId)
+		}
+	}
+	if db.SchemeUser {
+		if db.ChannelSchemeDefaultUserRole != "" {
+			schemeImpliedRoles = append(schemeImpliedRoles, db.ChannelSchemeDefaultUserRole)
+		} else if db.TeamSchemeDefaultUserRole != "" {
+			schemeImpliedRoles = append(schemeImpliedRoles, db.TeamSchemeDefaultUserRole)
+		} else {
+			schemeImpliedRoles = append(schemeImpliedRoles, model.ChannelUserRoleId)
+		}
+	}
+	if db.SchemeAdmin {
+		if db.ChannelSchemeDefaultAdminRole != "" {
+			schemeImpliedRoles = append(schemeImpliedRoles, db.ChannelSchemeDefaultAdminRole)
+		} else if db.TeamSchemeDefaultAdminRole != "" {
+			schemeImpliedRoles = append(schemeImpliedRoles, db.TeamSchemeDefaultAdminRole)
+		} else {
+			schemeImpliedRoles = append(schemeImpliedRoles, model.ChannelAdminRoleId)
+		}
+	}
+	for _, impliedRole := range schemeImpliedRoles {
+		alreadyThere := false
+		for _, role := range roles {
+			if role == impliedRole {
+				alreadyThere = true
+			}
+		}
+		if !alreadyThere {
+			roles = append(roles, impliedRole)
+		}
+	}
+
+	return db.ChannelId, strings.Join(roles, " ")
+}
+
+func (db allChannelMembers) ToMapStringString() map[string]string {
+	result := make(map[string]string)
+
+	for _, item := range db {
+		key, value := item.Process()
+		result[key] = value
+	}
+
+	return result
+}
+
 type MemChannelStore struct {
+	MemStore *MemStore
 	channels []*model.Channel
 	members  []*model.ChannelMember
 }
 
 func (s *MemChannelStore) ClearCaches() {}
 
-func newMemChannelStore() store.ChannelStore {
-	return &MemChannelStore{}
+func newMemChannelStore(memStore *MemStore) store.ChannelStore {
+	return &MemChannelStore{MemStore: memStore}
 }
 func (s *MemChannelStore) ClearSidebarOnTeamLeave(userId, teamId string) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) CreateInitialSidebarCategories(userId, teamId string) (*model.OrderedSidebarCategories, error) {
@@ -30,47 +108,58 @@ func (s *MemChannelStore) CreateInitialSidebarCategories(userId, teamId string) 
 }
 
 func (s *MemChannelStore) MigrateFavoritesToSidebarChannels(lastUserId string, runningOrder int64) (map[string]interface{}, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return map[string]interface{}{}, nil
 }
 
 func (s *MemChannelStore) CreateSidebarCategory(userId, teamId string, newCategory *model.SidebarCategoryWithChannels) (*model.SidebarCategoryWithChannels, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.SidebarCategoryWithChannels{}, nil
 }
 
 func (s *MemChannelStore) GetSidebarCategory(categoryId string) (*model.SidebarCategoryWithChannels, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.SidebarCategoryWithChannels{}, nil
 }
 
 func (s *MemChannelStore) GetSidebarCategories(userId, teamId string) (*model.OrderedSidebarCategories, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return &model.OrderedSidebarCategories{}, nil
 }
 
 func (s *MemChannelStore) GetSidebarCategoryOrder(userId, teamId string) ([]string, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []string{}, nil
 }
 
 func (s *MemChannelStore) UpdateSidebarCategoryOrder(userId, teamId string, categoryOrder []string) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) UpdateSidebarCategories(userId, teamId string, categories []*model.SidebarCategoryWithChannels) ([]*model.SidebarCategoryWithChannels, []*model.SidebarCategoryWithChannels, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.SidebarCategoryWithChannels{}, []*model.SidebarCategoryWithChannels{}, nil
 }
 
 func (s *MemChannelStore) UpdateSidebarChannelsByPreferences(preferences model.Preferences) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) DeleteSidebarChannelsByPreferences(preferences model.Preferences) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) UpdateSidebarChannelCategoryOnMove(channel *model.Channel, newTeamId string) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) DeleteSidebarCategory(categoryId string) error {
-	panic("not implemented")
+	// TODO: Implement this
+	return nil
 }
 
 func (s *MemChannelStore) Save(channel *model.Channel, maxChannelsPerTeam int64) (*model.Channel, error) {
@@ -109,15 +198,88 @@ func (s *MemChannelStore) Save(channel *model.Channel, maxChannelsPerTeam int64)
 }
 
 func (s *MemChannelStore) CreateDirectChannel(user *model.User, otherUser *model.User, channelOptions ...model.ChannelOption) (*model.Channel, error) {
-	panic("not implemented")
+	channel := new(model.Channel)
+
+	for _, option := range channelOptions {
+		option(channel)
+	}
+
+	channel.DisplayName = ""
+	channel.Name = model.GetDMNameFromIds(otherUser.Id, user.Id)
+
+	channel.Header = ""
+	channel.Type = model.ChannelTypeDirect
+	channel.Shared = model.NewBool(user.IsRemote() || otherUser.IsRemote())
+	channel.CreatorId = user.Id
+
+	cm1 := &model.ChannelMember{
+		UserId:      user.Id,
+		NotifyProps: model.GetDefaultChannelNotifyProps(),
+		SchemeGuest: user.IsGuest(),
+		SchemeUser:  !user.IsGuest(),
+	}
+	cm2 := &model.ChannelMember{
+		UserId:      otherUser.Id,
+		NotifyProps: model.GetDefaultChannelNotifyProps(),
+		SchemeGuest: otherUser.IsGuest(),
+		SchemeUser:  !otherUser.IsGuest(),
+	}
+
+	return s.SaveDirectChannel(channel, cm1, cm2)
 }
 
 func (s *MemChannelStore) SaveDirectChannel(directChannel *model.Channel, member1 *model.ChannelMember, member2 *model.ChannelMember) (*model.Channel, error) {
-	panic("not implemented")
+	if directChannel.DeleteAt != 0 {
+		return nil, store.NewErrInvalidInput("Channel", "DeleteAt", directChannel.DeleteAt)
+	}
+
+	if directChannel.Type != model.ChannelTypeDirect {
+		return nil, store.NewErrInvalidInput("Channel", "Type", directChannel.Type)
+	}
+
+	directChannel.TeamId = ""
+	newChannel, err := s.Save(directChannel, 0)
+	if err != nil {
+		return newChannel, err
+	}
+
+	// Members need new channel ID
+	member1.ChannelId = newChannel.Id
+	member2.ChannelId = newChannel.Id
+
+	if member1.UserId != member2.UserId {
+		_, err = s.SaveMultipleMembers([]*model.ChannelMember{member1, member2})
+	} else {
+		_, err = s.SaveMember(member2)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return newChannel, nil
 }
 
 func (s *MemChannelStore) Update(channel *model.Channel) (*model.Channel, error) {
-	panic("not implemented")
+	channel.PreUpdate()
+
+	if channel.DeleteAt != 0 {
+		return nil, store.NewErrInvalidInput("Channel", "DeleteAt", channel.DeleteAt)
+	}
+
+	if err := channel.IsValid(); err != nil {
+		return nil, err
+	}
+
+	existing, _ := s.GetByName(channel.TeamId, channel.Name, false)
+	if existing != nil {
+		return nil, store.NewErrInvalidInput("Channel", "Id", channel.Id)
+	}
+	if existing.Id != channel.Id {
+		return nil, store.NewErrInvalidInput("Channel", "Id", channel.Id)
+	}
+	channel.UpdateAt = model.GetMillis()
+	*existing = *channel
+
+	return channel, nil
 }
 
 func (s *MemChannelStore) GetChannelUnread(channelId, userId string) (*model.ChannelUnread, error) {
@@ -163,19 +325,60 @@ func (s *MemChannelStore) SetDeleteAt(channelId string, deleteAt, updateAt int64
 }
 
 func (s *MemChannelStore) PermanentDeleteByTeam(teamId string) error {
-	panic("not implemented")
+	result := []*model.Channel{}
+	for _, c := range s.channels {
+		if c.TeamId != teamId {
+			result = append(result, c)
+		}
+	}
+	s.channels = result
+	return nil
 }
 
 func (s *MemChannelStore) PermanentDelete(channelId string) error {
-	panic("not implemented")
+	result := []*model.Channel{}
+	for _, c := range s.channels {
+		if c.Id != channelId {
+			result = append(result, c)
+		}
+	}
+	s.channels = result
+	return nil
 }
 
 func (s *MemChannelStore) PermanentDeleteMembersByChannel(channelId string) error {
-	panic("not implemented")
+	result := []*model.ChannelMember{}
+	for _, m := range s.members {
+		if m.ChannelId != channelId {
+			result = append(result, m)
+		}
+	}
+	s.members = result
+	return nil
 }
 
 func (s *MemChannelStore) GetChannels(teamId string, userId string, includeDeleted bool, lastDeleteAt int) (model.ChannelList, error) {
-	panic("not implemented")
+	result := model.ChannelList{}
+	for _, m := range s.members {
+		if m.UserId != userId {
+			continue
+		}
+		c, err := s.Get(m.ChannelId, false)
+		if err != nil {
+			return nil, err
+		}
+		if c.TeamId != "" && c.TeamId != teamId {
+			continue
+		}
+		if !includeDeleted && c.DeleteAt != 0 {
+			continue
+		}
+		if includeDeleted && lastDeleteAt != 0 && c.DeleteAt < int64(lastDeleteAt) {
+			continue
+		}
+		result = append(result, c)
+	}
+	return result, nil
 }
 
 func (s *MemChannelStore) GetChannelsByUser(userId string, includeDeleted bool, lastDeleteAt, pageSize int, fromChannelID string) (model.ChannelList, error) {
@@ -215,7 +418,13 @@ func (s *MemChannelStore) GetChannelCounts(teamId string, userId string) (*model
 }
 
 func (s *MemChannelStore) GetTeamChannels(teamId string) (model.ChannelList, error) {
-	panic("not implemented")
+	result := model.ChannelList{}
+	for _, c := range s.channels {
+		if c.TeamId == teamId && c.Type != "D" {
+			result = append(result, c)
+		}
+	}
+	return result, nil
 }
 
 func (s *MemChannelStore) GetByName(teamId string, name string, allowFromCache bool) (*model.Channel, error) {
@@ -309,7 +518,17 @@ func (s *MemChannelStore) UpdateMemberNotifyProps(channelID, userID string, prop
 }
 
 func (s *MemChannelStore) GetMembers(channelId string, offset, limit int) (model.ChannelMembers, error) {
-	panic("not implemented")
+	result := model.ChannelMembers{}
+	for _, m := range s.members {
+		counter := 0
+		if m.ChannelId == channelId {
+			if counter >= offset && counter < offset+limit {
+				result = append(result, *m)
+			}
+			counter++
+		}
+	}
+	return result, nil
 }
 
 func (s *MemChannelStore) GetChannelMembersTimezones(channelId string) ([]model.StringMap, error) {
@@ -336,7 +555,50 @@ func (s *MemChannelStore) GetMemberForPost(postId string, userId string) (*model
 }
 
 func (s *MemChannelStore) GetAllChannelMembersForUser(userId string, allowFromCache bool, includeDeleted bool) (map[string]string, error) {
-	panic("not implemented")
+	var data allChannelMembers
+	for _, m := range s.members {
+		if m.UserId != userId {
+			channel, err := s.Get(m.ChannelId, false)
+			if err != nil {
+				return nil, err
+			}
+			channelMember := allChannelMember{
+				ChannelId:   m.ChannelId,
+				Roles:       m.Roles,
+				SchemeGuest: m.SchemeGuest,
+				SchemeUser:  m.SchemeUser,
+				SchemeAdmin: m.SchemeAdmin,
+			}
+			if channel.SchemeId != nil {
+				channelScheme, err := s.MemStore.Scheme().Get(*channel.SchemeId)
+				if err != nil {
+					return nil, err
+				}
+				channelMember.ChannelSchemeDefaultGuestRole = channelScheme.DefaultChannelGuestRole
+				channelMember.ChannelSchemeDefaultUserRole = channelScheme.DefaultChannelUserRole
+				channelMember.ChannelSchemeDefaultAdminRole = channelScheme.DefaultChannelAdminRole
+			}
+			if channel.TeamId != "" {
+				team, err := s.Get(channel.TeamId, false)
+				if err != nil {
+					return nil, err
+				}
+				if team.SchemeId != nil {
+					teamScheme, err := s.MemStore.Scheme().Get(*team.SchemeId)
+					if err != nil {
+						return nil, err
+					}
+					channelMember.TeamSchemeDefaultGuestRole = teamScheme.DefaultTeamGuestRole
+					channelMember.TeamSchemeDefaultUserRole = teamScheme.DefaultTeamUserRole
+					channelMember.TeamSchemeDefaultAdminRole = teamScheme.DefaultTeamAdminRole
+				}
+			}
+			if includeDeleted || channel.DeleteAt == 0 {
+				data = append(data, channelMember)
+			}
+		}
+	}
+	return data.ToMapStringString(), nil
 }
 
 func (s *MemChannelStore) InvalidateCacheForChannelMembersNotifyProps(channelId string) {}
@@ -349,11 +611,24 @@ func (s *MemChannelStore) GetAllChannelMembersNotifyPropsForChannel(channelId st
 func (s *MemChannelStore) InvalidateMemberCount(channelId string) {}
 
 func (s *MemChannelStore) GetMemberCountFromCache(channelId string) int64 {
-	panic("not implemented")
+	count, _ := s.GetMemberCount(channelId, true)
+	return count
 }
 
 func (s *MemChannelStore) GetMemberCount(channelId string, allowFromCache bool) (int64, error) {
-	panic("not implemented")
+	var count int64 = 0
+	for _, m := range s.members {
+		if m.ChannelId == channelId {
+			user, err := s.MemStore.User().Get(context.Background(), m.UserId)
+			if err != nil {
+				return 0, err
+			}
+			if user.DeleteAt == 0 {
+				count++
+			}
+		}
+	}
+	return count, nil
 }
 
 func (s *MemChannelStore) GetMemberCountsByGroup(ctx context.Context, channelID string, includeTimezones bool) ([]*model.ChannelMemberCountByGroup, error) {
@@ -373,15 +648,54 @@ func (s *MemChannelStore) GetGuestCount(channelId string, allowFromCache bool) (
 }
 
 func (s *MemChannelStore) RemoveMembers(channelId string, userIds []string) error {
-	panic("not implemented")
+	result := []*model.ChannelMember{}
+	for _, m := range s.members {
+		skip := false
+		if m.ChannelId == channelId {
+			for _, userId := range userIds {
+				if m.UserId == userId {
+					skip = true
+					break
+				}
+			}
+		}
+		if !skip {
+			result = append(result, m)
+		}
+	}
+	s.members = result
+	return nil
 }
 
 func (s *MemChannelStore) RemoveMember(channelId string, userId string) error {
-	panic("not implemented")
+	result := []*model.ChannelMember{}
+	for _, m := range s.members {
+		if m.ChannelId != channelId || m.UserId == userId {
+			result = append(result, m)
+		}
+	}
+	s.members = result
+	return nil
 }
 
 func (s *MemChannelStore) RemoveAllDeactivatedMembers(channelId string) error {
-	panic("not implemented")
+	result := []*model.ChannelMember{}
+	for _, m := range s.members {
+		if m.ChannelId != channelId {
+			result = append(result, m)
+			continue
+		}
+
+		user, err := s.MemStore.User().Get(context.Background(), m.UserId)
+		if err != nil {
+			return err
+		}
+		if user.DeleteAt == 0 {
+			result = append(result, m)
+		}
+	}
+	s.members = result
+	return nil
 }
 
 func (s *MemChannelStore) PermanentDeleteMembersByUser(userId string) error {
@@ -429,11 +743,48 @@ func (s *MemChannelStore) AnalyticsDeletedTypeCount(teamId string, channelType s
 }
 
 func (s *MemChannelStore) GetMembersForUser(teamId string, userId string) (model.ChannelMembers, error) {
-	panic("not implemented")
+	result := model.ChannelMembers{}
+	for _, m := range s.members {
+		if m.UserId == userId {
+			channel, err := s.Get(m.ChannelId, false)
+			if err != nil {
+				return nil, err
+			}
+			if channel.TeamId == teamId {
+				result = append(result, *m)
+			}
+		}
+	}
+	return result, nil
 }
 
 func (s *MemChannelStore) GetMembersForUserWithPagination(userId string, page, perPage int) (model.ChannelMembersWithTeamData, error) {
-	panic("not implemented")
+	result := model.ChannelMembersWithTeamData{}
+	counter := 0
+	offset := page * perPage
+	for _, m := range s.members {
+		if m.UserId == userId {
+			if counter >= offset && counter < offset-perPage {
+				channel, err := s.Get(m.ChannelId, false)
+				if err != nil {
+					return nil, err
+				}
+
+				team, err := s.MemStore.Team().Get(channel.TeamId)
+				if err != nil {
+					return nil, err
+				}
+				result = append(result, model.ChannelMemberWithTeamData{
+					ChannelMember:   *m,
+					TeamDisplayName: team.DisplayName,
+					TeamName:        team.Name,
+					TeamUpdateAt:    team.UpdateAt,
+				})
+			}
+			counter++
+		}
+	}
+	return result, nil
 }
 
 func (s *MemChannelStore) GetTeamMembersForChannel(channelID string) ([]string, error) {
@@ -481,7 +832,18 @@ func (s *MemChannelStore) GetMembersByIds(channelId string, userIds []string) (m
 }
 
 func (s *MemChannelStore) GetMembersByChannelIds(channelIds []string, userId string) (model.ChannelMembers, error) {
-	panic("not implemented")
+	result := model.ChannelMembers{}
+	for _, m := range s.members {
+		if m.UserId == userId {
+			for _, c := range channelIds {
+				if m.ChannelId == c {
+					result = append(result, *m)
+					break
+				}
+			}
+		}
+	}
+	return result, nil
 }
 
 func (s *MemChannelStore) GetChannelsByScheme(schemeId string, offset int, limit int) (model.ChannelList, error) {

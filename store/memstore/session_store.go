@@ -28,7 +28,13 @@ func (me *MemSessionStore) Get(ctx context.Context, sessionIdOrToken string) (*m
 }
 
 func (me *MemSessionStore) GetSessions(userId string) ([]*model.Session, error) {
-	panic("not implemented")
+	result := []*model.Session{}
+	for _, s := range me.sessions {
+		if s.UserId == userId {
+			result = append(result, s)
+		}
+	}
+	return result, nil
 }
 
 func (me *MemSessionStore) GetSessionsWithActiveDeviceIds(userId string) ([]*model.Session, error) {

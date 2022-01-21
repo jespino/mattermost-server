@@ -32,17 +32,21 @@ func (s *MemChannelMemberHistoryStore) LogLeaveEvent(userId string, channelId st
 }
 
 func (s *MemChannelMemberHistoryStore) GetUsersInChannelDuring(startTime int64, endTime int64, channelId string) ([]*model.ChannelMemberHistoryResult, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return []*model.ChannelMemberHistoryResult{}, nil
 }
 
 func (s *MemChannelMemberHistoryStore) PermanentDeleteBatchForRetentionPolicies(now, globalPolicyEndTime, limit int64, cursor model.RetentionPolicyCursor) (int64, model.RetentionPolicyCursor, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, model.RetentionPolicyCursor{}, nil
 }
 
 func (s *MemChannelMemberHistoryStore) DeleteOrphanedRows(limit int) (deleted int64, err error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }
 
 func (s *MemChannelMemberHistoryStore) PermanentDeleteBatch(endTime int64, limit int64) (int64, error) {
-	panic("not implemented")
+	// TODO: Implement this
+	return 0, nil
 }

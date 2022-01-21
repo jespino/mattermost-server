@@ -196,7 +196,15 @@ func (us *MemUserStore) UpdateMfaActive(userId string, active bool) error {
 
 // GetMany returns a list of users for the provided list of ids
 func (us *MemUserStore) GetMany(ctx context.Context, ids []string) ([]*model.User, error) {
-	panic("not implemented")
+	result := []*model.User{}
+	for _, u := range us.users {
+		for _, id := range ids {
+			if u.Id == id {
+				result = append(result, u)
+			}
+		}
+	}
+	return result, nil
 }
 
 func (us *MemUserStore) Get(ctx context.Context, id string) (*model.User, error) {

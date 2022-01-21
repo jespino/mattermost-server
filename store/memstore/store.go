@@ -96,7 +96,7 @@ type ColumnInfo struct {
 func New() *MemStore {
 	store := &MemStore{}
 	store.stores.team = newMemTeamStore()
-	store.stores.channel = newMemChannelStore()
+	store.stores.channel = newMemChannelStore(store)
 	store.stores.post = newMemPostStore(store)
 	store.stores.retentionPolicy = nil
 	store.stores.user = newMemUserStore(store)

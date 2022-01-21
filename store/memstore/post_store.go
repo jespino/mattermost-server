@@ -162,11 +162,25 @@ func (s *MemPostStore) Delete(postID string, time int64, deleteByID string) erro
 }
 
 func (s *MemPostStore) PermanentDeleteByUser(userId string) error {
-	panic("not implemented")
+	result := []*model.Post{}
+	for _, p := range s.posts {
+		if p.UserId != userId {
+			result = append(result, p)
+		}
+	}
+	s.posts = result
+	return nil
 }
 
 func (s *MemPostStore) PermanentDeleteByChannel(channelId string) error {
-	panic("not implemented")
+	result := []*model.Post{}
+	for _, p := range s.posts {
+		if p.ChannelId != channelId {
+			result = append(result, p)
+		}
+	}
+	s.posts = result
+	return nil
 }
 
 func (s *MemPostStore) GetPosts(options model.GetPostsOptions, _ bool) (*model.PostList, error) {

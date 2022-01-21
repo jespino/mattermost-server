@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/store"
+	"github.com/pkg/errors"
 )
 
 type MemTeamStore struct {
@@ -35,7 +36,27 @@ func (s *MemTeamStore) Save(team *model.Team) (*model.Team, error) {
 }
 
 func (s *MemTeamStore) Update(team *model.Team) (*model.Team, error) {
-	panic("not implemented")
+	team.PreUpdate()
+
+	if err := team.IsValid(); err != nil {
+		return nil, err
+	}
+
+	oldTeam, err := s.Get(team.Id)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get Team with id=%s", team.Id)
+
+	}
+
+	if oldTeam == nil {
+		return nil, store.NewErrInvalidInput("Team", "id", team.Id)
+	}
+
+	team.CreateAt = oldTeam.CreateAt
+	team.UpdateAt = model.GetMillis()
+	*oldTeam = *team
+
+	return team, nil
 }
 
 func (s *MemTeamStore) Get(id string) (*model.Team, error) {
@@ -84,7 +105,19 @@ func (s *MemTeamStore) GetAllPage(offset int, limit int, opts *model.TeamSearch)
 }
 
 func (s *MemTeamStore) GetTeamsByUserId(userId string) ([]*model.Team, error) {
-	panic("not implemented")
+	result := []*model.Team{}
+	for _, m := range s.members {
+		if m.UserId == userId && m.DeleteAt == 0 {
+			team, err := s.Get(m.TeamId)
+			if err != nil {
+				return nil, err
+			}
+			if team.DeleteAt == 0 {
+				result = append(result, team)
+			}
+		}
+	}
+	return result, nil
 }
 
 func (s *MemTeamStore) GetAllPrivateTeamListing() ([]*model.Team, error) {
@@ -178,7 +211,18 @@ func (s *MemTeamStore) GetActiveMemberCount(teamId string, restrictions *model.V
 }
 
 func (s *MemTeamStore) GetMembersByIds(teamId string, userIds []string, restrictions *model.ViewUsersRestrictions) ([]*model.TeamMember, error) {
-	panic("not implemented")
+	result := []*model.TeamMember{}
+	for _, m := range s.members {
+		if m.TeamId == teamId {
+			for _, id := range userIds {
+				if m.UserId == id {
+					result = append(result, m)
+					break
+				}
+			}
+		}
+	}
+	return result, nil
 }
 
 func (s *MemTeamStore) GetTeamsForUser(ctx context.Context, userId string) ([]*model.TeamMember, error) {
@@ -206,11 +250,25 @@ func (s *MemTeamStore) RemoveMember(teamId string, userId string) error {
 }
 
 func (s *MemTeamStore) RemoveAllMembersByTeam(teamId string) error {
-	panic("not implemented")
+	result := []*model.TeamMember{}
+	for _, m := range s.members {
+		if m.TeamId != teamId {
+			result = append(result, m)
+		}
+	}
+	s.members = result
+	return nil
 }
 
 func (s *MemTeamStore) RemoveAllMembersByUser(userId string) error {
-	panic("not implemented")
+	result := []*model.TeamMember{}
+	for _, m := range s.members {
+		if m.UserId != userId {
+			result = append(result, m)
+		}
+	}
+	s.members = result
+	return nil
 }
 
 func (s *MemTeamStore) UpdateLastTeamIconUpdate(teamId string, curTime int64) error {

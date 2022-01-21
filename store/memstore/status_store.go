@@ -28,11 +28,24 @@ func (s *MemStatusStore) SaveOrUpdate(st *model.Status) error {
 }
 
 func (s *MemStatusStore) Get(userId string) (*model.Status, error) {
-	panic("not implemented")
+	for _, item := range s.status {
+		if item.UserId == userId {
+			return item, nil
+		}
+	}
+	return nil, store.NewErrNotFound("Status", userId)
 }
 
 func (s *MemStatusStore) GetByIds(userIds []string) ([]*model.Status, error) {
-	panic("not implemented")
+	results := []*model.Status{}
+	for _, item := range s.status {
+		for _, id := range userIds {
+			if item.UserId == id {
+				results = append(results, item)
+			}
+		}
+	}
+	return results, nil
 }
 
 func (s *MemStatusStore) UpdateExpiredDNDStatuses() ([]*model.Status, error) {
