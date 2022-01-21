@@ -38,6 +38,7 @@ type TestHelper struct {
 	BasicUser2   *model.User
 	BasicChannel *model.Channel
 	BasicPost    *model.Post
+	store        store.Store
 
 	SystemAdminUser   *model.User
 	LogBuffer         *mlog.Buffer
@@ -105,6 +106,7 @@ func setupTestHelper(dbStore store.Store, enterprise bool, includeCacheLayer boo
 		LogBuffer:         buffer,
 		TestLogger:        testLogger,
 		IncludeCacheLayer: includeCacheLayer,
+		store:             dbStore,
 	}
 
 	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.TeamSettings.MaxUsersPerTeam = 50 })
@@ -160,7 +162,7 @@ func Setup(tb testing.TB) *TestHelper {
 	dbStore.MarkSystemRanUnitTests()
 	// mainHelper.PreloadMigrations()
 
-	return setupTestHelper(dbStore, false, true, tb)
+	return setupTestHelper(dbStore, false, false, tb)
 }
 
 func SetupWithMemStore(tb testing.TB) *TestHelper {
@@ -171,7 +173,7 @@ func SetupWithMemStore(tb testing.TB) *TestHelper {
 	dbStore.DropAllTables()
 	dbStore.MarkSystemRanUnitTests()
 
-	return setupTestHelper(dbStore, false, true, tb)
+	return setupTestHelper(dbStore, false, false, tb)
 }
 
 func SetupWithoutPreloadMigrations(tb testing.TB) *TestHelper {
@@ -243,9 +245,9 @@ func (th *TestHelper) InitBasic() *TestHelper {
 	th.SystemAdminUser = userCache.SystemAdminUser.DeepCopy()
 	th.BasicUser = userCache.BasicUser.DeepCopy()
 	th.BasicUser2 = userCache.BasicUser2.DeepCopy()
-	mainHelper.Store.Store.User().(*memstore.MemUserStore).SaveWithoutChecks(th.SystemAdminUser)
-	mainHelper.Store.Store.User().(*memstore.MemUserStore).SaveWithoutChecks(th.BasicUser)
-	mainHelper.Store.Store.User().(*memstore.MemUserStore).SaveWithoutChecks(th.BasicUser2)
+	th.store.User().(*memstore.MemUserStore).SaveWithoutChecks(th.SystemAdminUser)
+	th.store.User().(*memstore.MemUserStore).SaveWithoutChecks(th.BasicUser)
+	th.store.User().(*memstore.MemUserStore).SaveWithoutChecks(th.BasicUser2)
 
 	th.BasicTeam = th.CreateTeam()
 

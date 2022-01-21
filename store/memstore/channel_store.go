@@ -337,9 +337,7 @@ func (s *MemChannelStore) GetAllChannelMembersForUser(userId string, allowFromCa
 	panic("not implemented")
 }
 
-func (s *MemChannelStore) InvalidateCacheForChannelMembersNotifyProps(channelId string) {
-	panic("not implemented")
-}
+func (s *MemChannelStore) InvalidateCacheForChannelMembersNotifyProps(channelId string) {}
 
 func (s *MemChannelStore) GetAllChannelMembersNotifyPropsForChannel(channelId string, allowFromCache bool) (map[string]model.StringMap, error) {
 	// TODO: Implement this
@@ -360,17 +358,13 @@ func (s *MemChannelStore) GetMemberCountsByGroup(ctx context.Context, channelID 
 	panic("not implemented")
 }
 
-func (s *MemChannelStore) InvalidatePinnedPostCount(channelId string) {
-	panic("not implemented")
-}
+func (s *MemChannelStore) InvalidatePinnedPostCount(channelId string) {}
 
 func (s *MemChannelStore) GetPinnedPostCount(channelId string, allowFromCache bool) (int64, error) {
 	panic("not implemented")
 }
 
-func (s *MemChannelStore) InvalidateGuestCount(channelId string) {
-	panic("not implemented")
-}
+func (s *MemChannelStore) InvalidateGuestCount(channelId string) {}
 
 func (s *MemChannelStore) GetGuestCount(channelId string, allowFromCache bool) (int64, error) {
 	panic("not implemented")
