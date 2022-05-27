@@ -225,7 +225,6 @@ func NewServer(options ...Option) (*Server, error) {
 		hashSeed:         maphash.MakeSeed(),
 		timezones:        timezones.New(),
 		products:         make(map[string]Product),
-		SystemBus:        mem.New(),
 	}
 
 	for _, option := range options {
@@ -686,6 +685,9 @@ func NewServer(options ...Option) (*Server, error) {
 		}
 	})
 
+	// Initializing the system bus
+	// TODO: Allow another more robust system bus and add configuration for it
+	s.SystemBus = mem.New(s.Log)
 	s.registerSystemBusEvents()
 	s.registerSystemBusActions()
 	s.linkSystemBusBuiltinActions()
@@ -696,23 +698,37 @@ func NewServer(options ...Option) (*Server, error) {
 }
 
 func (s *Server) linkSystemBusBuiltinActions() {
-	s.SystemBus.LinkEventAction(events.ChannelCreated.ID, actions.PostMessageID, map[string]string{"template": "Welcome to my channel {{.DisplayName}}.", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"})
-	s.SystemBus.LinkEventAction(events.ChannelCreated.ID, actions.LogID, map[string]string{})
-	s.SystemBus.LinkEventAction(events.StartUp.ID, actions.LogID, map[string]string{"template": "This is an example of event data {{.Data}}."})
+	// s.SystemBus.LinkEventAction(events.ChannelCreated.ID, actions.PostMessageID, map[string]string{"template": "Welcome to my channel {{.DisplayName}}.", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"})
+	// s.SystemBus.LinkEventAction(events.PostDeleted.ID, actions.CreateChannelID, map[string]string{"name": "deleted-a-post-{{.PostId}}", "display-name": "You deleted the post with id {{.PostId}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"})
+	// s.SystemBus.LinkEventAction(events.StartUp.ID, actions.LogID, map[string]string{"template": "This is an example of event data {{.Data}}."})
+	// s.SystemBus.LinkEventAction(events.Shutdown.ID, actions.LogID, map[string]string{"template": "This is an example of event data {{.Data}}."})
+	// s.SystemBus.LinkEventAction(events.PostDeleted.ID, actions.LogID, map[string]string{"template": "This is post deleted for the post {{.PostId}}"})
 }
 
 func (s *Server) registerSystemBusEvents() {
 	s.SystemBus.RegisterEvent(&events.StartUp)
 	s.SystemBus.RegisterEvent(&events.ShutDown)
 	s.SystemBus.RegisterEvent(&events.ChannelCreated)
+	s.SystemBus.RegisterEvent(&events.ChannelArchived)     // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.ChannelUnarchived)   // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.TeamCreated)         // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.TeamArchived)        // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.TeamUnarchived)      // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.PostReactionAdded)   // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.PostReactionRemoved) // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.PostCreated)
+	s.SystemBus.RegisterEvent(&events.PostDeleted)
+	s.SystemBus.RegisterEvent(&events.UserJoinChannel)  // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.UserLeaveChannel) // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.UserJoinTeam)     // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.UserLeaveTeam)    // TODO: Emit it
 }
 
 func (s *Server) registerSystemBusActions() {
 	appInstance := New(ServerConnector(s.Channels()))
-
 	s.SystemBus.RegisterAction(actions.NewLog(s.Log))
 	s.SystemBus.RegisterAction(actions.NewPostMessage(appInstance, request.EmptyContext()))
-
+	s.SystemBus.RegisterAction(actions.NewCreateChannel(appInstance, request.EmptyContext()))
 }
 
 func (s *Server) SetupMetricsServer() {

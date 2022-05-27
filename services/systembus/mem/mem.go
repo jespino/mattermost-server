@@ -5,6 +5,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/services/systembus"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
 type SystemBus struct {
@@ -12,15 +13,17 @@ type SystemBus struct {
 	actions      map[string]*systembus.ActionDefinition
 	links        map[string]*systembus.LinkEventAction
 	linksByEvent map[string]map[string]*systembus.LinkEventAction
+	logger       *mlog.Logger
 	mutex        sync.RWMutex
 }
 
-func New() *SystemBus {
+func New(logger *mlog.Logger) *SystemBus {
 	return &SystemBus{
 		events:       map[string]*systembus.EventDefinition{},
 		actions:      map[string]*systembus.ActionDefinition{},
 		links:        map[string]*systembus.LinkEventAction{},
 		linksByEvent: map[string]map[string]*systembus.LinkEventAction{},
+		logger:       logger,
 	}
 }
 
@@ -48,7 +51,10 @@ func (es *SystemBus) SendEvent(event *systembus.Event) error {
 
 	for _, link := range links {
 		action := es.actions[link.ActionID]
-		action.Handler(event, link.Config)
+		_, err := action.Handler(event, link.Config)
+		if err != nil {
+			es.logger.Debug("SystemBus Action failed", mlog.Err(err))
+		}
 	}
 	return nil
 }

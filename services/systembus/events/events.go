@@ -76,14 +76,14 @@ var PostCreated = systembus.EventDefinition{
 	ID:          "post-created",
 	Name:        "Post created",
 	Description: "This events gets triggered when a new post is created.",
-	Fields:      []string{"Id", "Message", "UserId", "ChannelId", "RootId"},
+	Fields:      []string{"Id", "Message", "UserId", "ChannelId", "RootId", "TeamId"},
 }
 
 var PostDeleted = systembus.EventDefinition{
 	ID:          "post-deleted",
 	Name:        "Post deleted",
 	Description: "This events gets triggered when a post is deleted.",
-	Fields:      []string{"PostId", "UserId"},
+	Fields:      []string{"Message", "PostId", "UserId", "ChannelId", "TeamId"},
 }
 
 var UserJoinChannel = systembus.EventDefinition{

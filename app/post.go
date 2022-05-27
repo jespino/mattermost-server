@@ -18,6 +18,8 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 	"github.com/mattermost/mattermost-server/v6/services/cache"
+	"github.com/mattermost/mattermost-server/v6/services/systembus"
+	"github.com/mattermost/mattermost-server/v6/services/systembus/events"
 	"github.com/mattermost/mattermost-server/v6/shared/i18n"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"github.com/mattermost/mattermost-server/v6/store"
@@ -322,6 +324,20 @@ func (a *App) CreatePost(c *request.Context, post *model.Post, channel *model.Ch
 			}, plugin.MessageHasBeenPostedID)
 		})
 	}
+
+	a.Srv().SystemBus.SendEvent(
+		&systembus.Event{
+			ID: events.PostCreated.ID,
+			Data: map[string]string{
+				"Id":        rpost.Id,
+				"Message":   rpost.Message,
+				"UserId":    rpost.UserId,
+				"ChannelId": rpost.ChannelId,
+				"RootId":    rpost.RootId,
+				"TeamId":    channel.TeamId,
+			},
+		},
+	)
 
 	if a.Metrics() != nil {
 		a.Metrics().IncrementPostCreate()
@@ -1159,6 +1175,20 @@ func (a *App) DeletePost(postID, deleteByID string) (*model.Post, *model.AppErro
 	if jsonErr != nil {
 		mlog.Warn("Failed to encode post to JSON")
 	}
+
+	a.Srv().SystemBus.SendEvent(
+		&systembus.Event{
+			ID: events.PostDeleted.ID,
+			Data: map[string]string{
+				"PostId":    post.Id,
+				"Message":   post.Message,
+				"UserId":    deleteByID,
+				"ChannelId": post.ChannelId,
+				"RootId":    post.RootId,
+				"TeamId":    channel.TeamId,
+			},
+		},
+	)
 
 	userMessage := model.NewWebSocketEvent(model.WebsocketEventPostDeleted, "", post.ChannelId, "", nil)
 	userMessage.Add("post", string(postJSON))
