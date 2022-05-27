@@ -703,6 +703,14 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	// s.SystemBus.LinkEventAction(events.StartUp.ID, actions.LogID, map[string]string{"template": "This is an example of event data {{.Data}}."})
 	// s.SystemBus.LinkEventAction(events.Shutdown.ID, actions.LogID, map[string]string{"template": "This is an example of event data {{.Data}}."})
 	// s.SystemBus.LinkEventAction(events.PostDeleted.ID, actions.LogID, map[string]string{"template": "This is post deleted for the post {{.PostId}}"})
+	// actionsConfig, err := json.Marshal([]map[string]map[string]string{
+	// 	{actions.FilterID: {"template1": "{{.Message}}", "template2": "new channel", "comparison": "contains"}},
+	// 	{actions.CreateChannelID: {"name": "channel-from-post-{{.Id}}", "display-name": "Created Channel from Post {{.Id}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"}},
+	// })
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// s.SystemBus.LinkEventAction(events.PostCreated.ID, actions.PipeID, map[string]string{"actions": string(actionsConfig)})
 }
 
 func (s *Server) registerSystemBusEvents() {
@@ -729,6 +737,8 @@ func (s *Server) registerSystemBusActions() {
 	s.SystemBus.RegisterAction(actions.NewLog(s.Log))
 	s.SystemBus.RegisterAction(actions.NewPostMessage(appInstance, request.EmptyContext()))
 	s.SystemBus.RegisterAction(actions.NewCreateChannel(appInstance, request.EmptyContext()))
+	s.SystemBus.RegisterAction(actions.NewPipe(s.SystemBus))
+	s.SystemBus.RegisterAction(actions.NewFilter())
 }
 
 func (s *Server) SetupMetricsServer() {
