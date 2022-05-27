@@ -14,6 +14,8 @@ import (
 	"github.com/mattermost/mattermost-server/v6/app/request"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
+	"github.com/mattermost/mattermost-server/v6/services/systembus"
+	"github.com/mattermost/mattermost-server/v6/services/systembus/events"
 	"github.com/mattermost/mattermost-server/v6/shared/i18n"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"github.com/mattermost/mattermost-server/v6/store"
@@ -317,6 +319,20 @@ func (a *App) CreateChannel(c *request.Context, channel *model.Channel, addMembe
 			}, plugin.ChannelHasBeenCreatedID)
 		})
 	}
+
+	a.Srv().SystemBus.SendEvent(
+		&systembus.Event{
+			ID: events.ChannelCreated.ID,
+			Data: map[string]string{
+				"ID":          sc.Id,
+				"Name":        sc.Name,
+				"DisplayName": sc.DisplayName,
+				"Type":        string(sc.Type),
+				"TeamId":      sc.TeamId,
+				"CreatorId":   sc.CreatorId,
+			},
+		},
+	)
 
 	return sc, nil
 }

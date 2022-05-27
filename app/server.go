@@ -62,6 +62,10 @@ import (
 	"github.com/mattermost/mattermost-server/v6/services/searchengine/bleveengine"
 	"github.com/mattermost/mattermost-server/v6/services/searchengine/bleveengine/indexer"
 	"github.com/mattermost/mattermost-server/v6/services/sharedchannel"
+	"github.com/mattermost/mattermost-server/v6/services/systembus"
+	"github.com/mattermost/mattermost-server/v6/services/systembus/actions"
+	"github.com/mattermost/mattermost-server/v6/services/systembus/events"
+	"github.com/mattermost/mattermost-server/v6/services/systembus/mem"
 	"github.com/mattermost/mattermost-server/v6/services/telemetry"
 	"github.com/mattermost/mattermost-server/v6/services/timezones"
 	"github.com/mattermost/mattermost-server/v6/services/tracing"
@@ -202,6 +206,8 @@ type Server struct {
 	featureFlagSynchronizerMutex sync.Mutex
 
 	products map[string]Product
+
+	SystemBus systembus.SystemBus
 }
 
 func NewServer(options ...Option) (*Server, error) {
@@ -219,6 +225,7 @@ func NewServer(options ...Option) (*Server, error) {
 		hashSeed:         maphash.MakeSeed(),
 		timezones:        timezones.New(),
 		products:         make(map[string]Product),
+		SystemBus:        mem.New(),
 	}
 
 	for _, option := range options {
@@ -679,7 +686,33 @@ func NewServer(options ...Option) (*Server, error) {
 		}
 	})
 
+	s.registerSystemBusEvents()
+	s.registerSystemBusActions()
+	s.linkSystemBusBuiltinActions()
+
+	s.SystemBus.SendEvent(&systembus.Event{ID: events.StartUp.ID})
+
 	return s, nil
+}
+
+func (s *Server) linkSystemBusBuiltinActions() {
+	s.SystemBus.LinkEventAction(events.ChannelCreated.ID, actions.PostMessageID, map[string]string{"template": "Welcome to my channel {{.DisplayName}}.", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"})
+	s.SystemBus.LinkEventAction(events.ChannelCreated.ID, actions.LogID, map[string]string{})
+	s.SystemBus.LinkEventAction(events.StartUp.ID, actions.LogID, map[string]string{"template": "This is an example of event data {{.Data}}."})
+}
+
+func (s *Server) registerSystemBusEvents() {
+	s.SystemBus.RegisterEvent(&events.StartUp)
+	s.SystemBus.RegisterEvent(&events.ShutDown)
+	s.SystemBus.RegisterEvent(&events.ChannelCreated)
+}
+
+func (s *Server) registerSystemBusActions() {
+	appInstance := New(ServerConnector(s.Channels()))
+
+	s.SystemBus.RegisterAction(actions.NewLog(s.Log))
+	s.SystemBus.RegisterAction(actions.NewPostMessage(appInstance, request.EmptyContext()))
+
 }
 
 func (s *Server) SetupMetricsServer() {
@@ -973,6 +1006,8 @@ func (s *Server) StopHTTPServer() {
 
 func (s *Server) Shutdown() {
 	mlog.Info("Stopping Server...")
+
+	s.SystemBus.SendEvent(&systembus.Event{ID: events.ShutDown.ID})
 
 	defer sentry.Flush(2 * time.Second)
 
