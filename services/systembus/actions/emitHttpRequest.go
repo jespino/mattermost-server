@@ -85,7 +85,7 @@ func NewEmitHttpRequest() *systembus.ActionDefinition {
 
 	return &systembus.ActionDefinition{
 		ID:               EmitHttpRequestID,
-		Name:             "emit-http-request",
+		Name:             "Emit http request",
 		Description:      "Emits an http request",
 		ConfigDefinition: map[string]string{"url": "string", "method": "POST|GET|DELETE|PATCH|PUT", "content-type": "string", "body": "string"},
 		Handler:          handler,
