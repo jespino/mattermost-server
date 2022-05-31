@@ -113,3 +113,10 @@ var UserLeaveTeam = systembus.EventDefinition{
 	Description: "This events gets triggered when a user leave a team.",
 	Fields:      []string{"UserId", "TeamId"},
 }
+
+var SlashCommandCalled = systembus.EventDefinition{
+	ID:          "slash-command-called",
+	Name:        "Slash command called",
+	Description: "This events gets triggered when a user call a server side slash command.",
+	Fields:      []string{"UserId", "TeamId", "ChannelId", "SlashCommand"},
+}

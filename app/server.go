@@ -726,10 +726,11 @@ func (s *Server) registerSystemBusEvents() {
 	s.SystemBus.RegisterEvent(&events.PostReactionRemoved) // TODO: Emit it
 	s.SystemBus.RegisterEvent(&events.PostCreated)
 	s.SystemBus.RegisterEvent(&events.PostDeleted)
-	s.SystemBus.RegisterEvent(&events.UserJoinChannel)  // TODO: Emit it
-	s.SystemBus.RegisterEvent(&events.UserLeaveChannel) // TODO: Emit it
-	s.SystemBus.RegisterEvent(&events.UserJoinTeam)     // TODO: Emit it
-	s.SystemBus.RegisterEvent(&events.UserLeaveTeam)    // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.UserJoinChannel)    // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.UserLeaveChannel)   // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.UserJoinTeam)       // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.UserLeaveTeam)      // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.SlashCommandCalled) // TODO: Emit it
 }
 
 func (s *Server) registerSystemBusActions() {
