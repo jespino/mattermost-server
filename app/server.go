@@ -731,6 +731,9 @@ func (s *Server) registerSystemBusEvents() {
 	s.SystemBus.RegisterEvent(&events.UserJoinTeam)       // TODO: Emit it
 	s.SystemBus.RegisterEvent(&events.UserLeaveTeam)      // TODO: Emit it
 	s.SystemBus.RegisterEvent(&events.SlashCommandCalled) // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.LoginSuccess)       // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.LoginFailure)       // TODO: Emit it
+	s.SystemBus.RegisterEvent(&events.NewUser)            // TODO: Emit it
 }
 
 func (s *Server) registerSystemBusActions() {

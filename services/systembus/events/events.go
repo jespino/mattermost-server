@@ -120,3 +120,24 @@ var SlashCommandCalled = systembus.EventDefinition{
 	Description: "This events gets triggered when a user call a server side slash command.",
 	Fields:      []string{"UserId", "TeamId", "ChannelId", "SlashCommand"},
 }
+
+var LoginSuccess = systembus.EventDefinition{
+	ID:          "login-success",
+	Name:        "Login success",
+	Description: "This events gets triggered when a user succeed to login",
+	Fields:      []string{"UserId"},
+}
+
+var LoginFailure = systembus.EventDefinition{
+	ID:          "login-failure",
+	Name:        "Login failure",
+	Description: "This events gets triggered when a user failed to login.",
+	Fields:      []string{"UsernameInput"},
+}
+
+var NewUser = systembus.EventDefinition{
+	ID:          "new-user",
+	Name:        "New User",
+	Description: "This events gets triggered when a new user is created.",
+	Fields:      []string{"UserId", "Source"},
+}
