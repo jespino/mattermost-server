@@ -741,6 +741,7 @@ func (s *Server) registerSystemBusActions() {
 	s.SystemBus.RegisterAction(actions.NewLog(s.Log))
 	s.SystemBus.RegisterAction(actions.NewPostMessage(appInstance, request.EmptyContext()))
 	s.SystemBus.RegisterAction(actions.NewCreateChannel(appInstance, request.EmptyContext()))
+	s.SystemBus.RegisterAction(actions.NewRunSlashCommand(appInstance, request.EmptyContext()))
 	s.SystemBus.RegisterAction(actions.NewPipe(s.SystemBus))
 	s.SystemBus.RegisterAction(actions.NewFilter())
 	s.SystemBus.RegisterAction(actions.NewEmitHttpRequest())
