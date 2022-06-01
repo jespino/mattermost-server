@@ -90,6 +90,7 @@ type Params struct {
 	ExcludePolicyConstrained  bool
 	GroupSource               model.GroupSource
 	FilterHasMember           string
+	LinkId                    string
 
 	// Cloud
 	InvoiceId string
@@ -239,6 +240,10 @@ func ParamsFromRequest(r *http.Request) *Params {
 
 	if val, ok := props["invoice_id"]; ok {
 		params.InvoiceId = val
+	}
+
+	if val, ok := props["link_id"]; ok {
+		params.LinkId = val
 	}
 
 	params.Scope = query.Get("scope")

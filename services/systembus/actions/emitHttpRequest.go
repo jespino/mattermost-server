@@ -3,8 +3,10 @@ package actions
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/mattermost/mattermost-server/v6/services/systembus"
 )
@@ -30,7 +32,7 @@ func NewEmitHttpRequest() *systembus.ActionDefinition {
 		body := bytes.NewBufferString(bodyString)
 
 		var resp *http.Response
-		switch config["method"] {
+		switch strings.ToUpper(config["method"]) {
 		case "":
 			resp, err = http.Get(url)
 		case "GET":
@@ -57,12 +59,14 @@ func NewEmitHttpRequest() *systembus.ActionDefinition {
 			}
 			req.Header.Set("Content-Type", contentType)
 			resp, err = http.DefaultClient.Do(req)
+		default:
+			return nil, errors.New("invalid request method")
+
 		}
 
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
 
 		responseBody, err := io.ReadAll(resp.Body)
 		if err != nil {

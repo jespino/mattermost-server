@@ -44,6 +44,10 @@ func (es *SystemBus) RegisterAction(action *systembus.ActionDefinition) error {
 func (es *SystemBus) SendEvent(event *systembus.Event) error {
 	es.mutex.RLock()
 	defer es.mutex.RUnlock()
+	// TODO: Maybe support wildcard linking (something like * -> actionX)
+	// Also maybe make sense to support glob o regex with linking like event-family:* -> action
+	// And also, maybe make sense to have families of events with a prefix,
+	// something like channel:..., user:..., system:...
 	links, ok := es.linksByEvent[event.ID]
 	if !ok {
 		return nil
@@ -89,7 +93,7 @@ func (es *SystemBus) ListLinks() ([]*systembus.LinkEventAction, error) {
 	return links, nil
 }
 
-func (es *SystemBus) LinkEventAction(eventID string, actionID string, config map[string]string) error {
+func (es *SystemBus) LinkEventAction(eventID string, actionID string, config map[string]string) (*systembus.LinkEventAction, error) {
 	es.mutex.Lock()
 	defer es.mutex.Unlock()
 	newLink := systembus.LinkEventAction{
@@ -105,7 +109,7 @@ func (es *SystemBus) LinkEventAction(eventID string, actionID string, config map
 	} else {
 		es.linksByEvent[newLink.EventID] = map[string]*systembus.LinkEventAction{newLink.ID: &newLink}
 	}
-	return nil
+	return &newLink, nil
 }
 
 func (es *SystemBus) UnlinkEventAction(linkID string) error {
