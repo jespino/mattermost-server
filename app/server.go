@@ -690,14 +690,38 @@ func NewServer(options ...Option) (*Server, error) {
 	// Initializing the system bus
 	// TODO: Allow another more robust system bus and add configuration for it
 	s.SystemBus = mem.New(s.Log)
-	s.Actions = actions.New(s.Log, s.SystemBus)
+	s.Actions = actions.New(s.Log, s.SystemBus, RegisterCommandAction, UnregisterCommandProvider)
 	s.registerSystemBusEvents()
 	s.registerSystemBusActions()
 	s.linkSystemBusBuiltinActions()
+	s.linkSlashCommandActions()
 
 	s.SystemBus.SendEvent(&systembus.Event{ID: events.StartUp.ID})
 
 	return s, nil
+}
+
+func (s *Server) linkSlashCommandActions() {
+	s.Actions.LinkSlashCommandAction(&actions.LinkSlashCommandAction{
+		Command:  "log",
+		ActionID: builtinactions.LogID,
+		Flags:    map[string]string{"test": "string", "other": "boolean"},
+		Config:   map[string]string{"template": "This is an slash command action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"},
+		SubCommands: []actions.SubCommand{
+			{
+				SubCommand:  "test",
+				ActionID:    builtinactions.LogID,
+				Flags:       map[string]string{"test": "string", "other": "boolean"},
+				Config:      map[string]string{"template": "This is an slash subcommand action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"},
+				Description: "custo made sub command",
+				Hint:        "",
+				Name:        "My new subcommand",
+			},
+		},
+		Description: "custom made command",
+		Hint:        "[test]",
+		Name:        "My new Command",
+	})
 }
 
 func (s *Server) linkSystemBusBuiltinActions() {
