@@ -1,3 +1,3 @@
-package actions
+package builtinactions
 
 // TODO: Update channel metadata, header, display name...

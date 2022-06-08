@@ -3,128 +3,65 @@ package mem
 import (
 	"sync"
 
-	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/services/systembus"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
 type SystemBus struct {
-	events       map[string]*systembus.EventDefinition
-	actions      map[string]*systembus.ActionDefinition
-	links        map[string]*systembus.LinkEventAction
-	linksByEvent map[string]map[string]*systembus.LinkEventAction
-	logger       *mlog.Logger
-	mutex        sync.RWMutex
+	events      map[string]*systembus.EventDefinition
+	logger      *mlog.Logger
+	mutex       sync.RWMutex
+	subscribers []func(event *systembus.Event) (*systembus.Event, error)
 }
 
 func New(logger *mlog.Logger) *SystemBus {
 	return &SystemBus{
-		events:       map[string]*systembus.EventDefinition{},
-		actions:      map[string]*systembus.ActionDefinition{},
-		links:        map[string]*systembus.LinkEventAction{},
-		linksByEvent: map[string]map[string]*systembus.LinkEventAction{},
-		logger:       logger,
+		events: map[string]*systembus.EventDefinition{},
+		logger: logger,
 	}
 }
 
-func (es *SystemBus) RegisterEvent(event *systembus.EventDefinition) error {
-	es.mutex.Lock()
-	defer es.mutex.Unlock()
-	es.events[event.ID] = event
+func (sb *SystemBus) RegisterEvent(event *systembus.EventDefinition) error {
+	sb.mutex.Lock()
+	defer sb.mutex.Unlock()
+	sb.events[event.ID] = event
 	return nil
 }
 
-func (es *SystemBus) RegisterAction(action *systembus.ActionDefinition) error {
-	es.mutex.Lock()
-	defer es.mutex.Unlock()
-	es.actions[action.ID] = action
+func (sb *SystemBus) Subscribe(subscriber func(*systembus.Event) (*systembus.Event, error)) error {
+	sb.mutex.Lock()
+	defer sb.mutex.Unlock()
+	sb.subscribers = append(sb.subscribers, subscriber)
 	return nil
 }
 
-func (es *SystemBus) SendEvent(event *systembus.Event) error {
-	es.mutex.RLock()
-	defer es.mutex.RUnlock()
-	// TODO: Maybe support wildcard linking (something like * -> actionX)
-	// Also maybe make sense to support glob o regex with linking like event-family:* -> action
-	// And also, maybe make sense to have families of events with a prefix,
-	// something like channel:..., user:..., system:...
-	links, ok := es.linksByEvent[event.ID]
-	if !ok {
-		return nil
-	}
+func (sb *SystemBus) SendEvent(event *systembus.Event) error {
+	sb.mutex.RLock()
+	defer sb.mutex.RUnlock()
 
-	for _, link := range links {
-		action := es.actions[link.ActionID]
-		_, err := action.Handler(event, link.Config)
+	for _, subscriber := range sb.subscribers {
+		_, err := subscriber(event)
 		if err != nil {
-			es.logger.Debug("SystemBus Action failed", mlog.Err(err))
+			sb.logger.Debug("Subscriber failed", mlog.Err(err))
 		}
 	}
 	return nil
 }
 
-func (es *SystemBus) ListEvents() ([]*systembus.EventDefinition, error) {
-	es.mutex.RLock()
-	defer es.mutex.RUnlock()
+func (sb *SystemBus) ListEvents() ([]*systembus.EventDefinition, error) {
+	sb.mutex.RLock()
+	defer sb.mutex.RUnlock()
 	events := []*systembus.EventDefinition{}
-	for _, event := range es.events {
+	for _, event := range sb.events {
 		events = append(events, event)
 	}
 	return events, nil
 }
 
-func (es *SystemBus) ListActions() ([]*systembus.ActionDefinition, error) {
-	es.mutex.RLock()
-	defer es.mutex.RUnlock()
-	actions := []*systembus.ActionDefinition{}
-	for _, action := range es.actions {
-		actions = append(actions, action)
-	}
-	return actions, nil
-}
-
-func (es *SystemBus) ListLinks() ([]*systembus.LinkEventAction, error) {
-	es.mutex.RLock()
-	defer es.mutex.RUnlock()
-	links := []*systembus.LinkEventAction{}
-	for _, link := range es.links {
-		links = append(links, link)
-	}
-	return links, nil
-}
-
-func (es *SystemBus) LinkEventAction(eventID string, actionID string, config map[string]string) (*systembus.LinkEventAction, error) {
-	es.mutex.Lock()
-	defer es.mutex.Unlock()
-	newLink := systembus.LinkEventAction{
-		ID:       model.NewId(),
-		EventID:  eventID,
-		ActionID: actionID,
-		Config:   config,
-	}
-
-	es.links[newLink.ID] = &newLink
-	if _, ok := es.linksByEvent[newLink.EventID]; ok {
-		es.linksByEvent[newLink.EventID][newLink.ID] = &newLink
-	} else {
-		es.linksByEvent[newLink.EventID] = map[string]*systembus.LinkEventAction{newLink.ID: &newLink}
-	}
-	return &newLink, nil
-}
-
-func (es *SystemBus) UnlinkEventAction(linkID string) error {
-	es.mutex.Lock()
-	defer es.mutex.Unlock()
-	link := es.links[linkID]
-	delete(es.linksByEvent[link.EventID], link.ID)
-	delete(es.links, link.ID)
+func (sb *SystemBus) Start() error {
 	return nil
 }
 
-func (es *SystemBus) Start() error {
-	return nil
-}
-
-func (es *SystemBus) Shutdown() error {
+func (sb *SystemBus) Shutdown() error {
 	return nil
 }

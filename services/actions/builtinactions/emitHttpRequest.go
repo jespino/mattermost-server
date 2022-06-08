@@ -1,4 +1,4 @@
-package actions
+package builtinactions
 
 import (
 	"bytes"
@@ -8,30 +8,22 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v6/services/systembus"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
 )
 
 const EmitHttpRequestID = "emit-http-request"
 const EmitHttpRequestResponseID = "emit-http-request-response"
 
-func NewEmitHttpRequest() *systembus.ActionDefinition {
-	handler := func(event *systembus.Event, config map[string]string) (*systembus.Event, error) {
-		url, err := applyTemplate(config["url"], event.Data)
-		if err != nil {
-			return nil, err
-		}
-		bodyString, err := applyTemplate(config["body"], event.Data)
-		if err != nil {
-			return nil, err
-		}
-		contentType, err := applyTemplate(config["content-type"], event.Data)
-		if err != nil {
-			return nil, err
-		}
+func NewEmitHttpRequest() *actions.ActionDefinition {
+	handler := func(config map[string]string, data map[string]string) (map[string]string, error) {
+		url := config["url"]
+		bodyString := config["body"]
+		contentType := config["content-type"]
 
 		body := bytes.NewBufferString(bodyString)
 
 		var resp *http.Response
+		var err error
 		switch strings.ToUpper(config["method"]) {
 		case "":
 			resp, err = http.Get(url)
@@ -78,16 +70,13 @@ func NewEmitHttpRequest() *systembus.ActionDefinition {
 			return nil, err
 		}
 
-		return &systembus.Event{
-			ID: EmitHttpRequestResponseID,
-			Data: map[string]string{
-				"Body":    string(responseBody),
-				"Headers": string(headers),
-			},
+		return map[string]string{
+			"Body":    string(responseBody),
+			"Headers": string(headers),
 		}, nil
 	}
 
-	return &systembus.ActionDefinition{
+	return &actions.ActionDefinition{
 		ID:               EmitHttpRequestID,
 		Name:             "Emit http request",
 		Description:      "Emits an http request",

@@ -1,9 +1,9 @@
-package actions
+package builtinactions
 
 import (
 	"github.com/mattermost/mattermost-server/v6/app/request"
 	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/services/systembus"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
 )
 
 const CreateChannelID = "create-channel"
@@ -12,32 +12,13 @@ type ChannelCreator interface {
 	CreateChannelWithUser(c *request.Context, channel *model.Channel, userID string) (*model.Channel, *model.AppError)
 }
 
-func NewCreateChannel(channelCreator ChannelCreator, ctx *request.Context) *systembus.ActionDefinition {
-	createChannelActionHandler := func(event *systembus.Event, config map[string]string) (*systembus.Event, error) {
-		channelName, err := applyTemplate(config["name"], event.Data)
-		if err != nil {
-			return nil, err
-		}
-
-		channelDisplayName, err := applyTemplate(config["display-name"], event.Data)
-		if err != nil {
-			return nil, err
-		}
-
-		teamID, err := applyTemplate(config["team-id"], event.Data)
-		if err != nil {
-			return nil, err
-		}
-
-		creatorID, err := applyTemplate(config["creator-id"], event.Data)
-		if err != nil {
-			return nil, err
-		}
-
-		channelType, err := applyTemplate(config["type"], event.Data)
-		if err != nil {
-			return nil, err
-		}
+func NewCreateChannel(channelCreator ChannelCreator, ctx *request.Context) *actions.ActionDefinition {
+	createChannelActionHandler := func(config map[string]string, data map[string]string) (map[string]string, error) {
+		channelName := config["name"]
+		channelDisplayName := config["display-name"]
+		teamID := config["team-id"]
+		creatorID := config["creator-id"]
+		channelType := config["type"]
 
 		now := model.GetMillis()
 		channel := model.Channel{
@@ -57,7 +38,7 @@ func NewCreateChannel(channelCreator ChannelCreator, ctx *request.Context) *syst
 		return nil, nil
 	}
 
-	createChannelAction := systembus.ActionDefinition{
+	createChannelAction := actions.ActionDefinition{
 		ID:               CreateChannelID,
 		Name:             "Create channel",
 		Description:      "Create a new channel in a team",

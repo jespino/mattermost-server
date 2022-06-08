@@ -1,9 +1,9 @@
-package actions
+package builtinactions
 
 import (
 	"github.com/mattermost/mattermost-server/v6/app/request"
 	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/services/systembus"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
 	"github.com/mattermost/mattermost-server/v6/shared/i18n"
 )
 
@@ -14,22 +14,11 @@ type CommandExecutor interface {
 	ExecuteCommand(c *request.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError)
 }
 
-func NewRunSlashCommand(commandExecutor CommandExecutor, ctx *request.Context) *systembus.ActionDefinition {
-	runSlashCommandActionHandler := func(event *systembus.Event, config map[string]string) (*systembus.Event, error) {
-		command, err := applyTemplate(config["command"], event.Data)
-		if err != nil {
-			return nil, err
-		}
-
-		channelID, err := applyTemplate(config["channelId"], event.Data)
-		if err != nil {
-			return nil, err
-		}
-
-		userID, err := applyTemplate(config["userId"], event.Data)
-		if err != nil {
-			return nil, err
-		}
+func NewRunSlashCommand(commandExecutor CommandExecutor, ctx *request.Context) *actions.ActionDefinition {
+	runSlashCommandActionHandler := func(config map[string]string, data map[string]string) (map[string]string, error) {
+		command := config["command"]
+		channelID := config["channelId"]
+		userID := config["userId"]
 
 		commandArgs := model.CommandArgs{
 			Command:         command,
@@ -59,7 +48,7 @@ func NewRunSlashCommand(commandExecutor CommandExecutor, ctx *request.Context) *
 		return nil, nil
 	}
 
-	runSlashCommandAction := systembus.ActionDefinition{
+	runSlashCommandAction := actions.ActionDefinition{
 		ID:               RunSlashCommandID,
 		Name:             "Run Slash Command",
 		Description:      "Run a slash command",

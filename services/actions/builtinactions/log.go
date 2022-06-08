@@ -1,17 +1,17 @@
-package actions
+package builtinactions
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v6/services/systembus"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
 const LogID = "print"
 
-func NewLog(logger *mlog.Logger) *systembus.ActionDefinition {
-	handler := func(event *systembus.Event, config map[string]string) (*systembus.Event, error) {
+func NewLog(logger *mlog.Logger) *actions.ActionDefinition {
+	handler := func(config map[string]string, data map[string]string) (map[string]string, error) {
 		logLevel := config["level"]
 		logFunc := logger.Debug
 		switch strings.ToLower(logLevel) {
@@ -28,20 +28,16 @@ func NewLog(logger *mlog.Logger) *systembus.ActionDefinition {
 		}
 
 		if config["template"] == "" {
-			logFunc(fmt.Sprintf("Event: %s", event))
+			logFunc(fmt.Sprintf("Data: %s", data))
 			return nil, nil
 		}
 
-		message, err := applyTemplate(config["template"], event.Data)
-		if err != nil {
-			return nil, err
-		}
-
+		message := config["template"]
 		logFunc(message)
 		return nil, nil
 	}
 
-	return &systembus.ActionDefinition{
+	return &actions.ActionDefinition{
 		ID:               LogID,
 		Name:             "Log",
 		Description:      "Logs the data passed as parameter.",

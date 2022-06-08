@@ -1,67 +1,61 @@
-package actions
+package builtinactions
 
 import (
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v6/services/systembus"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
 )
 
 const FilterID = "filter"
 
-func NewFilter() *systembus.ActionDefinition {
-	handler := func(event *systembus.Event, config map[string]string) (*systembus.Event, error) {
-		template1, err := applyTemplate(config["template1"], event.Data)
-		if err != nil {
-			return nil, err
-		}
-		template2, err := applyTemplate(config["template2"], event.Data)
-		if err != nil {
-			return nil, err
-		}
+func NewFilter() *actions.ActionDefinition {
+	handler := func(config map[string]string, data map[string]string) (map[string]string, error) {
+		template1 := config["template1"]
+		template2 := config["template2"]
 
 		switch config["comparison"] {
 		case "":
 			if template1 == template2 {
-				return event, nil
+				return data, nil
 			}
 		case "eq":
 			if template1 == template2 {
-				return event, nil
+				return data, nil
 			}
 		case "gt":
 			if template1 > template2 {
-				return event, nil
+				return data, nil
 			}
 		case "lt":
 			if template1 < template2 {
-				return event, nil
+				return data, nil
 			}
 		case "gte":
 			if template1 >= template2 {
-				return event, nil
+				return data, nil
 			}
 		case "lte":
 			if template1 <= template2 {
-				return event, nil
+				return data, nil
 			}
 		case "contains":
 			if strings.Contains(template1, template2) {
-				return event, nil
+				return data, nil
 			}
 		case "prefix":
 			if strings.HasPrefix(template1, template2) {
-				return event, nil
+				return data, nil
 			}
 		case "suffix":
 			if strings.HasSuffix(template1, template2) {
-				return event, nil
+				return data, nil
 			}
 		}
 
 		return nil, nil
 	}
 
-	return &systembus.ActionDefinition{
+	return &actions.ActionDefinition{
 		ID:               FilterID,
 		Name:             "Filter",
 		Description:      "Filter events based on a criteria, used in combination with pipes or other multi action actions",

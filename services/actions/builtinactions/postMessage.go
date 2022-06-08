@@ -1,9 +1,9 @@
-package actions
+package builtinactions
 
 import (
 	"github.com/mattermost/mattermost-server/v6/app/request"
 	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/services/systembus"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
 )
 
 const PostMessageID = "post-message"
@@ -13,22 +13,11 @@ type MessagePoster interface {
 	CreatePost(*request.Context, *model.Post, *model.Channel, bool, bool) (*model.Post, *model.AppError)
 }
 
-func NewPostMessage(messagePoster MessagePoster, ctx *request.Context) *systembus.ActionDefinition {
-	postActionHandler := func(event *systembus.Event, config map[string]string) (*systembus.Event, error) {
-		message, err := applyTemplate(config["template"], event.Data)
-		if err != nil {
-			return nil, err
-		}
-
-		channelID, err := applyTemplate(config["channel-id"], event.Data)
-		if err != nil {
-			return nil, err
-		}
-
-		userID, err := applyTemplate(config["user-id"], event.Data)
-		if err != nil {
-			return nil, err
-		}
+func NewPostMessage(messagePoster MessagePoster, ctx *request.Context) *actions.ActionDefinition {
+	postActionHandler := func(config map[string]string, data map[string]string) (map[string]string, error) {
+		message := config["template"]
+		channelID := config["channel-id"]
+		userID := config["user-id"]
 
 		channel, appErr := messagePoster.GetChannel(channelID)
 		if appErr != nil {
@@ -51,7 +40,7 @@ func NewPostMessage(messagePoster MessagePoster, ctx *request.Context) *systembu
 		return nil, nil
 	}
 
-	postMessageAction := systembus.ActionDefinition{
+	postMessageAction := actions.ActionDefinition{
 		ID:               PostMessageID,
 		Name:             "Post Message",
 		Description:      "Post a message into a channel",

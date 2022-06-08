@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/services/systembus"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
@@ -45,7 +45,7 @@ func getSystemBusActions(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actions, err := c.App.Srv().SystemBus.ListActions()
+	actions, err := c.App.Srv().Actions.ListActions()
 	if err != nil {
 		c.Err = model.NewAppError("Api4.getSystemBusActions", "api.systembus.request_error", nil, err.Error(), http.StatusInternalServerError)
 		return
@@ -62,7 +62,7 @@ func getSystemBusLinks(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	links, err := c.App.Srv().SystemBus.ListLinks()
+	links, err := c.App.Srv().Actions.ListLinks()
 	if err != nil {
 		c.Err = model.NewAppError("Api4.getSystemBusLinks", "api.systembus.request_error", nil, err.Error(), http.StatusInternalServerError)
 		return
@@ -79,7 +79,7 @@ func createSystemBusLink(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link := systembus.LinkEventAction{}
+	link := actions.LinkEventAction{}
 
 	json.NewDecoder(r.Body).Decode(&link)
 	if link.EventID == "" {
@@ -92,7 +92,7 @@ func createSystemBusLink(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newLink, err := c.App.Srv().SystemBus.LinkEventAction(link.EventID, link.ActionID, link.Config)
+	newLink, err := c.App.Srv().Actions.LinkEventAction(link.EventID, link.ActionID, link.Config)
 	if err != nil {
 		c.Err = model.NewAppError("Api4.createSystemBusLink", "api.systembus.request_error", nil, err.Error(), http.StatusInternalServerError)
 		return
@@ -115,7 +115,7 @@ func deleteSystemBusLink(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := c.App.Srv().SystemBus.UnlinkEventAction(c.Params.LinkId); err != nil {
+	if err := c.App.Srv().Actions.UnlinkEventAction(c.Params.LinkId); err != nil {
 		c.Err = model.NewAppError("Api4.createSystemBusLink", "api.systembus.request_error", nil, err.Error(), http.StatusInternalServerError)
 		return
 	}

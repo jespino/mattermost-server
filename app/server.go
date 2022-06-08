@@ -54,6 +54,8 @@ import (
 	"github.com/mattermost/mattermost-server/v6/jobs/resend_invitation_email"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin/scheduler"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
+	"github.com/mattermost/mattermost-server/v6/services/actions/builtinactions"
 	"github.com/mattermost/mattermost-server/v6/services/awsmeter"
 	"github.com/mattermost/mattermost-server/v6/services/cache"
 	"github.com/mattermost/mattermost-server/v6/services/httpservice"
@@ -63,7 +65,6 @@ import (
 	"github.com/mattermost/mattermost-server/v6/services/searchengine/bleveengine/indexer"
 	"github.com/mattermost/mattermost-server/v6/services/sharedchannel"
 	"github.com/mattermost/mattermost-server/v6/services/systembus"
-	"github.com/mattermost/mattermost-server/v6/services/systembus/actions"
 	"github.com/mattermost/mattermost-server/v6/services/systembus/events"
 	"github.com/mattermost/mattermost-server/v6/services/systembus/mem"
 	"github.com/mattermost/mattermost-server/v6/services/telemetry"
@@ -208,6 +209,7 @@ type Server struct {
 	products map[string]Product
 
 	SystemBus systembus.SystemBus
+	Actions   *actions.Actions
 }
 
 func NewServer(options ...Option) (*Server, error) {
@@ -688,6 +690,7 @@ func NewServer(options ...Option) (*Server, error) {
 	// Initializing the system bus
 	// TODO: Allow another more robust system bus and add configuration for it
 	s.SystemBus = mem.New(s.Log)
+	s.Actions = actions.New(s.Log, s.SystemBus)
 	s.registerSystemBusEvents()
 	s.registerSystemBusActions()
 	s.linkSystemBusBuiltinActions()
@@ -738,13 +741,13 @@ func (s *Server) registerSystemBusEvents() {
 
 func (s *Server) registerSystemBusActions() {
 	appInstance := New(ServerConnector(s.Channels()))
-	s.SystemBus.RegisterAction(actions.NewLog(s.Log))
-	s.SystemBus.RegisterAction(actions.NewPostMessage(appInstance, request.EmptyContext()))
-	s.SystemBus.RegisterAction(actions.NewCreateChannel(appInstance, request.EmptyContext()))
-	s.SystemBus.RegisterAction(actions.NewRunSlashCommand(appInstance, request.EmptyContext()))
-	s.SystemBus.RegisterAction(actions.NewPipe(s.SystemBus))
-	s.SystemBus.RegisterAction(actions.NewFilter())
-	s.SystemBus.RegisterAction(actions.NewEmitHttpRequest())
+	s.Actions.RegisterAction(builtinactions.NewLog(s.Log))
+	s.Actions.RegisterAction(builtinactions.NewPostMessage(appInstance, request.EmptyContext()))
+	s.Actions.RegisterAction(builtinactions.NewCreateChannel(appInstance, request.EmptyContext()))
+	s.Actions.RegisterAction(builtinactions.NewRunSlashCommand(appInstance, request.EmptyContext()))
+	s.Actions.RegisterAction(builtinactions.NewPipe(s.Actions))
+	s.Actions.RegisterAction(builtinactions.NewFilter())
+	s.Actions.RegisterAction(builtinactions.NewEmitHttpRequest())
 }
 
 func (s *Server) SetupMetricsServer() {
