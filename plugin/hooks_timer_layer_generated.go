@@ -13,6 +13,8 @@ import (
 
 	"github.com/mattermost/mattermost-server/v6/einterfaces"
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
+	"github.com/mattermost/mattermost-server/v6/services/systembus"
 )
 
 type hooksTimerLayer struct {
@@ -211,4 +213,17 @@ func (hooks *hooksTimerLayer) OnCloudLimitsUpdated(limits *model.ProductLimits) 
 	startTime := timePkg.Now()
 	hooks.hooksImpl.OnCloudLimitsUpdated(limits)
 	hooks.recordTime(startTime, "OnCloudLimitsUpdated", true)
+}
+
+func (hooks *hooksTimerLayer) OnSystembusEvent(event *systembus.Event) {
+	startTime := timePkg.Now()
+	hooks.hooksImpl.OnSystembusEvent(event)
+	hooks.recordTime(startTime, "OnSystembusEvent", true)
+}
+
+func (hooks *hooksTimerLayer) OnActionCalled(actionDefinition *actions.ActionDefinition, config map[string]string, data map[string]string) (map[string]string, error) {
+	startTime := timePkg.Now()
+	_returnsA, _returnsB := hooks.hooksImpl.OnActionCalled(actionDefinition, config, data)
+	hooks.recordTime(startTime, "OnActionCalled", _returnsB == nil)
+	return _returnsA, _returnsB
 }

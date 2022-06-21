@@ -18,6 +18,8 @@ import (
 
 	"github.com/mattermost/mattermost-server/v6/app/request"
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
+	"github.com/mattermost/mattermost-server/v6/services/systembus"
 	"github.com/mattermost/mattermost-server/v6/shared/i18n"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
@@ -1187,4 +1189,27 @@ func (api *PluginAPI) GetCloudLimits() (*model.ProductLimits, error) {
 	}
 	limits, err := api.app.Cloud().GetCloudLimits("")
 	return limits, err
+}
+
+// SendSystembusEvent propagate an event through the system bus
+func (api *PluginAPI) SendSystembusEvent(event *systembus.Event) error {
+	return api.app.Srv().SystemBus.SendEvent(event)
+}
+
+func (api *PluginAPI) RegisterSystembusEvent(eventDefinition *systembus.EventDefinition) error {
+	return api.app.Srv().SystemBus.RegisterEvent(eventDefinition)
+}
+
+func (api *PluginAPI) RegisterAction(actionDefinition *actions.ActionDefinition) error {
+	actionDefinition.Handler = func(config map[string]string, data map[string]string) (map[string]string, error) {
+		if pluginsEnvironment := api.app.GetPluginsEnvironment(); pluginsEnvironment != nil {
+			hooks, err := pluginsEnvironment.HooksForPlugin(api.id)
+			if err != nil {
+				return nil, err
+			}
+			return hooks.OnActionCalled(actionDefinition, config, data)
+		}
+		return nil, nil
+	}
+	return api.app.Srv().Actions.RegisterAction(actionDefinition)
 }

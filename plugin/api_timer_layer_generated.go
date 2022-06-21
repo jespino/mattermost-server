@@ -13,6 +13,8 @@ import (
 
 	"github.com/mattermost/mattermost-server/v6/einterfaces"
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
+	"github.com/mattermost/mattermost-server/v6/services/systembus"
 )
 
 type apiTimerLayer struct {
@@ -1231,4 +1233,25 @@ func (api *apiTimerLayer) GetCloudLimits() (*model.ProductLimits, error) {
 	_returnsA, _returnsB := api.apiImpl.GetCloudLimits()
 	api.recordTime(startTime, "GetCloudLimits", _returnsB == nil)
 	return _returnsA, _returnsB
+}
+
+func (api *apiTimerLayer) RegisterSystembusEvent(eventDefinition *systembus.EventDefinition) error {
+	startTime := timePkg.Now()
+	_returnsA := api.apiImpl.RegisterSystembusEvent(eventDefinition)
+	api.recordTime(startTime, "RegisterSystembusEvent", _returnsA == nil)
+	return _returnsA
+}
+
+func (api *apiTimerLayer) RegisterAction(actionDefinition *actions.ActionDefinition) error {
+	startTime := timePkg.Now()
+	_returnsA := api.apiImpl.RegisterAction(actionDefinition)
+	api.recordTime(startTime, "RegisterAction", _returnsA == nil)
+	return _returnsA
+}
+
+func (api *apiTimerLayer) SendSystembusEvent(event *systembus.Event) error {
+	startTime := timePkg.Now()
+	_returnsA := api.apiImpl.SendSystembusEvent(event)
+	api.recordTime(startTime, "SendSystembusEvent", _returnsA == nil)
+	return _returnsA
 }

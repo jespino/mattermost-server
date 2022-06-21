@@ -10,6 +10,8 @@ import (
 	plugin "github.com/hashicorp/go-plugin"
 
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
+	"github.com/mattermost/mattermost-server/v6/services/systembus"
 )
 
 // The API can be used to retrieve data or perform actions on behalf of the plugin. Most methods
@@ -1152,6 +1154,21 @@ type API interface {
 	//
 	// Minimum server version: 7.0
 	GetCloudLimits() (*model.ProductLimits, error)
+
+	// RegisterSystembusEvent register a new event type
+	//
+	// Minimum server version: 7.4
+	RegisterSystembusEvent(eventDefinition *systembus.EventDefinition) error
+
+	// RegisterAction register a new action type
+	//
+	// Minimum server version: 7.4
+	RegisterAction(actionDefinition *actions.ActionDefinition) error
+
+	// SendSystembusEvent emits an event to the system bus
+	//
+	// Minimum server version: 7.4
+	SendSystembusEvent(event *systembus.Event) error
 }
 
 var handshake = plugin.HandshakeConfig{

@@ -11,6 +11,8 @@ import (
 	"log"
 
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
+	"github.com/mattermost/mattermost-server/v6/services/systembus"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
@@ -803,6 +805,77 @@ func (s *hooksRPCServer) OnCloudLimitsUpdated(args *Z_OnCloudLimitsUpdatedArgs, 
 		hook.OnCloudLimitsUpdated(args.A)
 	} else {
 		return encodableError(fmt.Errorf("Hook OnCloudLimitsUpdated called but not implemented."))
+	}
+	return nil
+}
+
+func init() {
+	hookNameToId["OnSystembusEvent"] = OnSystembusEventID
+}
+
+type Z_OnSystembusEventArgs struct {
+	A *systembus.Event
+}
+
+type Z_OnSystembusEventReturns struct {
+}
+
+func (g *hooksRPCClient) OnSystembusEvent(event *systembus.Event) {
+	_args := &Z_OnSystembusEventArgs{event}
+	_returns := &Z_OnSystembusEventReturns{}
+	if g.implemented[OnSystembusEventID] {
+		if err := g.client.Call("Plugin.OnSystembusEvent", _args, _returns); err != nil {
+			g.log.Error("RPC call OnSystembusEvent to plugin failed.", mlog.Err(err))
+		}
+	}
+
+}
+
+func (s *hooksRPCServer) OnSystembusEvent(args *Z_OnSystembusEventArgs, returns *Z_OnSystembusEventReturns) error {
+	if hook, ok := s.impl.(interface {
+		OnSystembusEvent(event *systembus.Event)
+	}); ok {
+		hook.OnSystembusEvent(args.A)
+	} else {
+		return encodableError(fmt.Errorf("Hook OnSystembusEvent called but not implemented."))
+	}
+	return nil
+}
+
+func init() {
+	hookNameToId["OnActionCalled"] = OnActionCalledID
+}
+
+type Z_OnActionCalledArgs struct {
+	A *actions.ActionDefinition
+	B map[string]string
+	C map[string]string
+}
+
+type Z_OnActionCalledReturns struct {
+	A map[string]string
+	B error
+}
+
+func (g *hooksRPCClient) OnActionCalled(actionDefinition *actions.ActionDefinition, config map[string]string, data map[string]string) (map[string]string, error) {
+	_args := &Z_OnActionCalledArgs{actionDefinition, config, data}
+	_returns := &Z_OnActionCalledReturns{}
+	if g.implemented[OnActionCalledID] {
+		if err := g.client.Call("Plugin.OnActionCalled", _args, _returns); err != nil {
+			g.log.Error("RPC call OnActionCalled to plugin failed.", mlog.Err(err))
+		}
+	}
+	return _returns.A, _returns.B
+}
+
+func (s *hooksRPCServer) OnActionCalled(args *Z_OnActionCalledArgs, returns *Z_OnActionCalledReturns) error {
+	if hook, ok := s.impl.(interface {
+		OnActionCalled(actionDefinition *actions.ActionDefinition, config map[string]string, data map[string]string) (map[string]string, error)
+	}); ok {
+		returns.A, returns.B = hook.OnActionCalled(args.A, args.B, args.C)
+		returns.B = encodableError(returns.B)
+	} else {
+		return encodableError(fmt.Errorf("Hook OnActionCalled called but not implemented."))
 	}
 	return nil
 }
@@ -5675,6 +5748,93 @@ func (s *apiRPCServer) GetCloudLimits(args *Z_GetCloudLimitsArgs, returns *Z_Get
 		returns.B = encodableError(returns.B)
 	} else {
 		return encodableError(fmt.Errorf("API GetCloudLimits called but not implemented."))
+	}
+	return nil
+}
+
+type Z_RegisterSystembusEventArgs struct {
+	A *systembus.EventDefinition
+}
+
+type Z_RegisterSystembusEventReturns struct {
+	A error
+}
+
+func (g *apiRPCClient) RegisterSystembusEvent(eventDefinition *systembus.EventDefinition) error {
+	_args := &Z_RegisterSystembusEventArgs{eventDefinition}
+	_returns := &Z_RegisterSystembusEventReturns{}
+	if err := g.client.Call("Plugin.RegisterSystembusEvent", _args, _returns); err != nil {
+		log.Printf("RPC call to RegisterSystembusEvent API failed: %s", err.Error())
+	}
+	return _returns.A
+}
+
+func (s *apiRPCServer) RegisterSystembusEvent(args *Z_RegisterSystembusEventArgs, returns *Z_RegisterSystembusEventReturns) error {
+	if hook, ok := s.impl.(interface {
+		RegisterSystembusEvent(eventDefinition *systembus.EventDefinition) error
+	}); ok {
+		returns.A = hook.RegisterSystembusEvent(args.A)
+		returns.A = encodableError(returns.A)
+	} else {
+		return encodableError(fmt.Errorf("API RegisterSystembusEvent called but not implemented."))
+	}
+	return nil
+}
+
+type Z_RegisterActionArgs struct {
+	A *actions.ActionDefinition
+}
+
+type Z_RegisterActionReturns struct {
+	A error
+}
+
+func (g *apiRPCClient) RegisterAction(actionDefinition *actions.ActionDefinition) error {
+	_args := &Z_RegisterActionArgs{actionDefinition}
+	_returns := &Z_RegisterActionReturns{}
+	if err := g.client.Call("Plugin.RegisterAction", _args, _returns); err != nil {
+		log.Printf("RPC call to RegisterAction API failed: %s", err.Error())
+	}
+	return _returns.A
+}
+
+func (s *apiRPCServer) RegisterAction(args *Z_RegisterActionArgs, returns *Z_RegisterActionReturns) error {
+	if hook, ok := s.impl.(interface {
+		RegisterAction(actionDefinition *actions.ActionDefinition) error
+	}); ok {
+		returns.A = hook.RegisterAction(args.A)
+		returns.A = encodableError(returns.A)
+	} else {
+		return encodableError(fmt.Errorf("API RegisterAction called but not implemented."))
+	}
+	return nil
+}
+
+type Z_SendSystembusEventArgs struct {
+	A *systembus.Event
+}
+
+type Z_SendSystembusEventReturns struct {
+	A error
+}
+
+func (g *apiRPCClient) SendSystembusEvent(event *systembus.Event) error {
+	_args := &Z_SendSystembusEventArgs{event}
+	_returns := &Z_SendSystembusEventReturns{}
+	if err := g.client.Call("Plugin.SendSystembusEvent", _args, _returns); err != nil {
+		log.Printf("RPC call to SendSystembusEvent API failed: %s", err.Error())
+	}
+	return _returns.A
+}
+
+func (s *apiRPCServer) SendSystembusEvent(args *Z_SendSystembusEventArgs, returns *Z_SendSystembusEventReturns) error {
+	if hook, ok := s.impl.(interface {
+		SendSystembusEvent(event *systembus.Event) error
+	}); ok {
+		returns.A = hook.SendSystembusEvent(args.A)
+		returns.A = encodableError(returns.A)
+	} else {
+		return encodableError(fmt.Errorf("API SendSystembusEvent called but not implemented."))
 	}
 	return nil
 }

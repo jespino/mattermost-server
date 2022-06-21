@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/services/actions"
+	"github.com/mattermost/mattermost-server/v6/services/systembus"
 )
 
 // These assignments are part of the wire protocol used to trigger hook events in plugins.
@@ -43,6 +45,8 @@ const (
 	OnInstallID                     = 25
 	OnSendDailyTelemetryID          = 26
 	OnCloudLimitsUpdatedID          = 27
+	OnSystembusEventID              = 28
+	OnActionCalledID                = 29
 	TotalHooksID                    = iota
 )
 
@@ -270,4 +274,14 @@ type Hooks interface {
 	//
 	// Minimum server version: 7.0
 	OnCloudLimitsUpdated(limits *model.ProductLimits)
+
+	// OnSystembusEvent is invoked when a new message is sent to the systembus
+	//
+	// Minimum server version: 7.4
+	OnSystembusEvent(event *systembus.Event)
+
+	// OnActionCalled is invoked when a plugin action is called
+	//
+	// Minimum server version: 7.4
+	OnActionCalled(actionDefinition *actions.ActionDefinition, config map[string]string, data map[string]string) (map[string]string, error)
 }
