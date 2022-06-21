@@ -125,7 +125,7 @@ var LoginSuccess = systembus.EventDefinition{
 	ID:          "login-success",
 	Name:        "Login success",
 	Description: "This events gets triggered when a user succeed to login",
-	Fields:      []string{"UserId"},
+	Fields:      []string{"UserId", "UserAgent", "IPAddress"},
 }
 
 var LoginFailure = systembus.EventDefinition{

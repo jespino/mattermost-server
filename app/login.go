@@ -19,6 +19,8 @@ import (
 	"github.com/mattermost/mattermost-server/v6/app/request"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
+	"github.com/mattermost/mattermost-server/v6/services/systembus"
+	"github.com/mattermost/mattermost-server/v6/services/systembus/events"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"github.com/mattermost/mattermost-server/v6/store"
 	"github.com/mattermost/mattermost-server/v6/utils"
@@ -235,6 +237,17 @@ func (a *App) DoLogin(c *request.Context, w http.ResponseWriter, r *http.Request
 			}, plugin.UserHasLoggedInID)
 		})
 	}
+
+	a.Srv().SystemBus.SendEvent(
+		&systembus.Event{
+			ID: events.LoginSuccess.ID,
+			Data: map[string]string{
+				"UserId":    user.Id,
+				"UserAgent": c.UserAgent(),
+				"IPAddress": c.IPAddress(),
+			},
+		},
+	)
 
 	return nil
 }
