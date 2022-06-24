@@ -778,6 +778,29 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	graph5.AddNode(luaAction)
 	graph5.AddEdge(actions.NewEdge(createPostEvent, luaAction, map[string]string{"code": "print(\"Hi from lua, I'm watching you, you posted the message: \", data_Message)"}))
 	s.Actions.AddGraph(graph5)
+
+	graph6 := actions.NewGraph()
+	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
+	graph6.AddNode(createPostEvent)
+	filterAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.FilterID))
+	graph6.AddNode(filterAction)
+	delayAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.DelayID))
+	graph6.AddNode(delayAction)
+	createPostAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.PostMessageID))
+	graph6.AddNode(createPostAction)
+	graph6.AddEdge(actions.NewEdge(createPostEvent, filterAction, map[string]string{"template1": "{{.Message}}", "template2": "hello", "comparison": "contains"}))
+	graph6.AddEdge(actions.NewEdge(filterAction, delayAction, map[string]string{"delay": "10"}))
+	graph6.AddEdge(actions.NewEdge(filterAction, createPostAction, map[string]string{"template": "Hello, I was a bit distracted", "channel-id": "{{.ChannelId}}", "root-id": "{{.PostId}}", "user-id": "{{.UserId}}"}))
+	s.Actions.AddGraph(graph6)
+
+	graph7 := actions.NewGraph()
+	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
+	graph7.AddNode(createPostEvent)
+	javascriptAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.JavascriptID))
+	graph7.AddNode(javascriptAction)
+	graph7.AddEdge(actions.NewEdge(createPostEvent, javascriptAction, map[string]string{"code": "console.log('Hi from javascript, I am watching you, you posted the message:', data.Message)"}))
+	s.Actions.AddGraph(graph7)
+
 }
 
 func (s *Server) registerSystemBusEvents() {
@@ -806,12 +829,14 @@ func (s *Server) registerSystemBusEvents() {
 func (s *Server) registerSystemBusActions() {
 	appInstance := New(ServerConnector(s.Channels()))
 	s.Actions.RegisterAction(builtinactions.NewLua())
+	s.Actions.RegisterAction(builtinactions.NewJavascript())
 	s.Actions.RegisterAction(builtinactions.NewLog(s.Log))
 	s.Actions.RegisterAction(builtinactions.NewPostMessage(appInstance, request.EmptyContext()))
 	s.Actions.RegisterAction(builtinactions.NewCreateChannel(appInstance, request.EmptyContext()))
 	s.Actions.RegisterAction(builtinactions.NewRunSlashCommand(appInstance, request.EmptyContext()))
 	s.Actions.RegisterAction(builtinactions.NewFilter())
 	s.Actions.RegisterAction(builtinactions.NewEmitHttpRequest())
+	s.Actions.RegisterAction(builtinactions.NewDelay())
 }
 
 func (s *Server) SetupMetricsServer() {

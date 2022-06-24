@@ -51,7 +51,7 @@ func EventToGraphSubscription(a *Actions) func(event *systembus.Event) (*systemb
 		fmt.Println("GRAPHS FOUND")
 		for _, graph := range graphs {
 			fmt.Println("RUNNING GRAPH")
-			graph.RunEvent(event)
+			go graph.RunEvent(event)
 		}
 		return nil, nil
 	}
