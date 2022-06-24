@@ -15,16 +15,16 @@ const EmitHttpRequestID = "emit-http-request"
 const EmitHttpRequestResponseID = "emit-http-request-response"
 
 func NewEmitHttpRequest() *actions.ActionDefinition {
-	handler := func(config map[string]string, data map[string]string) (map[string]string, error) {
-		url := config["url"]
-		bodyString := config["body"]
-		contentType := config["content-type"]
+	handler := func(data map[string]string) (map[string]string, error) {
+		url := data["url"]
+		bodyString := data["body"]
+		contentType := data["content-type"]
 
 		body := bytes.NewBufferString(bodyString)
 
 		var resp *http.Response
 		var err error
-		switch strings.ToUpper(config["method"]) {
+		switch strings.ToUpper(data["method"]) {
 		case "":
 			resp, err = http.Get(url)
 		case "GET":

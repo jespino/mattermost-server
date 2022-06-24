@@ -8,11 +8,11 @@ import (
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
-const LogID = "print"
+const LogID = "log"
 
 func NewLog(logger *mlog.Logger) *actions.ActionDefinition {
-	handler := func(config map[string]string, data map[string]string) (map[string]string, error) {
-		logLevel := config["level"]
+	handler := func(data map[string]string) (map[string]string, error) {
+		logLevel := data["level"]
 		logFunc := logger.Debug
 		switch strings.ToLower(logLevel) {
 		case "trace":
@@ -27,14 +27,14 @@ func NewLog(logger *mlog.Logger) *actions.ActionDefinition {
 			logFunc = logger.Critical
 		}
 
-		if config["template"] == "" {
+		if data["template"] == "" {
 			logFunc(fmt.Sprintf("Data: %s", data))
-			return nil, nil
+			return data, nil
 		}
 
-		message := config["template"]
+		message := data["template"]
 		logFunc(message)
-		return nil, nil
+		return data, nil
 	}
 
 	return &actions.ActionDefinition{

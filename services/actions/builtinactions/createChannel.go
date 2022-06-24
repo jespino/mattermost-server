@@ -1,6 +1,8 @@
 package builtinactions
 
 import (
+	"fmt"
+
 	"github.com/mattermost/mattermost-server/v6/app/request"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/services/actions"
@@ -13,29 +15,32 @@ type ChannelCreator interface {
 }
 
 func NewCreateChannel(channelCreator ChannelCreator, ctx *request.Context) *actions.ActionDefinition {
-	createChannelActionHandler := func(config map[string]string, data map[string]string) (map[string]string, error) {
-		channelName := config["name"]
-		channelDisplayName := config["display-name"]
-		teamID := config["team-id"]
-		creatorID := config["creator-id"]
-		channelType := config["type"]
-
+	createChannelActionHandler := func(data map[string]string) (map[string]string, error) {
 		now := model.GetMillis()
 		channel := model.Channel{
-			Name:        channelName,
-			DisplayName: channelDisplayName,
-			TeamId:      teamID,
-			CreatorId:   creatorID,
+			Name:        data["name"],
+			DisplayName: data["display-name"],
+			TeamId:      data["team-id"],
+			CreatorId:   data["creator-id"],
 			CreateAt:    now,
 			UpdateAt:    now,
-			Type:        model.ChannelType(channelType),
+			Type:        model.ChannelType(data["type"]),
 		}
-		_, appErr := channelCreator.CreateChannelWithUser(ctx, &channel, creatorID)
+		c, appErr := channelCreator.CreateChannelWithUser(ctx, &channel, data["creator-id"])
 		if appErr != nil {
 			return nil, appErr
 		}
 
-		return nil, nil
+		newData := map[string]string{}
+		for key, value := range data {
+			newData[key] = value
+		}
+
+		newData["id"] = c.Id
+		newData["create-at"] = fmt.Sprintf("%d", c.CreateAt)
+		newData["update-at"] = fmt.Sprintf("%d", c.UpdateAt)
+
+		return newData, nil
 	}
 
 	createChannelAction := actions.ActionDefinition{

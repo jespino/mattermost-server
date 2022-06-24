@@ -157,13 +157,13 @@ func (_m *Hooks) MessageWillBeUpdated(c *plugin.Context, newPost *model.Post, ol
 	return r0, r1
 }
 
-// OnActionCalled provides a mock function with given fields: actionDefinition, config, data
-func (_m *Hooks) OnActionCalled(actionDefinition *actions.ActionDefinition, config map[string]string, data map[string]string) (map[string]string, error) {
-	ret := _m.Called(actionDefinition, config, data)
+// OnActionCalled provides a mock function with given fields: actionDefinition, data
+func (_m *Hooks) OnActionCalled(actionDefinition *actions.ActionDefinition, data map[string]string) (map[string]string, error) {
+	ret := _m.Called(actionDefinition, data)
 
 	var r0 map[string]string
-	if rf, ok := ret.Get(0).(func(*actions.ActionDefinition, map[string]string, map[string]string) map[string]string); ok {
-		r0 = rf(actionDefinition, config, data)
+	if rf, ok := ret.Get(0).(func(*actions.ActionDefinition, map[string]string) map[string]string); ok {
+		r0 = rf(actionDefinition, data)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]string)
@@ -171,8 +171,8 @@ func (_m *Hooks) OnActionCalled(actionDefinition *actions.ActionDefinition, conf
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*actions.ActionDefinition, map[string]string, map[string]string) error); ok {
-		r1 = rf(actionDefinition, config, data)
+	if rf, ok := ret.Get(1).(func(*actions.ActionDefinition, map[string]string) error); ok {
+		r1 = rf(actionDefinition, data)
 	} else {
 		r1 = ret.Error(1)
 	}

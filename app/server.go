@@ -690,7 +690,8 @@ func NewServer(options ...Option) (*Server, error) {
 	// Initializing the system bus
 	// TODO: Allow another more robust system bus and add configuration for it
 	s.SystemBus = mem.New(s.Log)
-	s.Actions = actions.New(s.Log, s.SystemBus, RegisterCommandAction, UnregisterCommandProvider)
+	// s.Actions = actions.New(s.Log, s.SystemBus, RegisterCommandAction, UnregisterCommandProvider)
+	s.Actions = actions.New(s.Log, s.SystemBus)
 	s.registerSystemBusEvents()
 	s.registerSystemBusActions()
 	s.linkSystemBusBuiltinActions()
@@ -725,19 +726,48 @@ func (s *Server) linkSlashCommandActions() {
 }
 
 func (s *Server) linkSystemBusBuiltinActions() {
-	// s.SystemBus.LinkEventAction(events.ChannelCreated.ID, actions.PostMessageID, map[string]string{"template": "Welcome to my channel {{.DisplayName}}.", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"})
-	// s.SystemBus.LinkEventAction(events.PostDeleted.ID, actions.CreateChannelID, map[string]string{"name": "deleted-a-post-{{.PostId}}", "display-name": "You deleted the post with id {{.PostId}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"})
-	// s.SystemBus.LinkEventAction(events.StartUp.ID, actions.LogID, map[string]string{"template": "This is an example of event data {{.Data}}."})
-	// s.SystemBus.LinkEventAction(events.Shutdown.ID, actions.LogID, map[string]string{"template": "This is an example of event data {{.Data}}."})
-	// s.SystemBus.LinkEventAction(events.PostDeleted.ID, actions.LogID, map[string]string{"template": "This is post deleted for the post {{.PostId}}"})
-	// actionsConfig, err := json.Marshal([]map[string]map[string]string{
-	// 	{actions.FilterID: {"template1": "{{.Message}}", "template2": "new channel", "comparison": "contains"}},
-	// 	{actions.CreateChannelID: {"name": "channel-from-post-{{.Id}}", "display-name": "Created Channel from Post {{.Id}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"}},
-	// })
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// s.SystemBus.LinkEventAction(events.PostCreated.ID, actions.PipeID, map[string]string{"actions": string(actionsConfig)})
+	graph := actions.NewGraph()
+	createPostEvent := actions.NewEventNode(events.ChannelCreated.ID)
+	graph.AddNode(createPostEvent)
+	createPostAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.PostMessageID))
+	graph.AddNode(createPostAction)
+	graph.AddEdge(actions.NewEdge(createPostEvent, createPostAction, map[string]string{"template": "Welcome to my channel {{.DisplayName}}.", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"}))
+	s.Actions.AddGraph(graph)
+
+	graph1 := actions.NewGraph()
+	startUpEvent := actions.NewEventNode(events.StartUp.ID)
+	graph1.AddNode(startUpEvent)
+	logAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.LogID))
+	graph1.AddNode(logAction)
+	graph1.AddEdge(actions.NewEdge(startUpEvent, logAction, map[string]string{"template": "This is an example of event data {{.Data}}."}))
+	s.Actions.AddGraph(graph1)
+
+	graph2 := actions.NewGraph()
+	shutDownEvent := actions.NewEventNode(events.ShutDown.ID)
+	graph2.AddNode(shutDownEvent)
+	logAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.LogID))
+	graph2.AddNode(logAction)
+	graph2.AddEdge(actions.NewEdge(shutDownEvent, logAction, map[string]string{"template": "This is an example of event data {{.Data}}."}))
+	s.Actions.AddGraph(graph2)
+
+	graph3 := actions.NewGraph()
+	postDeletedEvent := actions.NewEventNode(events.PostDeleted.ID)
+	graph3.AddNode(postDeletedEvent)
+	createChannelAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.CreateChannelID))
+	graph3.AddNode(createChannelAction)
+	graph3.AddEdge(actions.NewEdge(postDeletedEvent, createChannelAction, map[string]string{"name": "deleted-a-post-{{.PostId}}", "display-name": "You deleted the post with id {{.PostId}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"}))
+	s.Actions.AddGraph(graph3)
+
+	graph4 := actions.NewGraph()
+	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
+	graph4.AddNode(createPostEvent)
+	filterAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.FilterID))
+	graph4.AddNode(filterAction)
+	createChannelAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.CreateChannelID))
+	graph4.AddNode(createChannelAction)
+	graph4.AddEdge(actions.NewEdge(createPostEvent, filterAction, map[string]string{"template1": "{{.Message}}", "template2": "new channel", "comparison": "contains"}))
+	graph4.AddEdge(actions.NewEdge(filterAction, createChannelAction, map[string]string{"name": "channel-from-post-{{.Id}}", "display-name": "Created Channel from Post {{.Id}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"}))
+	s.Actions.AddGraph(graph4)
 }
 
 func (s *Server) registerSystemBusEvents() {
@@ -765,11 +795,11 @@ func (s *Server) registerSystemBusEvents() {
 
 func (s *Server) registerSystemBusActions() {
 	appInstance := New(ServerConnector(s.Channels()))
+	s.Actions.RegisterAction(builtinactions.NewLua())
 	s.Actions.RegisterAction(builtinactions.NewLog(s.Log))
 	s.Actions.RegisterAction(builtinactions.NewPostMessage(appInstance, request.EmptyContext()))
 	s.Actions.RegisterAction(builtinactions.NewCreateChannel(appInstance, request.EmptyContext()))
 	s.Actions.RegisterAction(builtinactions.NewRunSlashCommand(appInstance, request.EmptyContext()))
-	s.Actions.RegisterAction(builtinactions.NewPipe(s.Actions))
 	s.Actions.RegisterAction(builtinactions.NewFilter())
 	s.Actions.RegisterAction(builtinactions.NewEmitHttpRequest())
 }

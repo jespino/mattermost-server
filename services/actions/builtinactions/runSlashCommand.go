@@ -7,7 +7,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/shared/i18n"
 )
 
-const RunSlashCommandID = "create-channel"
+const RunSlashCommandID = "run-slash-command"
 
 type CommandExecutor interface {
 	GetChannel(channelId string) (*model.Channel, *model.AppError)
@@ -15,10 +15,10 @@ type CommandExecutor interface {
 }
 
 func NewRunSlashCommand(commandExecutor CommandExecutor, ctx *request.Context) *actions.ActionDefinition {
-	runSlashCommandActionHandler := func(config map[string]string, data map[string]string) (map[string]string, error) {
-		command := config["command"]
-		channelID := config["channelId"]
-		userID := config["userId"]
+	runSlashCommandActionHandler := func(data map[string]string) (map[string]string, error) {
+		command := data["command"]
+		channelID := data["channelId"]
+		userID := data["userId"]
 
 		commandArgs := model.CommandArgs{
 			Command:         command,
@@ -45,7 +45,7 @@ func NewRunSlashCommand(commandExecutor CommandExecutor, ctx *request.Context) *
 			return nil, appErr
 		}
 
-		return nil, nil
+		return data, nil
 	}
 
 	runSlashCommandAction := actions.ActionDefinition{

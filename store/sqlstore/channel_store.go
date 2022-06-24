@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -826,6 +827,8 @@ func (s SqlChannelStore) Get(id string, allowFromCache bool) (*model.Channel, er
 	err := s.GetReplicaX().Get(&ch, `SELECT * FROM Channels WHERE Id=?`, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			debug.PrintStack()
+
 			return nil, store.NewErrNotFound("Channel", id)
 		}
 		return nil, errors.Wrapf(err, "failed to find channel with id = %s", id)

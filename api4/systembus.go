@@ -17,9 +17,9 @@ import (
 func (api *API) InitSystemBus() {
 	api.BaseRoutes.SystemBus.Handle("/events", api.APISessionRequired(getSystemBusEvents)).Methods("GET")
 	api.BaseRoutes.SystemBus.Handle("/actions", api.APISessionRequired(getSystemBusActions)).Methods("GET")
-	api.BaseRoutes.SystemBus.Handle("/links", api.APISessionRequired(getSystemBusLinks)).Methods("GET")
-	api.BaseRoutes.SystemBus.Handle("/links", api.APISessionRequired(createSystemBusLink)).Methods("POST")
-	api.BaseRoutes.SystemBus.Handle("/links/{link_id:[A-Za-z0-9]+}", api.APISessionRequired(deleteSystemBusLink)).Methods("DELETE")
+	api.BaseRoutes.SystemBus.Handle("/graphs", api.APISessionRequired(getSystemBusGraphs)).Methods("GET")
+	api.BaseRoutes.SystemBus.Handle("/graphs", api.APISessionRequired(createSystemBusGraph)).Methods("POST")
+	api.BaseRoutes.SystemBus.Handle("/graphs/{graph_id:[A-Za-z0-9]+}", api.APISessionRequired(deleteSystemBusGraph)).Methods("DELETE")
 }
 
 func getSystemBusEvents(c *Context, w http.ResponseWriter, r *http.Request) {
@@ -56,69 +56,60 @@ func getSystemBusActions(c *Context, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getSystemBusLinks(c *Context, w http.ResponseWriter, r *http.Request) {
+func getSystemBusGraphs(c *Context, w http.ResponseWriter, r *http.Request) {
 	if !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
 		c.SetPermissionError(model.PermissionManageSystem)
 		return
 	}
 
-	links, err := c.App.Srv().Actions.ListLinks()
-	if err != nil {
-		c.Err = model.NewAppError("Api4.getSystemBusLinks", "api.systembus.request_error", nil, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// graphs, err := c.App.Srv().Actions.ListGraphs()
+	// if err != nil {
+	// 	c.Err = model.NewAppError("Api4.getSystemBusGraphs", "api.systembus.request_error", nil, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
-	if err := json.NewEncoder(w).Encode(links); err != nil {
-		mlog.Warn("Error while writing response", mlog.Err(err))
-	}
+	// if err := json.NewEncoder(w).Encode(graphs); err != nil {
+	// 	mlog.Warn("Error while writing response", mlog.Err(err))
+	// }
 }
 
-func createSystemBusLink(c *Context, w http.ResponseWriter, r *http.Request) {
+func createSystemBusGraph(c *Context, w http.ResponseWriter, r *http.Request) {
 	if !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
 		c.SetPermissionError(model.PermissionManageSystem)
 		return
 	}
 
-	link := actions.LinkEventAction{}
+	graph := actions.Graph{}
 
-	json.NewDecoder(r.Body).Decode(&link)
-	if link.EventID == "" {
-		c.SetInvalidParam("event_id")
-		return
-	}
+	json.NewDecoder(r.Body).Decode(&graph)
 
-	if link.ActionID == "" {
-		c.SetInvalidParam("action_id")
-		return
-	}
+	// newLink, err := c.App.Srv().Actions.LinkEventAction(graph.EventID, graph.ActionID, graph.Config)
+	// if err != nil {
+	// 	c.Err = model.NewAppError("Api4.createSystemBusLink", "api.systembus.request_error", nil, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
-	newLink, err := c.App.Srv().Actions.LinkEventAction(link.EventID, link.ActionID, link.Config)
-	if err != nil {
-		c.Err = model.NewAppError("Api4.createSystemBusLink", "api.systembus.request_error", nil, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(newLink); err != nil {
-		mlog.Warn("Error while writing response", mlog.Err(err))
-	}
+	// w.WriteHeader(http.StatusCreated)
+	// if err := json.NewEncoder(w).Encode(newLink); err != nil {
+	// 	mlog.Warn("Error while writing response", mlog.Err(err))
+	// }
 }
 
-func deleteSystemBusLink(c *Context, w http.ResponseWriter, r *http.Request) {
+func deleteSystemBusGraph(c *Context, w http.ResponseWriter, r *http.Request) {
 	if !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionManageSystem) {
 		c.SetPermissionError(model.PermissionManageSystem)
 		return
 	}
 
-	c.RequireLinkId()
-	if c.Err != nil {
-		return
-	}
+	// c.RequireGraphId()
+	// if c.Err != nil {
+	// 	return
+	// }
 
-	if err := c.App.Srv().Actions.UnlinkEventAction(c.Params.LinkId); err != nil {
-		c.Err = model.NewAppError("Api4.createSystemBusLink", "api.systembus.request_error", nil, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// if err := c.App.Srv().Actions.DeleteGraph(c.Params.GraphId); err != nil {
+	// 	c.Err = model.NewAppError("Api4.createSystemBusLink", "api.systembus.request_error", nil, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
 	ReturnStatusOK(w)
 }

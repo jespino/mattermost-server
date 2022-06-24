@@ -283,5 +283,5 @@ type Hooks interface {
 	// OnActionCalled is invoked when a plugin action is called
 	//
 	// Minimum server version: 7.4
-	OnActionCalled(actionDefinition *actions.ActionDefinition, config map[string]string, data map[string]string) (map[string]string, error)
+	OnActionCalled(actionDefinition *actions.ActionDefinition, data map[string]string) (map[string]string, error)
 }

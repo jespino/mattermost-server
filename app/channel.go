@@ -317,22 +317,22 @@ func (a *App) CreateChannel(c *request.Context, channel *model.Channel, addMembe
 				hooks.ChannelHasBeenCreated(pluginContext, sc)
 				return true
 			}, plugin.ChannelHasBeenCreatedID)
+
+			a.Srv().SystemBus.SendEvent(
+				&systembus.Event{
+					ID: events.ChannelCreated.ID,
+					Data: map[string]string{
+						"ID":          sc.Id,
+						"Name":        sc.Name,
+						"DisplayName": sc.DisplayName,
+						"Type":        string(sc.Type),
+						"TeamId":      sc.TeamId,
+						"CreatorId":   sc.CreatorId,
+					},
+				},
+			)
 		})
 	}
-
-	a.Srv().SystemBus.SendEvent(
-		&systembus.Event{
-			ID: events.ChannelCreated.ID,
-			Data: map[string]string{
-				"ID":          sc.Id,
-				"Name":        sc.Name,
-				"DisplayName": sc.DisplayName,
-				"Type":        string(sc.Type),
-				"TeamId":      sc.TeamId,
-				"CreatorId":   sc.CreatorId,
-			},
-		},
-	)
 
 	return sc, nil
 }

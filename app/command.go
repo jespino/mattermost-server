@@ -6,7 +6,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -18,7 +17,6 @@ import (
 
 	"github.com/mattermost/mattermost-server/v6/app/request"
 	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/services/actions"
 	"github.com/mattermost/mattermost-server/v6/shared/i18n"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"github.com/mattermost/mattermost-server/v6/store"
@@ -57,134 +55,134 @@ func GetCommandProvider(name string) CommandProvider {
 	return nil
 }
 
-type LinkSlashCommandActionProvider struct {
-	link *actions.LinkSlashCommandAction
-}
+// type LinkSlashCommandActionProvider struct {
+// 	link *actions.LinkSlashCommandAction
+// }
 
-func (lscap *LinkSlashCommandActionProvider) GetTrigger() string {
-	return lscap.link.Command
-}
-func (lscap *LinkSlashCommandActionProvider) GetCommand(a *App, T i18n.TranslateFunc) *model.Command {
-	autocomplete := model.NewAutocompleteData(lscap.link.Command, lscap.link.Hint, lscap.link.Description)
+// func (lscap *LinkSlashCommandActionProvider) GetTrigger() string {
+// 	return lscap.link.Command
+// }
+// func (lscap *LinkSlashCommandActionProvider) GetCommand(a *App, T i18n.TranslateFunc) *model.Command {
+// 	autocomplete := model.NewAutocompleteData(lscap.link.Command, lscap.link.Hint, lscap.link.Description)
 
-	for _, subcommand := range lscap.link.SubCommands {
-		subAutocompleteData := model.NewAutocompleteData(subcommand.SubCommand, "", T("api.command_share.invite_remote.help"))
-		for flagName, flagType := range subcommand.Flags {
-			if flagType == "boolean" {
-				subAutocompleteData.AddNamedTextArgument(flagName, "", "", "Y|N|y|n", false)
-			}
-			if flagType == "text" {
-				subAutocompleteData.AddNamedTextArgument(flagName, "", "", "", false)
-			}
-		}
-		autocomplete.AddCommand(subAutocompleteData)
-	}
+// 	for _, subcommand := range lscap.link.SubCommands {
+// 		subAutocompleteData := model.NewAutocompleteData(subcommand.SubCommand, "", T("api.command_share.invite_remote.help"))
+// 		for flagName, flagType := range subcommand.Flags {
+// 			if flagType == "boolean" {
+// 				subAutocompleteData.AddNamedTextArgument(flagName, "", "", "Y|N|y|n", false)
+// 			}
+// 			if flagType == "text" {
+// 				subAutocompleteData.AddNamedTextArgument(flagName, "", "", "", false)
+// 			}
+// 		}
+// 		autocomplete.AddCommand(subAutocompleteData)
+// 	}
 
-	for flagName, flagType := range lscap.link.Flags {
-		if flagType == "boolean" {
-			autocomplete.AddNamedTextArgument(flagName, "", "", "Y|N|y|n", false)
-		}
-		if flagType == "text" {
-			autocomplete.AddNamedTextArgument(flagName, "", "", "", false)
-		}
-	}
-	return &model.Command{
-		Id:               lscap.link.ID,
-		DeleteAt:         0,
-		Trigger:          lscap.link.Command,
-		AutoComplete:     true,
-		AutoCompleteDesc: lscap.link.Description,
-		AutoCompleteHint: lscap.link.Hint,
-		DisplayName:      lscap.link.Name,
-		AutocompleteData: autocomplete,
-	}
-}
-func (lscap *LinkSlashCommandActionProvider) DoCommand(a *App, c *request.Context, args *model.CommandArgs, message string) *model.CommandResponse {
-	trimSpaceAndQuotes := func(s string) string {
-		trimmed := strings.TrimSpace(s)
-		trimmed = strings.TrimPrefix(trimmed, "\"")
-		trimmed = strings.TrimPrefix(trimmed, "'")
-		trimmed = strings.TrimSuffix(trimmed, "\"")
-		trimmed = strings.TrimSuffix(trimmed, "'")
-		return trimmed
-	}
+// 	for flagName, flagType := range lscap.link.Flags {
+// 		if flagType == "boolean" {
+// 			autocomplete.AddNamedTextArgument(flagName, "", "", "Y|N|y|n", false)
+// 		}
+// 		if flagType == "text" {
+// 			autocomplete.AddNamedTextArgument(flagName, "", "", "", false)
+// 		}
+// 	}
+// 	return &model.Command{
+// 		Id:               lscap.link.ID,
+// 		DeleteAt:         0,
+// 		Trigger:          lscap.link.Command,
+// 		AutoComplete:     true,
+// 		AutoCompleteDesc: lscap.link.Description,
+// 		AutoCompleteHint: lscap.link.Hint,
+// 		DisplayName:      lscap.link.Name,
+// 		AutocompleteData: autocomplete,
+// 	}
+// }
+// func (lscap *LinkSlashCommandActionProvider) DoCommand(a *App, c *request.Context, args *model.CommandArgs, message string) *model.CommandResponse {
+// 	trimSpaceAndQuotes := func(s string) string {
+// 		trimmed := strings.TrimSpace(s)
+// 		trimmed = strings.TrimPrefix(trimmed, "\"")
+// 		trimmed = strings.TrimPrefix(trimmed, "'")
+// 		trimmed = strings.TrimSuffix(trimmed, "\"")
+// 		trimmed = strings.TrimSuffix(trimmed, "'")
+// 		return trimmed
+// 	}
 
-	parseNamedArgs := func(cmd string) map[string]string {
-		m := make(map[string]string)
+// 	parseNamedArgs := func(cmd string) map[string]string {
+// 		m := make(map[string]string)
 
-		split := strings.Fields(cmd)
+// 		split := strings.Fields(cmd)
 
-		// check for optional action
-		if len(split) >= 2 && !strings.HasPrefix(split[1], "--") {
-			m["-action"] = split[1] // prefix with hyphen to avoid collision with arg named "action"
-		}
+// 		// check for optional action
+// 		if len(split) >= 2 && !strings.HasPrefix(split[1], "--") {
+// 			m["-action"] = split[1] // prefix with hyphen to avoid collision with arg named "action"
+// 		}
 
-		for i := 0; i < len(split); i++ {
-			if !strings.HasPrefix(split[i], "--") {
-				continue
-			}
-			var val string
-			arg := trimSpaceAndQuotes(strings.Trim(split[i], "-"))
-			if i < len(split)-1 && !strings.HasPrefix(split[i+1], "--") {
-				val = trimSpaceAndQuotes(split[i+1])
-			}
-			if arg != "" {
-				m[arg] = val
-			}
-		}
-		return m
-	}
+// 		for i := 0; i < len(split); i++ {
+// 			if !strings.HasPrefix(split[i], "--") {
+// 				continue
+// 			}
+// 			var val string
+// 			arg := trimSpaceAndQuotes(strings.Trim(split[i], "-"))
+// 			if i < len(split)-1 && !strings.HasPrefix(split[i+1], "--") {
+// 				val = trimSpaceAndQuotes(split[i+1])
+// 			}
+// 			if arg != "" {
+// 				m[arg] = val
+// 			}
+// 		}
+// 		return m
+// 	}
 
-	margs := parseNamedArgs(args.Command)
-	action, ok := margs["-action"]
+// 	margs := parseNamedArgs(args.Command)
+// 	action, ok := margs["-action"]
 
-	data := margs
-	data["UserId"] = args.UserId
-	data["ChannelId"] = args.ChannelId
-	data["TeamId"] = args.TeamId
-	data["RootId"] = args.RootId
-	data["ParentId"] = args.ParentId
-	data["TriggerId"] = args.TriggerId
+// 	data := margs
+// 	data["UserId"] = args.UserId
+// 	data["ChannelId"] = args.ChannelId
+// 	data["TeamId"] = args.TeamId
+// 	data["RootId"] = args.RootId
+// 	data["ParentId"] = args.ParentId
+// 	data["TriggerId"] = args.TriggerId
 
-	if !ok {
-		config, err := actions.ApplyConfigTemplates(lscap.link.Config, data)
-		if err != nil {
-			return &model.CommandResponse{
-				ResponseType: model.CommandResponseTypeEphemeral,
-				Text:         fmt.Sprintf("Error: Unable to run the command %s. (%s)", lscap.link.Command, err),
-				Type:         model.PostTypeDefault,
-			}
-		}
-		a.Srv().Actions.Run(lscap.link.ActionID, config, data)
-		return &model.CommandResponse{}
-	}
+// 	if !ok {
+// 		config, err := actions.ApplyConfigTemplates(lscap.link.Config, data)
+// 		if err != nil {
+// 			return &model.CommandResponse{
+// 				ResponseType: model.CommandResponseTypeEphemeral,
+// 				Text:         fmt.Sprintf("Error: Unable to run the command %s. (%s)", lscap.link.Command, err),
+// 				Type:         model.PostTypeDefault,
+// 			}
+// 		}
+// 		a.Srv().Actions.Run(lscap.link.ActionID, config, data)
+// 		return &model.CommandResponse{}
+// 	}
 
-	for _, subCommand := range lscap.link.SubCommands {
-		config, err := actions.ApplyConfigTemplates(subCommand.Config, data)
-		if err != nil {
-			return &model.CommandResponse{
-				ResponseType: model.CommandResponseTypeEphemeral,
-				Text:         fmt.Sprintf("Error: Unable to run the subcommand %s. (%s)", subCommand.SubCommand, err),
-				Type:         model.PostTypeDefault,
-			}
-		}
-		if subCommand.SubCommand == action {
-			a.Srv().Actions.Run(subCommand.ActionID, config, data)
-			return &model.CommandResponse{}
-		}
-	}
+// 	for _, subCommand := range lscap.link.SubCommands {
+// 		config, err := actions.ApplyConfigTemplates(subCommand.Config, data)
+// 		if err != nil {
+// 			return &model.CommandResponse{
+// 				ResponseType: model.CommandResponseTypeEphemeral,
+// 				Text:         fmt.Sprintf("Error: Unable to run the subcommand %s. (%s)", subCommand.SubCommand, err),
+// 				Type:         model.PostTypeDefault,
+// 			}
+// 		}
+// 		if subCommand.SubCommand == action {
+// 			a.Srv().Actions.Run(subCommand.ActionID, config, data)
+// 			return &model.CommandResponse{}
+// 		}
+// 	}
 
-	return &model.CommandResponse{
-		ResponseType: model.CommandResponseTypeEphemeral,
-		Text:         fmt.Sprintf("Command action %s not found.", action),
-		Type:         model.PostTypeDefault,
-	}
-}
+// 	return &model.CommandResponse{
+// 		ResponseType: model.CommandResponseTypeEphemeral,
+// 		Text:         fmt.Sprintf("Command action %s not found.", action),
+// 		Type:         model.PostTypeDefault,
+// 	}
+// }
 
-func RegisterCommandAction(link *actions.LinkSlashCommandAction) {
-	newProvider := &LinkSlashCommandActionProvider{link: link}
-	RegisterCommandProvider(newProvider)
-}
+// func RegisterCommandAction(link *actions.LinkSlashCommandAction) {
+// 	newProvider := &LinkSlashCommandActionProvider{link: link}
+// 	RegisterCommandProvider(newProvider)
+// }
 
 // @openTracingParams teamID, skipSlackParsing
 func (a *App) CreateCommandPost(c *request.Context, post *model.Post, teamID string, response *model.CommandResponse, skipSlackParsing bool) (*model.Post, *model.AppError) {

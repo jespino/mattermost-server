@@ -221,9 +221,9 @@ func (hooks *hooksTimerLayer) OnSystembusEvent(event *systembus.Event) {
 	hooks.recordTime(startTime, "OnSystembusEvent", true)
 }
 
-func (hooks *hooksTimerLayer) OnActionCalled(actionDefinition *actions.ActionDefinition, config map[string]string, data map[string]string) (map[string]string, error) {
+func (hooks *hooksTimerLayer) OnActionCalled(actionDefinition *actions.ActionDefinition, data map[string]string) (map[string]string, error) {
 	startTime := timePkg.Now()
-	_returnsA, _returnsB := hooks.hooksImpl.OnActionCalled(actionDefinition, config, data)
+	_returnsA, _returnsB := hooks.hooksImpl.OnActionCalled(actionDefinition, data)
 	hooks.recordTime(startTime, "OnActionCalled", _returnsB == nil)
 	return _returnsA, _returnsB
 }

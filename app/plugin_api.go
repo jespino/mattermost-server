@@ -1201,13 +1201,13 @@ func (api *PluginAPI) RegisterSystembusEvent(eventDefinition *systembus.EventDef
 }
 
 func (api *PluginAPI) RegisterAction(actionDefinition *actions.ActionDefinition) error {
-	actionDefinition.Handler = func(config map[string]string, data map[string]string) (map[string]string, error) {
+	actionDefinition.Handler = func(data map[string]string) (map[string]string, error) {
 		if pluginsEnvironment := api.app.GetPluginsEnvironment(); pluginsEnvironment != nil {
 			hooks, err := pluginsEnvironment.HooksForPlugin(api.id)
 			if err != nil {
 				return nil, err
 			}
-			return hooks.OnActionCalled(actionDefinition, config, data)
+			return hooks.OnActionCalled(actionDefinition, data)
 		}
 		return nil, nil
 	}

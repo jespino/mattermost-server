@@ -9,11 +9,11 @@ import (
 const FilterID = "filter"
 
 func NewFilter() *actions.ActionDefinition {
-	handler := func(config map[string]string, data map[string]string) (map[string]string, error) {
-		template1 := config["template1"]
-		template2 := config["template2"]
+	handler := func(data map[string]string) (map[string]string, error) {
+		template1 := data["template1"]
+		template2 := data["template2"]
 
-		switch config["comparison"] {
+		switch data["comparison"] {
 		case "":
 			if template1 == template2 {
 				return data, nil

@@ -77,6 +77,7 @@ require (
 	github.com/JalfResi/justext v0.0.0-20170829062021-c0282dea7198 // indirect
 	github.com/PuerkitoBio/goquery v1.8.0 // indirect
 	github.com/RoaringBitmap/roaring v0.9.4 // indirect
+	github.com/Shopify/go-lua v0.0.0-20220120202609-9ab779377807 // indirect
 	github.com/advancedlogic/GoOse v0.0.0-20210820140952-9d5822d4a625 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
@@ -164,6 +165,7 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/wiggin77/srslog v1.0.1 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
+	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect

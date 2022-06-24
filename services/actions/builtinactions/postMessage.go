@@ -1,6 +1,8 @@
 package builtinactions
 
 import (
+	"fmt"
+
 	"github.com/mattermost/mattermost-server/v6/app/request"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/services/actions"
@@ -14,10 +16,10 @@ type MessagePoster interface {
 }
 
 func NewPostMessage(messagePoster MessagePoster, ctx *request.Context) *actions.ActionDefinition {
-	postActionHandler := func(config map[string]string, data map[string]string) (map[string]string, error) {
-		message := config["template"]
-		channelID := config["channel-id"]
-		userID := config["user-id"]
+	postActionHandler := func(data map[string]string) (map[string]string, error) {
+		message := data["template"]
+		channelID := data["channel-id"]
+		userID := data["user-id"]
 
 		channel, appErr := messagePoster.GetChannel(channelID)
 		if appErr != nil {
@@ -32,12 +34,20 @@ func NewPostMessage(messagePoster MessagePoster, ctx *request.Context) *actions.
 			UpdateAt:  now,
 			Type:      model.PostTypeDefault,
 		}
-		_, appErr = messagePoster.CreatePost(ctx, &post, channel, false, false)
+		p, appErr := messagePoster.CreatePost(ctx, &post, channel, false, false)
 		if appErr != nil {
 			return nil, appErr
 		}
 
-		return nil, nil
+		result := map[string]string{}
+		for key, value := range data {
+			result[key] = value
+		}
+		result["id"] = p.Id
+		result["create-at"] = fmt.Sprintf("%d", p.CreateAt)
+		result["update-at"] = fmt.Sprintf("%d", p.UpdateAt)
+
+		return result, nil
 	}
 
 	postMessageAction := actions.ActionDefinition{

@@ -1,10 +1,8 @@
 package actions
 
 import (
-	"bytes"
 	"fmt"
 	"sync"
-	"text/template"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/services/systembus"
@@ -12,25 +10,11 @@ import (
 )
 
 type ActionDefinition struct {
-	ID               string                                                                            `json:"id"`
-	Name             string                                                                            `json:"name"`
-	Description      string                                                                            `json:"description"`
-	ConfigDefinition map[string]string                                                                 `json:"config_definition"`
-	Handler          func(config map[string]string, data map[string]string) (map[string]string, error) `json:"-"`
-}
-
-type LinkEventAction struct {
-	ID       string            `json:"id"`
-	EventID  string            `json:"event_id"`
-	ActionID string            `json:"action_id"`
-	Config   map[string]string `json:"config"`
-}
-
-type LinkPostAction struct {
-	ID       string            `json:"id"`
-	Name     string            `json:"name"`
-	ActionID string            `json:"action_id"`
-	Config   map[string]string `json:"config"`
+	ID               string                                                  `json:"id"`
+	Name             string                                                  `json:"name"`
+	Description      string                                                  `json:"description"`
+	ConfigDefinition map[string]string                                       `json:"config_definition"`
+	Handler          func(data map[string]string) (map[string]string, error) `json:"-"`
 }
 
 type SubCommand struct {
@@ -55,88 +39,50 @@ type LinkSlashCommandAction struct {
 	Config      map[string]string `json:"config"`
 }
 
-type CommandsRegistry interface {
-	RegisterCommandAction(*LinkSlashCommandAction)
-	UnregisterCommandProvider(command string)
-}
-
-func ApplyConfigTemplates(config map[string]string, data map[string]string) (map[string]string, error) {
-	result := map[string]string{}
-	for key, value := range config {
-		tmpl, err := template.New("template").Parse(value)
-		if err != nil {
-			return nil, err
-		}
-		var buf bytes.Buffer
-		tmpl.Execute(&buf, data)
-		result[key] = buf.String()
-	}
-	return result, nil
-}
-
-func (lea *LinkEventAction) ApplyConfigTemplates(event *systembus.Event) (map[string]string, error) {
-	result := map[string]string{}
-	for key, value := range lea.Config {
-		tmpl, err := template.New("template").Parse(value)
-		if err != nil {
-			return nil, err
-		}
-		var buf bytes.Buffer
-		tmpl.Execute(&buf, event.Data)
-		result[key] = buf.String()
-	}
-	return result, nil
-}
-
 type Actions struct {
-	systemBus          systembus.SystemBus
-	registerCommand    func(*LinkSlashCommandAction)
-	unregisterCommand  func(string)
-	actions            map[string]*ActionDefinition
-	eventsLinks        map[string]*LinkEventAction
-	eventsLinksByEvent map[string]map[string]*LinkEventAction
-	mutex              sync.RWMutex
-	logger             *mlog.Logger
+	systemBus systembus.SystemBus
+	// registerCommand   func(*LinkSlashCommandAction)
+	// unregisterCommand func(string)
+	actions       map[string]*ActionDefinition
+	graphs        map[string]*Graph
+	graphsByEvent map[string]map[string]*Graph
+	mutex         sync.RWMutex
+	logger        *mlog.Logger
 }
 
-func EventToActionSubscription(a *Actions) func(event *systembus.Event) (*systembus.Event, error) {
+func EventToGraphSubscription(a *Actions) func(event *systembus.Event) (*systembus.Event, error) {
 	return func(event *systembus.Event) (*systembus.Event, error) {
 		a.mutex.RLock()
 		defer a.mutex.RUnlock()
 
-		eventsLinks, ok := a.eventsLinksByEvent[event.ID]
+		fmt.Println("RUNNING EVENT", a.graphs, a.graphsByEvent, event.ID)
+		graphs, ok := a.graphsByEvent[event.ID]
 		if !ok {
+			fmt.Println("NO GRAPH FOUND")
 			return event, nil
 		}
 
-		for _, link := range eventsLinks {
-			config, err := link.ApplyConfigTemplates(event)
-			if err != nil {
-				a.logger.Debug("Invalid link config", mlog.Err(err))
-				continue
-			}
-
-			_, err = a.Run(link.ActionID, config, event.Data)
-			if err != nil {
-				a.logger.Debug("Action failed", mlog.Err(err))
-				continue
-			}
+		fmt.Println("GRAPHS FOUND")
+		for _, graph := range graphs {
+			fmt.Println("RUNNING GRAPH")
+			graph.RunEvent(event)
 		}
 		return nil, nil
 	}
 }
 
-func New(logger *mlog.Logger, systemBus systembus.SystemBus, registerCommand func(*LinkSlashCommandAction), unregisterCommand func(string)) *Actions {
+// func New(logger *mlog.Logger, systemBus systembus.SystemBus, registerCommand func(*LinkSlashCommandAction), unregisterCommand func(string)) *Actions {
+func New(logger *mlog.Logger, systemBus systembus.SystemBus) *Actions {
 	actions := &Actions{
-		systemBus:          systemBus,
-		registerCommand:    registerCommand,
-		unregisterCommand:  unregisterCommand,
-		actions:            map[string]*ActionDefinition{},
-		eventsLinks:        map[string]*LinkEventAction{},
-		eventsLinksByEvent: map[string]map[string]*LinkEventAction{},
-		logger:             logger,
+		systemBus: systemBus,
+		// registerCommand:   registerCommand,
+		// unregisterCommand: unregisterCommand,
+		actions:       map[string]*ActionDefinition{},
+		graphs:        map[string]*Graph{},
+		graphsByEvent: map[string]map[string]*Graph{},
+		logger:        logger,
 	}
-	systemBus.Subscribe(EventToActionSubscription(actions))
+	systemBus.Subscribe(EventToGraphSubscription(actions))
 	return actions
 }
 
@@ -145,6 +91,12 @@ func (a *Actions) RegisterAction(action *ActionDefinition) error {
 	defer a.mutex.Unlock()
 	a.actions[action.ID] = action
 	return nil
+}
+
+func (a *Actions) GetAction(actionID string) *ActionDefinition {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	return a.actions[actionID]
 }
 
 func (a *Actions) ListActions() ([]*ActionDefinition, error) {
@@ -157,63 +109,50 @@ func (a *Actions) ListActions() ([]*ActionDefinition, error) {
 	return actions, nil
 }
 
-func (a *Actions) ListLinks() ([]*LinkEventAction, error) {
+func (a *Actions) ListGraphs() ([]*Graph, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
-	links := []*LinkEventAction{}
-	for _, link := range a.eventsLinks {
-		links = append(links, link)
+	graphs := []*Graph{}
+	for _, graph := range a.graphs {
+		graphs = append(graphs, graph)
 	}
-	return links, nil
+	return graphs, nil
 }
 
-func (a *Actions) Run(actionID string, config map[string]string, data map[string]string) (map[string]string, error) {
+func (a *Actions) Run(actionID string, data map[string]string) (map[string]string, error) {
 	action, ok := a.actions[actionID]
 	if !ok {
 		return nil, fmt.Errorf("Action %s not found", actionID)
 	}
-	return action.Handler(config, data)
+	return action.Handler(data)
 }
 
-func (a *Actions) LinkEventAction(eventID string, actionID string, config map[string]string) (*LinkEventAction, error) {
+func (a *Actions) AddGraph(graph *Graph) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	newLink := LinkEventAction{
-		ID:       model.NewId(),
-		EventID:  eventID,
-		ActionID: actionID,
-		Config:   config,
+
+	a.graphs[graph.id] = graph
+	for _, node := range graph.nodes {
+		if node.Type() == "event" {
+			if _, ok := a.graphsByEvent[node.(*EventNode).eventName]; ok {
+				a.graphsByEvent[node.(*EventNode).eventName][graph.id] = graph
+			} else {
+				a.graphsByEvent[node.(*EventNode).eventName] = map[string]*Graph{graph.id: graph}
+			}
+		}
 	}
+}
 
-	a.eventsLinks[newLink.ID] = &newLink
-	if _, ok := a.eventsLinksByEvent[newLink.EventID]; ok {
-		a.eventsLinksByEvent[newLink.EventID][newLink.ID] = &newLink
-	} else {
-		a.eventsLinksByEvent[newLink.EventID] = map[string]*LinkEventAction{newLink.ID: &newLink}
+func (a *Actions) DeleteGraph(graphID string) error {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	graph := a.graphs[graphID]
+	for _, node := range graph.nodes {
+		if node.Type() == "event" {
+			delete(a.graphsByEvent[node.(*EventNode).eventName], graph.id)
+		}
 	}
-	return &newLink, nil
-}
-
-func (a *Actions) UnlinkEventAction(linkID string) error {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	link := a.eventsLinks[linkID]
-	delete(a.eventsLinksByEvent[link.EventID], link.ID)
-	delete(a.eventsLinks, link.ID)
-	return nil
-}
-
-func (a *Actions) LinkPostAction(name string, actionID string, config map[string]string) (*LinkPostAction, error) {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	// TODO
-	return nil, nil
-}
-
-func (a *Actions) UnlinkPostAction(linkID string) error {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	// TODO
+	delete(a.graphs, graph.id)
 	return nil
 }
 
@@ -221,14 +160,14 @@ func (a *Actions) LinkSlashCommandAction(link *LinkSlashCommandAction) (*LinkSla
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	link.ID = model.NewId()
-	a.registerCommand(link)
+	// a.registerCommand(link)
 	return link, nil
 }
 
 func (a *Actions) UnlinkSlashCommandAction(command string) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	a.unregisterCommand(command)
+	// a.unregisterCommand(command)
 	return nil
 }
 

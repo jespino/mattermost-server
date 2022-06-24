@@ -849,7 +849,6 @@ func init() {
 type Z_OnActionCalledArgs struct {
 	A *actions.ActionDefinition
 	B map[string]string
-	C map[string]string
 }
 
 type Z_OnActionCalledReturns struct {
@@ -857,8 +856,8 @@ type Z_OnActionCalledReturns struct {
 	B error
 }
 
-func (g *hooksRPCClient) OnActionCalled(actionDefinition *actions.ActionDefinition, config map[string]string, data map[string]string) (map[string]string, error) {
-	_args := &Z_OnActionCalledArgs{actionDefinition, config, data}
+func (g *hooksRPCClient) OnActionCalled(actionDefinition *actions.ActionDefinition, data map[string]string) (map[string]string, error) {
+	_args := &Z_OnActionCalledArgs{actionDefinition, data}
 	_returns := &Z_OnActionCalledReturns{}
 	if g.implemented[OnActionCalledID] {
 		if err := g.client.Call("Plugin.OnActionCalled", _args, _returns); err != nil {
@@ -870,9 +869,9 @@ func (g *hooksRPCClient) OnActionCalled(actionDefinition *actions.ActionDefiniti
 
 func (s *hooksRPCServer) OnActionCalled(args *Z_OnActionCalledArgs, returns *Z_OnActionCalledReturns) error {
 	if hook, ok := s.impl.(interface {
-		OnActionCalled(actionDefinition *actions.ActionDefinition, config map[string]string, data map[string]string) (map[string]string, error)
+		OnActionCalled(actionDefinition *actions.ActionDefinition, data map[string]string) (map[string]string, error)
 	}); ok {
-		returns.A, returns.B = hook.OnActionCalled(args.A, args.B, args.C)
+		returns.A, returns.B = hook.OnActionCalled(args.A, args.B)
 		returns.B = encodableError(returns.B)
 	} else {
 		return encodableError(fmt.Errorf("Hook OnActionCalled called but not implemented."))
