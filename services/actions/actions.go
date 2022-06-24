@@ -23,31 +23,17 @@ type SubCommand struct {
 	Hint        string            `json:"hint"`
 	Name        string            `json:"name"`
 	Flags       map[string]string `json:"flags"`
-	ActionID    string            `json:"action_id"`
-	Config      map[string]string `json:"config"`
-}
-
-type LinkSlashCommandAction struct {
-	ID          string            `json:"id"`
-	Command     string            `json:"command"`
-	Description string            `json:"description"`
-	Hint        string            `json:"hint"`
-	Name        string            `json:"name"`
-	SubCommands []SubCommand      `json:"subcommands"`
-	Flags       map[string]string `json:"flags"`
-	ActionID    string            `json:"action_id"`
-	Config      map[string]string `json:"config"`
 }
 
 type Actions struct {
-	systemBus systembus.SystemBus
-	// registerCommand   func(*LinkSlashCommandAction)
-	// unregisterCommand func(string)
-	actions       map[string]*ActionDefinition
-	graphs        map[string]*Graph
-	graphsByEvent map[string]map[string]*Graph
-	mutex         sync.RWMutex
-	logger        *mlog.Logger
+	systemBus         systembus.SystemBus
+	registerCommand   func(*model.Command, func(*model.CommandArgs, string) *model.CommandResponse)
+	unregisterCommand func(string)
+	actions           map[string]*ActionDefinition
+	graphs            map[string]*Graph
+	graphsByEvent     map[string]map[string]*Graph
+	mutex             sync.RWMutex
+	logger            *mlog.Logger
 }
 
 func EventToGraphSubscription(a *Actions) func(event *systembus.Event) (*systembus.Event, error) {
@@ -71,16 +57,15 @@ func EventToGraphSubscription(a *Actions) func(event *systembus.Event) (*systemb
 	}
 }
 
-// func New(logger *mlog.Logger, systemBus systembus.SystemBus, registerCommand func(*LinkSlashCommandAction), unregisterCommand func(string)) *Actions {
-func New(logger *mlog.Logger, systemBus systembus.SystemBus) *Actions {
+func New(logger *mlog.Logger, systemBus systembus.SystemBus, registerCommand func(*model.Command, func(*model.CommandArgs, string) *model.CommandResponse), unregisterCommand func(string)) *Actions {
 	actions := &Actions{
-		systemBus: systemBus,
-		// registerCommand:   registerCommand,
-		// unregisterCommand: unregisterCommand,
-		actions:       map[string]*ActionDefinition{},
-		graphs:        map[string]*Graph{},
-		graphsByEvent: map[string]map[string]*Graph{},
-		logger:        logger,
+		systemBus:         systemBus,
+		registerCommand:   registerCommand,
+		unregisterCommand: unregisterCommand,
+		actions:           map[string]*ActionDefinition{},
+		graphs:            map[string]*Graph{},
+		graphsByEvent:     map[string]map[string]*Graph{},
+		logger:            logger,
 	}
 	systemBus.Subscribe(EventToGraphSubscription(actions))
 	return actions
@@ -139,6 +124,12 @@ func (a *Actions) AddGraph(graph *Graph) {
 			} else {
 				a.graphsByEvent[node.(*EventNode).eventName] = map[string]*Graph{graph.id: graph}
 			}
+		} else if node.Type() == "slash-command" {
+			realDoCommand := node.(*SlashCommandNode).DoCommand
+			doCommand := func(args *model.CommandArgs, message string) *model.CommandResponse {
+				return realDoCommand(graph, args, message)
+			}
+			a.registerCommand(node.(*SlashCommandNode).GetCommand(), doCommand)
 		}
 	}
 }
@@ -150,24 +141,11 @@ func (a *Actions) DeleteGraph(graphID string) error {
 	for _, node := range graph.nodes {
 		if node.Type() == "event" {
 			delete(a.graphsByEvent[node.(*EventNode).eventName], graph.id)
+		} else if node.Type() == "slash-command" {
+			a.unregisterCommand(node.(*SlashCommandNode).Command)
 		}
 	}
 	delete(a.graphs, graph.id)
-	return nil
-}
-
-func (a *Actions) LinkSlashCommandAction(link *LinkSlashCommandAction) (*LinkSlashCommandAction, error) {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	link.ID = model.NewId()
-	// a.registerCommand(link)
-	return link, nil
-}
-
-func (a *Actions) UnlinkSlashCommandAction(command string) error {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	// a.unregisterCommand(command)
 	return nil
 }
 

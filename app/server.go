@@ -690,8 +690,7 @@ func NewServer(options ...Option) (*Server, error) {
 	// Initializing the system bus
 	// TODO: Allow another more robust system bus and add configuration for it
 	s.SystemBus = mem.New(s.Log)
-	// s.Actions = actions.New(s.Log, s.SystemBus, RegisterCommandAction, UnregisterCommandProvider)
-	s.Actions = actions.New(s.Log, s.SystemBus)
+	s.Actions = actions.New(s.Log, s.SystemBus, RegisterCommandAction, UnregisterCommandProvider)
 	s.registerSystemBusEvents()
 	s.registerSystemBusActions()
 	s.linkSystemBusBuiltinActions()
@@ -703,26 +702,29 @@ func NewServer(options ...Option) (*Server, error) {
 }
 
 func (s *Server) linkSlashCommandActions() {
-	s.Actions.LinkSlashCommandAction(&actions.LinkSlashCommandAction{
-		Command:  "log",
-		ActionID: builtinactions.LogID,
-		Flags:    map[string]string{"test": "string", "other": "boolean"},
-		Config:   map[string]string{"template": "This is an slash command action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"},
-		SubCommands: []actions.SubCommand{
-			{
-				SubCommand:  "test",
-				ActionID:    builtinactions.LogID,
-				Flags:       map[string]string{"test": "string", "other": "boolean"},
-				Config:      map[string]string{"template": "This is an slash subcommand action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"},
-				Description: "custo made sub command",
-				Hint:        "",
-				Name:        "My new subcommand",
-			},
-		},
-		Description: "custom made command",
-		Hint:        "[test]",
-		Name:        "My new Command",
+	commandNode := actions.NewSlashCommandNode("log", "custom made command", "[test]", "My new command")
+	commandNode.AddFlag("test", "string")
+	commandNode.AddFlag("other", "boolean")
+	commandNode.AddSubCommand(actions.SubCommand{
+		SubCommand:  "test",
+		Flags:       map[string]string{"test": "string", "other": "boolean"},
+		Description: "custo made sub command",
+		Hint:        "",
+		Name:        "My new subcommand",
 	})
+
+	graph := actions.NewGraph()
+	graph.AddNode(commandNode)
+	logAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.LogID))
+	graph.AddNode(logAction)
+
+	edge0 := actions.NewEdge(commandNode, logAction, map[string]string{"template": "This is an slash command action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"})
+	edge0.SetFromOutput("0")
+	graph.AddEdge(edge0)
+	edge1 := actions.NewEdge(commandNode, logAction, map[string]string{"template": "This is an slash subcommand action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"})
+	edge1.SetFromOutput("1")
+	graph.AddEdge(edge1)
+	s.Actions.AddGraph(graph)
 }
 
 func (s *Server) linkSystemBusBuiltinActions() {
@@ -768,6 +770,14 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	graph4.AddEdge(actions.NewEdge(createPostEvent, filterAction, map[string]string{"template1": "{{.Message}}", "template2": "new channel", "comparison": "contains"}))
 	graph4.AddEdge(actions.NewEdge(filterAction, createChannelAction, map[string]string{"name": "channel-from-post-{{.Id}}", "display-name": "Created Channel from Post {{.Id}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"}))
 	s.Actions.AddGraph(graph4)
+
+	graph5 := actions.NewGraph()
+	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
+	graph5.AddNode(createPostEvent)
+	luaAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.LuaID))
+	graph5.AddNode(luaAction)
+	graph5.AddEdge(actions.NewEdge(createPostEvent, luaAction, map[string]string{"code": "print(\"Hi from lua, I'm watching you, you posted the message: \", data_Message)"}))
+	s.Actions.AddGraph(graph5)
 }
 
 func (s *Server) registerSystemBusEvents() {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"strings"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/services/systembus"
@@ -22,19 +23,25 @@ func NewGraph() *Graph {
 }
 
 type Edge struct {
-	id     string
-	from   Node
-	to     Node
-	config map[string]string
+	id         string
+	from       Node
+	fromOutput string
+	to         Node
+	config     map[string]string
 }
 
 func NewEdge(from Node, to Node, config map[string]string) *Edge {
 	return &Edge{
-		id:     model.NewId(),
-		from:   from,
-		to:     to,
-		config: config,
+		id:         model.NewId(),
+		from:       from,
+		fromOutput: "",
+		to:         to,
+		config:     config,
 	}
+}
+
+func (e *Edge) SetFromOutput(fromOutput string) {
+	e.fromOutput = fromOutput
 }
 
 type Node interface {
@@ -102,23 +109,153 @@ func (e *ActionNode) Outputs() int {
 }
 
 type SlashCommandNode struct {
-	id string
+	id          string
+	Command     string
+	Description string
+	Hint        string
+	Name        string
+	SubCommands []SubCommand
+	Flags       map[string]string
 }
 
-func (e *SlashCommandNode) ID() string {
-	return e.id
+func NewSlashCommandNode(command string, description string, hint string, name string) *SlashCommandNode {
+	return &SlashCommandNode{
+		id:          model.NewId(),
+		Command:     command,
+		Flags:       map[string]string{},
+		SubCommands: []SubCommand{},
+		Description: description,
+		Hint:        hint,
+		Name:        name,
+	}
 }
 
-func (e *SlashCommandNode) Type() string {
+func (s *SlashCommandNode) AddFlag(flagName string, flagType string) {
+	s.Flags[flagName] = flagType
+}
+
+func (s *SlashCommandNode) AddSubCommand(subcommand SubCommand) {
+	s.SubCommands = append(s.SubCommands, subcommand)
+}
+
+func (s *SlashCommandNode) GetCommand() *model.Command {
+	autocomplete := model.NewAutocompleteData(s.Command, s.Hint, s.Description)
+
+	for _, subcommand := range s.SubCommands {
+		subAutocompleteData := model.NewAutocompleteData(subcommand.SubCommand, "", "")
+		for flagName, flagType := range subcommand.Flags {
+			if flagType == "boolean" {
+				subAutocompleteData.AddNamedTextArgument(flagName, "", "", "Y|N|y|n", false)
+			}
+			if flagType == "text" {
+				subAutocompleteData.AddNamedTextArgument(flagName, "", "", "", false)
+			}
+		}
+		autocomplete.AddCommand(subAutocompleteData)
+	}
+
+	for flagName, flagType := range s.Flags {
+		if flagType == "boolean" {
+			autocomplete.AddNamedTextArgument(flagName, "", "", "Y|N|y|n", false)
+		}
+		if flagType == "text" {
+			autocomplete.AddNamedTextArgument(flagName, "", "", "", false)
+		}
+	}
+	return &model.Command{
+		Id:               s.id,
+		DeleteAt:         0,
+		Trigger:          s.Command,
+		AutoComplete:     true,
+		AutoCompleteDesc: s.Description,
+		AutoCompleteHint: s.Hint,
+		DisplayName:      s.Name,
+		AutocompleteData: autocomplete,
+	}
+}
+
+func (s *SlashCommandNode) DoCommand(g *Graph, args *model.CommandArgs, message string) *model.CommandResponse {
+	trimSpaceAndQuotes := func(s string) string {
+		trimmed := strings.TrimSpace(s)
+		trimmed = strings.TrimPrefix(trimmed, "\"")
+		trimmed = strings.TrimPrefix(trimmed, "'")
+		trimmed = strings.TrimSuffix(trimmed, "\"")
+		trimmed = strings.TrimSuffix(trimmed, "'")
+		return trimmed
+	}
+
+	parseNamedArgs := func(cmd string) map[string]string {
+		m := make(map[string]string)
+
+		split := strings.Fields(cmd)
+
+		// check for optional action
+		if len(split) >= 2 && !strings.HasPrefix(split[1], "--") {
+			m["-action"] = split[1] // prefix with hyphen to avoid collision with arg named "action"
+		}
+
+		for i := 0; i < len(split); i++ {
+			if !strings.HasPrefix(split[i], "--") {
+				continue
+			}
+			var val string
+			arg := trimSpaceAndQuotes(strings.Trim(split[i], "-"))
+			if i < len(split)-1 && !strings.HasPrefix(split[i+1], "--") {
+				val = trimSpaceAndQuotes(split[i+1])
+			}
+			if arg != "" {
+				m[arg] = val
+			}
+		}
+		return m
+	}
+
+	margs := parseNamedArgs(args.Command)
+	action, ok := margs["-action"]
+
+	data := margs
+	data["UserId"] = args.UserId
+	data["ChannelId"] = args.ChannelId
+	data["TeamId"] = args.TeamId
+	data["RootId"] = args.RootId
+	data["ParentId"] = args.ParentId
+	data["TriggerId"] = args.TriggerId
+
+	if !ok {
+		s.Run(g, data)
+		data["Output"] = "0"
+		return &model.CommandResponse{}
+	}
+
+	for idx, subCommand := range s.SubCommands {
+		if action == subCommand.SubCommand {
+			data["Output"] = fmt.Sprintf("%d", idx+1)
+			s.Run(g, data)
+			return &model.CommandResponse{}
+		}
+	}
+
+	return &model.CommandResponse{
+		ResponseType: model.CommandResponseTypeEphemeral,
+		Text:         fmt.Sprintf("Command action %s not found.", action),
+		Type:         model.PostTypeDefault,
+	}
+}
+
+func (s *SlashCommandNode) ID() string {
+	return s.id
+}
+
+func (s *SlashCommandNode) Type() string {
 	return "slash-command"
 }
 
-func (e *SlashCommandNode) Inputs() int {
+func (s *SlashCommandNode) Inputs() int {
 	return 0
 }
 
-func (e *SlashCommandNode) Outputs() int {
-	return 1
+func (s *SlashCommandNode) Outputs() int {
+	return 1 + len(s.SubCommands)
 }
 
 func (g *Graph) RunEvent(event *systembus.Event) {
@@ -155,15 +292,16 @@ func (g *Graph) AddEdge(edge *Edge) {
 	g.edges = append(g.edges, edge)
 }
 
-func (n EventNode) Run(g *Graph, data map[string]string) error {
-	fmt.Println("EVENT NODE FOUND, RUNNING INSIDE", g.getEdgesFrom(n.ID()), g.edges)
+func (g *Graph) RunEdgesForNode(n Node, data map[string]string) error {
 	for _, edge := range g.getEdgesFrom(n.ID()) {
-		fmt.Println("APPLYING CONFIG")
+		if edge.fromOutput != "" && edge.fromOutput != data["Output"] {
+			continue
+		}
+
 		newData, err := edge.ApplyConfig(data)
 		if err != nil {
 			return err
 		}
-		fmt.Println("RUNNING ACTION", edge.to, newData)
 		err = edge.to.Run(g, newData)
 		if err != nil {
 			return err
@@ -172,9 +310,21 @@ func (n EventNode) Run(g *Graph, data map[string]string) error {
 	return nil
 }
 
-func (n *ActionNode) Run(g *Graph, data map[string]string) error {
-	fmt.Println("RUNNING ACTION INSIDE", n.action.ID, n.action.Name, data)
-	result, err := n.action.Handler(data)
+func (e *EventNode) Run(g *Graph, data map[string]string) error {
+	fmt.Println("EVENT NODE FOUND, RUNNING INSIDE", g.getEdgesFrom(e.ID()), g.edges)
+	g.RunEdgesForNode(e, data)
+	return nil
+}
+
+func (s *SlashCommandNode) Run(g *Graph, data map[string]string) error {
+	fmt.Println("SLASH COMMAND NODE FOUND, RUNNING INSIDE", g.getEdgesFrom(s.ID()), g.edges)
+	g.RunEdgesForNode(s, data)
+	return nil
+}
+
+func (a *ActionNode) Run(g *Graph, data map[string]string) error {
+	fmt.Println("RUNNING ACTION INSIDE", a.action.ID, a.action.Name, data)
+	result, err := a.action.Handler(data)
 	if err != nil {
 		return err
 	}
@@ -182,18 +332,7 @@ func (n *ActionNode) Run(g *Graph, data map[string]string) error {
 		return nil
 	}
 	fmt.Println("ACTION EXECUTED, PASSING RESULT TO EDGES")
-	for _, edge := range g.getEdgesFrom(n.ID()) {
-		fmt.Println("APPLYING EDGE CONFIG")
-		newData, err := edge.ApplyConfig(result)
-		if err != nil {
-			return err
-		}
-		fmt.Println("RUNNING ACTION", edge.to, newData)
-		err = edge.to.Run(g, newData)
-		if err != nil {
-			return err
-		}
-	}
+	g.RunEdgesForNode(a, data)
 	return nil
 }
 
