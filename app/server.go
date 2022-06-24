@@ -801,6 +801,16 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	graph7.AddEdge(actions.NewEdge(createPostEvent, javascriptAction, map[string]string{"code": "console.log('Hi from javascript, I am watching you, you posted the message:', data.Message)"}))
 	s.Actions.AddGraph(graph7)
 
+	graph8 := actions.NewGraph()
+	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
+	graph8.AddNode(createPostEvent)
+	filterAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.FilterID))
+	graph8.AddNode(filterAction)
+	sendEmailAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.SendEmailID))
+	graph8.AddNode(sendEmailAction)
+	graph8.AddEdge(actions.NewEdge(createPostEvent, filterAction, map[string]string{"template1": "{{.Message}}", "template2": "email", "comparison": "contains"}))
+	graph8.AddEdge(actions.NewEdge(filterAction, sendEmailAction, map[string]string{"to": "jesus@mattermost.com", "subject": "test email", "body": "test body {{.Message}}"}))
+	s.Actions.AddGraph(graph8)
 }
 
 func (s *Server) registerSystemBusEvents() {
@@ -837,6 +847,7 @@ func (s *Server) registerSystemBusActions() {
 	s.Actions.RegisterAction(builtinactions.NewFilter())
 	s.Actions.RegisterAction(builtinactions.NewEmitHttpRequest())
 	s.Actions.RegisterAction(builtinactions.NewDelay())
+	s.Actions.RegisterAction(builtinactions.NewSendEmail(s))
 }
 
 func (s *Server) SetupMetricsServer() {
