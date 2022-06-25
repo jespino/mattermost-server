@@ -870,6 +870,20 @@ func (s *Server) addBuiltinGraphs() {
 	}
 	s.Actions.AddGraphData(&graph)
 
+	// Login notification Graph
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "Notify user on new logins",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.LoginSuccess.ID},
+			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.SendDMID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"template": "New login in your account from IP {{.IPAddress}} with the browser {{.UserAgent}}", "receiver-id": "{{.UserId}}", "sender-username": "boards"}},
+	}
+	s.Actions.AddGraphData(&graph)
+
 	// Command Graph
 	commandNode := actions.NewSlashCommandNode("log", "custom made command", "[test]", "My new command")
 	commandNode.AddFlag("test", "string")
@@ -932,6 +946,7 @@ func (s *Server) registerSystemBusActions() {
 	s.Actions.RegisterAction(builtinactions.NewEmitHttpRequest())
 	s.Actions.RegisterAction(builtinactions.NewDelay())
 	s.Actions.RegisterAction(builtinactions.NewSendEmail(s))
+	s.Actions.RegisterAction(builtinactions.NewSendDM(appInstance, request.EmptyContext()))
 }
 
 func (s *Server) SetupMetricsServer() {
