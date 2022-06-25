@@ -713,16 +713,18 @@ func (s *Server) linkSlashCommandActions() {
 		Name:        "My new subcommand",
 	})
 
+	commandNode.SetPos(100, 100)
 	graph := actions.NewGraph("log slash command")
 	graph.AddNode(commandNode)
 	logAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.LogID))
+	logAction.SetPos(100, 200)
 	graph.AddNode(logAction)
 
 	edge0 := actions.NewEdge(commandNode, logAction, map[string]string{"template": "This is an slash command action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"})
-	edge0.SetFromOutput("0")
+	edge0.SetFromOutput("main")
 	graph.AddEdge(edge0)
 	edge1 := actions.NewEdge(commandNode, logAction, map[string]string{"template": "This is an slash subcommand action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"})
-	edge1.SetFromOutput("1")
+	edge1.SetFromOutput("subcommand:test")
 	graph.AddEdge(edge1)
 	s.Actions.AddGraph(graph)
 }
