@@ -1,16 +1,21 @@
 package actions
 
 type NodeData struct {
-	ID         string            `json:"id"`
-	Type       string            `json:"type"`
-	X          int               `json:"x"`
-	Y          int               `json:"y"`
-	Inputs     []string          `json:"inputs"`
-	Outputs    []string          `json:"outputs"`
-	EventName  string            `json:"eventName"`
-	ActionName string            `json:"actionName"`
-	Command    *SlashCommandNode `json:"command"`
-	Secret     string            `json:"secret"`
+	ID            string            `json:"id"`
+	Type          string            `json:"type"`
+	X             int               `json:"x"`
+	Y             int               `json:"y"`
+	Inputs        []string          `json:"inputs"`
+	Outputs       []string          `json:"outputs"`
+	EventName     string            `json:"eventName,omitempty"`
+	ActionName    string            `json:"actionName,omitempty"`
+	Command       *SlashCommandNode `json:"command,omitempty"`
+	Secret        string            `json:"secret,omitempty"`
+	ControlType   string            `json:"controlType,omitempty"`
+	IfValue       string            `json:"ifValue,omitempty"`
+	IfComparison  string            `json:"ifComparison,omitempty"`
+	CaseValues    []string          `json:"caseValues,omitempty"`
+	RandomOptions int               `json:"randomOptions,omitempty"`
 }
 
 type Node interface {

@@ -42,6 +42,12 @@ func (g *Graph) ToGraphData() *GraphData {
 			nodeData.Command = node.(*SlashCommandNode)
 		case NodeTypeWebhook:
 			nodeData.Secret = node.(*WebhookNode).secret
+		case NodeTypeFlow:
+			nodeData.ControlType = node.(*FlowNode).controlType
+			nodeData.IfValue = node.(*FlowNode).ifValue
+			nodeData.IfComparison = node.(*FlowNode).ifComparison
+			nodeData.CaseValues = node.(*FlowNode).caseValues
+			nodeData.RandomOptions = node.(*FlowNode).randomOptions
 		}
 		nodes = append(nodes, nodeData)
 	}
@@ -93,6 +99,7 @@ func (g *Graph) AddEdge(edge *Edge) {
 func (g *Graph) RunEdgesForNode(n Node, data map[string]string) error {
 	for _, edge := range g.getEdgesFrom(n.ID()) {
 		if edge.fromOutput != "" && edge.fromOutput != data["Output"] {
+			fmt.Println("SKIPPING EDGE", edge, data)
 			continue
 		}
 

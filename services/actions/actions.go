@@ -143,16 +143,38 @@ func (a *Actions) AddGraphData(g *GraphData) {
 		switch nodeData.Type {
 		case NodeTypeAction:
 			node = NewActionNode(a.GetAction(nodeData.ActionName))
-			node.(*ActionNode).id = nodeData.ID
+			if nodeData.ID != "" {
+				node.(*ActionNode).id = nodeData.ID
+			}
 		case NodeTypeEvent:
 			node = NewEventNode(nodeData.EventName)
-			node.(*EventNode).id = nodeData.ID
+			if nodeData.ID != "" {
+				node.(*EventNode).id = nodeData.ID
+			}
 		case NodeTypeWebhook:
 			node = NewWebhookNode(nodeData.Secret)
-			node.(*WebhookNode).id = nodeData.ID
+			if nodeData.ID != "" {
+				node.(*WebhookNode).id = nodeData.ID
+			}
 		case NodeTypeSlashCommand:
 			node = nodeData.Command
-			node.(*SlashCommandNode).id = nodeData.ID
+			if nodeData.ID != "" {
+				node.(*SlashCommandNode).id = nodeData.ID
+			} else {
+				node.(*SlashCommandNode).id = model.NewId()
+			}
+		case NodeTypeFlow:
+			switch nodeData.ControlType {
+			case NodeTypeFlowTypeIf:
+				node = NewFlowIfNode(nodeData.ControlType, nodeData.IfValue, nodeData.IfComparison)
+			case NodeTypeFlowTypeSwitch:
+				node = NewFlowSwitchNode(nodeData.ControlType, nodeData.CaseValues)
+			case NodeTypeFlowTypeRandom:
+				node = NewFlowRandomNode(nodeData.ControlType, nodeData.RandomOptions)
+			}
+			if nodeData.ID != "" {
+				node.(*FlowNode).id = nodeData.ID
+			}
 		}
 		nodes = append(nodes, node)
 		nodesById[node.ID()] = node

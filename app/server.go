@@ -693,15 +693,163 @@ func NewServer(options ...Option) (*Server, error) {
 	s.Actions = actions.New(s.Log, s.SystemBus, RegisterCommandAction, UnregisterCommandProvider)
 	s.registerSystemBusEvents()
 	s.registerSystemBusActions()
-	s.linkSystemBusBuiltinActions()
-	s.linkSlashCommandActions()
+	s.addBuiltinGraphs()
 
 	s.SystemBus.SendEvent(&systembus.Event{ID: events.StartUp.ID})
 
 	return s, nil
 }
 
-func (s *Server) linkSlashCommandActions() {
+func (s *Server) addBuiltinGraphs() {
+	// Welcome Message Graph
+	graph := actions.GraphData{
+		ID:   model.NewId(),
+		Name: "welcome message in channel creation",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.ChannelCreated.ID},
+			{ID: model.NewId(), X: 100, Y: 200, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"template": "Welcome to my channel {{.DisplayName}}.", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	// Startup Graph
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "log in startup",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.StartUp.ID},
+			{ID: model.NewId(), X: 100, Y: 200, Type: actions.NodeTypeAction, ActionName: builtinactions.LogID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"template": "This is an example of event data {{.Data}}."}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	// Shutdown Graph
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "log in shutdown",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.ShutDown.ID},
+			{ID: model.NewId(), X: 100, Y: 200, Type: actions.NodeTypeAction, ActionName: builtinactions.LogID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"template": "This is an example of event data {{.Data}}."}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	// Create Channel Graph
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "create channel on delete post",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.PostDeleted.ID},
+			{ID: model.NewId(), X: 100, Y: 200, Type: actions.NodeTypeAction, ActionName: builtinactions.CreateChannelID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"name": "deleted-a-post-{{.PostId}}", "display-name": "You deleted the post with id {{.PostId}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	// If Graph
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "create channel on post text detected",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.PostCreated.ID},
+			{ID: model.NewId(), X: 100, Y: 200, Type: actions.NodeTypeFlow, ControlType: actions.NodeTypeFlowTypeIf, IfValue: "new channel", IfComparison: "contains"},
+			{ID: model.NewId(), X: 100, Y: 300, Type: actions.NodeTypeAction, ActionName: builtinactions.CreateChannelID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"value": "{{.Message}}"}},
+		{From: graph.Nodes[1].ID, FromOutput: "then", To: graph.Nodes[2].ID, Config: map[string]string{"name": "channel-from-post-{{.Id}}", "display-name": "Created Channel from Post {{.Id}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	// Lua Graph
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "pass all messages through lua",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.PostCreated.ID},
+			{ID: model.NewId(), X: 100, Y: 200, Type: actions.NodeTypeAction, ActionName: builtinactions.LuaID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"code": "print(\"Hi from lua, I'm watching you, you posted the message: \", data_Message)"}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	// Javascript Graph
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "pass all messages through javascript",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.PostCreated.ID},
+			{ID: model.NewId(), X: 100, Y: 200, Type: actions.NodeTypeAction, ActionName: builtinactions.JavascriptID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"code": "console.log('Hi from javascript, I am watching you, you posted the message:', data.Message)"}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	// Delay Graph
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "delayed reply",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.PostCreated.ID},
+			{ID: model.NewId(), X: 100, Y: 200, Type: actions.NodeTypeFlow, ControlType: actions.NodeTypeFlowTypeIf, IfValue: "hello", IfComparison: "contains"},
+			{ID: model.NewId(), X: 100, Y: 300, Type: actions.NodeTypeAction, ActionName: builtinactions.DelayID},
+			{ID: model.NewId(), X: 100, Y: 400, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"value": "{{.Message}}"}},
+		{From: graph.Nodes[1].ID, FromOutput: "then", To: graph.Nodes[2].ID, Config: map[string]string{"delay": "10"}},
+		{From: graph.Nodes[2].ID, To: graph.Nodes[3].ID, Config: map[string]string{"template": "Hello, I was a bit distracted", "channel-id": "{{.ChannelId}}", "root-id": "{{.PostId}}", "user-id": "{{.UserId}}"}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	// Email Graph
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "send email",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.PostCreated.ID},
+			{ID: model.NewId(), X: 100, Y: 200, Type: actions.NodeTypeFlow, ControlType: actions.NodeTypeFlowTypeIf, IfValue: "email", IfComparison: "contains"},
+			{ID: model.NewId(), X: 100, Y: 300, Type: actions.NodeTypeAction, ActionName: builtinactions.SendEmailID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"value": "{{.Message}}"}},
+		{From: graph.Nodes[1].ID, FromOutput: "then", To: graph.Nodes[2].ID, Config: map[string]string{"to": "jesus@mattermost.com", "subject": "test email", "body": "test body {{.Message}}"}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	// Webhook Graph
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "webhook",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeWebhook, Secret: "secret"},
+			{ID: model.NewId(), X: 100, Y: 200, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"template": "Webhook new message: {{.message}}", "channel-id": "xdfmdh66xjd5traix74zh1jaey", "user-id": "p9thdes94bnbxm9zw3dr9x6fmh"}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	// Command Graph
 	commandNode := actions.NewSlashCommandNode("log", "custom made command", "[test]", "My new command")
 	commandNode.AddFlag("test", "string")
 	commandNode.AddFlag("other", "boolean")
@@ -713,138 +861,19 @@ func (s *Server) linkSlashCommandActions() {
 		Name:        "My new subcommand",
 	})
 
-	commandNode.SetPos(100, 100)
-	graph := actions.NewGraph("log slash command")
-	graph.AddNode(commandNode)
-	logAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.LogID))
-	logAction.SetPos(100, 200)
-	graph.AddNode(logAction)
-
-	edge0 := actions.NewEdge(commandNode, logAction, map[string]string{"template": "This is an slash command action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"})
-	edge0.SetFromOutput("main")
-	graph.AddEdge(edge0)
-	edge1 := actions.NewEdge(commandNode, logAction, map[string]string{"template": "This is an slash subcommand action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"})
-	edge1.SetFromOutput("subcommand:test")
-	graph.AddEdge(edge1)
-	s.Actions.AddGraph(graph)
-}
-
-func (s *Server) linkSystemBusBuiltinActions() {
-	graph := actions.NewGraph("welcome message in channel creation")
-	createPostEvent := actions.NewEventNode(events.ChannelCreated.ID)
-	createPostEvent.SetPos(100, 100)
-	graph.AddNode(createPostEvent)
-	createPostAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.PostMessageID))
-	createPostAction.SetPos(100, 200)
-	graph.AddNode(createPostAction)
-	graph.AddEdge(actions.NewEdge(createPostEvent, createPostAction, map[string]string{"template": "Welcome to my channel {{.DisplayName}}.", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"}))
-	s.Actions.AddGraph(graph)
-
-	graph1 := actions.NewGraph("log in startup")
-	startUpEvent := actions.NewEventNode(events.StartUp.ID)
-	startUpEvent.SetPos(100, 100)
-	graph1.AddNode(startUpEvent)
-	logAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.LogID))
-	logAction.SetPos(100, 200)
-	graph1.AddNode(logAction)
-	graph1.AddEdge(actions.NewEdge(startUpEvent, logAction, map[string]string{"template": "This is an example of event data {{.Data}}."}))
-	s.Actions.AddGraph(graph1)
-
-	graph2 := actions.NewGraph("log in shutdown")
-	shutDownEvent := actions.NewEventNode(events.ShutDown.ID)
-	shutDownEvent.SetPos(100, 100)
-	graph2.AddNode(shutDownEvent)
-	logAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.LogID))
-	logAction.SetPos(100, 200)
-	graph2.AddNode(logAction)
-	graph2.AddEdge(actions.NewEdge(shutDownEvent, logAction, map[string]string{"template": "This is an example of event data {{.Data}}."}))
-	s.Actions.AddGraph(graph2)
-
-	graph3 := actions.NewGraph("create channel no delete post")
-	postDeletedEvent := actions.NewEventNode(events.PostDeleted.ID)
-	postDeletedEvent.SetPos(100, 100)
-	graph3.AddNode(postDeletedEvent)
-	createChannelAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.CreateChannelID))
-	createChannelAction.SetPos(100, 200)
-	graph3.AddNode(createChannelAction)
-	graph3.AddEdge(actions.NewEdge(postDeletedEvent, createChannelAction, map[string]string{"name": "deleted-a-post-{{.PostId}}", "display-name": "You deleted the post with id {{.PostId}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"}))
-	s.Actions.AddGraph(graph3)
-
-	graph4 := actions.NewGraph("create channel on post text detected")
-	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
-	createPostEvent.SetPos(100, 100)
-	graph4.AddNode(createPostEvent)
-	filterAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.FilterID))
-	filterAction.SetPos(100, 200)
-	graph4.AddNode(filterAction)
-	createChannelAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.CreateChannelID))
-	createChannelAction.SetPos(100, 300)
-	graph4.AddNode(createChannelAction)
-	graph4.AddEdge(actions.NewEdge(createPostEvent, filterAction, map[string]string{"template1": "{{.Message}}", "template2": "new channel", "comparison": "contains"}))
-	graph4.AddEdge(actions.NewEdge(filterAction, createChannelAction, map[string]string{"name": "channel-from-post-{{.Id}}", "display-name": "Created Channel from Post {{.Id}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"}))
-	s.Actions.AddGraph(graph4)
-
-	graph5 := actions.NewGraph("pass all messages through lua")
-	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
-	createPostEvent.SetPos(100, 100)
-	graph5.AddNode(createPostEvent)
-	luaAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.LuaID))
-	luaAction.SetPos(100, 200)
-	graph5.AddNode(luaAction)
-	graph5.AddEdge(actions.NewEdge(createPostEvent, luaAction, map[string]string{"code": "print(\"Hi from lua, I'm watching you, you posted the message: \", data_Message)"}))
-	s.Actions.AddGraph(graph5)
-
-	graph6 := actions.NewGraph("delayed reply")
-	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
-	createPostEvent.SetPos(100, 100)
-	graph6.AddNode(createPostEvent)
-	filterAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.FilterID))
-	filterAction.SetPos(100, 200)
-	graph6.AddNode(filterAction)
-	delayAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.DelayID))
-	delayAction.SetPos(100, 300)
-	graph6.AddNode(delayAction)
-	createPostAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.PostMessageID))
-	createPostAction.SetPos(100, 400)
-	graph6.AddNode(createPostAction)
-	graph6.AddEdge(actions.NewEdge(createPostEvent, filterAction, map[string]string{"template1": "{{.Message}}", "template2": "hello", "comparison": "contains"}))
-	graph6.AddEdge(actions.NewEdge(filterAction, delayAction, map[string]string{"delay": "10"}))
-	graph6.AddEdge(actions.NewEdge(filterAction, createPostAction, map[string]string{"template": "Hello, I was a bit distracted", "channel-id": "{{.ChannelId}}", "root-id": "{{.PostId}}", "user-id": "{{.UserId}}"}))
-	s.Actions.AddGraph(graph6)
-
-	graph7 := actions.NewGraph("pass all messages through javascript")
-	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
-	createPostEvent.SetPos(100, 100)
-	graph7.AddNode(createPostEvent)
-	javascriptAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.JavascriptID))
-	javascriptAction.SetPos(100, 200)
-	graph7.AddNode(javascriptAction)
-	graph7.AddEdge(actions.NewEdge(createPostEvent, javascriptAction, map[string]string{"code": "console.log('Hi from javascript, I am watching you, you posted the message:', data.Message)"}))
-	s.Actions.AddGraph(graph7)
-
-	graph8 := actions.NewGraph("send email")
-	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
-	createPostEvent.SetPos(100, 100)
-	graph8.AddNode(createPostEvent)
-	filterAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.FilterID))
-	filterAction.SetPos(100, 200)
-	graph8.AddNode(filterAction)
-	sendEmailAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.SendEmailID))
-	sendEmailAction.SetPos(100, 300)
-	graph8.AddNode(sendEmailAction)
-	graph8.AddEdge(actions.NewEdge(createPostEvent, filterAction, map[string]string{"template1": "{{.Message}}", "template2": "email", "comparison": "contains"}))
-	graph8.AddEdge(actions.NewEdge(filterAction, sendEmailAction, map[string]string{"to": "jesus@mattermost.com", "subject": "test email", "body": "test body {{.Message}}"}))
-	s.Actions.AddGraph(graph8)
-
-	graph9 := actions.NewGraph("webhook")
-	webhook := actions.NewWebhookNode("secret")
-	webhook.SetPos(100, 100)
-	graph9.AddNode(webhook)
-	createPostAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.PostMessageID))
-	createPostAction.SetPos(100, 200)
-	graph9.AddNode(createPostAction)
-	graph9.AddEdge(actions.NewEdge(webhook, createPostAction, map[string]string{"template": "Webhook new message: {{.message}}", "channel-id": "xdfmdh66xjd5traix74zh1jaey", "user-id": "p9thdes94bnbxm9zw3dr9x6fmh"}))
-	s.Actions.AddGraph(graph9)
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "log slash command",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeSlashCommand, Command: commandNode},
+			{ID: model.NewId(), X: 100, Y: 200, Type: actions.NodeTypeAction, ActionName: builtinactions.LogID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, FromOutput: "main", To: graph.Nodes[1].ID, Config: map[string]string{"template": "This is an slash command action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"}},
+		{From: graph.Nodes[0].ID, FromOutput: "subcommand:test", To: graph.Nodes[1].ID, Config: map[string]string{"template": "This is an slash subcommand action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"}},
+	}
+	s.Actions.AddGraphData(&graph)
 }
 
 func (s *Server) registerSystemBusEvents() {
