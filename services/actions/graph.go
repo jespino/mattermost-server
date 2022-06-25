@@ -18,6 +18,10 @@ const NodeTypeWebhook = "webhook"
 type NodeData struct {
 	ID         string            `json:"id"`
 	Type       string            `json:"type"`
+	X          int               `json:"x"`
+	Y          int               `json:"y"`
+	Inputs     []string          `json:"inputs"`
+	Outputs    []string          `json:"outputs"`
 	EventName  string            `json:"eventName"`
 	ActionName string            `json:"actionName"`
 	Command    *SlashCommandNode `json:"command"`
@@ -50,8 +54,12 @@ func (g *Graph) ToGraphData() *GraphData {
 	nodes := []NodeData{}
 	for _, node := range g.nodes {
 		nodeData := NodeData{
-			ID:   node.ID(),
-			Type: node.Type(),
+			ID:      node.ID(),
+			Type:    node.Type(),
+			X:       node.X(),
+			Y:       node.Y(),
+			Inputs:  node.Inputs(),
+			Outputs: node.Outputs(),
 		}
 
 		switch node.Type() {
@@ -118,13 +126,18 @@ func (e *Edge) SetFromOutput(fromOutput string) {
 type Node interface {
 	ID() string
 	Type() string
-	Inputs() int
-	Outputs() int
+	X() int
+	Y() int
+	SetPos(x int, y int)
+	Inputs() []string
+	Outputs() []string
 	Run(g *Graph, data map[string]string) error
 }
 
 type EventNode struct {
 	id        string
+	x         int
+	y         int
 	eventName string
 }
 
@@ -139,20 +152,35 @@ func (e *EventNode) ID() string {
 	return e.id
 }
 
+func (e *EventNode) X() int {
+	return e.x
+}
+
+func (e *EventNode) Y() int {
+	return e.y
+}
+
+func (e *EventNode) SetPos(x, y int) {
+	e.x = x
+	e.y = y
+}
+
 func (e *EventNode) Type() string {
 	return NodeTypeEvent
 }
 
-func (e *EventNode) Inputs() int {
-	return 0
+func (e *EventNode) Inputs() []string {
+	return []string{}
 }
 
-func (e *EventNode) Outputs() int {
-	return 1
+func (e *EventNode) Outputs() []string {
+	return []string{"out"}
 }
 
 type WebhookNode struct {
 	id     string
+	x      int
+	y      int
 	secret string
 }
 
@@ -167,20 +195,35 @@ func (e *WebhookNode) ID() string {
 	return e.id
 }
 
+func (e *WebhookNode) X() int {
+	return e.x
+}
+
+func (e *WebhookNode) Y() int {
+	return e.y
+}
+
+func (e *WebhookNode) SetPos(x, y int) {
+	e.x = x
+	e.y = y
+}
+
 func (e *WebhookNode) Type() string {
 	return NodeTypeWebhook
 }
 
-func (e *WebhookNode) Inputs() int {
-	return 0
+func (e *WebhookNode) Inputs() []string {
+	return []string{}
 }
 
-func (e *WebhookNode) Outputs() int {
-	return 1
+func (e *WebhookNode) Outputs() []string {
+	return []string{"out"}
 }
 
 type ActionNode struct {
 	id     string
+	x      int
+	y      int
 	action *ActionDefinition
 }
 
@@ -195,16 +238,29 @@ func (e *ActionNode) ID() string {
 	return e.id
 }
 
+func (e *ActionNode) X() int {
+	return e.x
+}
+
+func (e *ActionNode) Y() int {
+	return e.y
+}
+
+func (e *ActionNode) SetPos(x, y int) {
+	e.x = x
+	e.y = y
+}
+
 func (e *ActionNode) Type() string {
 	return NodeTypeAction
 }
 
-func (e *ActionNode) Inputs() int {
-	return 1
+func (e *ActionNode) Inputs() []string {
+	return []string{"in"}
 }
 
-func (e *ActionNode) Outputs() int {
-	return 1
+func (e *ActionNode) Outputs() []string {
+	return []string{"out"}
 }
 
 type SubCommand struct {
@@ -216,7 +272,9 @@ type SubCommand struct {
 }
 
 type SlashCommandNode struct {
-	id          string            `json:"id"`
+	id          string `json:"id"`
+	x           int
+	y           int
 	Command     string            `json:"command"`
 	Description string            `json:"description"`
 	Hint        string            `json:"hint"`
@@ -353,16 +411,34 @@ func (s *SlashCommandNode) ID() string {
 	return s.id
 }
 
+func (s *SlashCommandNode) X() int {
+	return s.x
+}
+
+func (s *SlashCommandNode) Y() int {
+	return s.y
+}
+
+func (s *SlashCommandNode) SetPos(x, y int) {
+	s.x = x
+	s.y = y
+}
+
 func (s *SlashCommandNode) Type() string {
 	return NodeTypeSlashCommand
 }
 
-func (s *SlashCommandNode) Inputs() int {
-	return 0
+func (s *SlashCommandNode) Inputs() []string {
+	return []string{}
 }
 
-func (s *SlashCommandNode) Outputs() int {
-	return 1 + len(s.SubCommands)
+func (s *SlashCommandNode) Outputs() []string {
+	result := []string{"main"}
+	for _, command := range s.SubCommands {
+		result = append(result, fmt.Sprintf("subcommand:%s", command.SubCommand))
+	}
+
+	return result
 }
 
 func (g *Graph) RunEvent(event *systembus.Event) {
