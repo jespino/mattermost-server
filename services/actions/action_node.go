@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/mattermost/mattermost-server/v6/model"
@@ -33,6 +34,9 @@ func (e *ActionNode) Outputs() []string {
 }
 
 func (a *ActionNode) Run(g *Graph, data map[string]string) error {
+	if a.action == nil {
+		return errors.New("Action handler doesn't exists")
+	}
 	fmt.Println("RUNNING ACTION INSIDE", a.action.ID, a.action.Name, data)
 	result, err := a.action.Handler(data)
 	if err != nil {

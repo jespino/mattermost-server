@@ -35,7 +35,9 @@ func (g *Graph) ToGraphData() *GraphData {
 
 		switch node.Type() {
 		case NodeTypeAction:
-			nodeData.ActionName = node.(*ActionNode).action.ID
+			if node.(*ActionNode).action != nil {
+				nodeData.ActionName = node.(*ActionNode).action.ID
+			}
 		case NodeTypeEvent:
 			nodeData.EventName = node.(*EventNode).eventName
 		case NodeTypeSlashCommand:

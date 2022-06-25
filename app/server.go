@@ -708,11 +708,26 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "welcome message in channel creation",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.ChannelCreated.ID},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{
 		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"template": "Welcome to my channel {{.DisplayName}}.", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	// TODO: Fix the plugins support for events and actions
+	// Autocreate board for channel Graph
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "autocreate board for channel",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.ChannelCreated.ID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: "create-board"},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"Title": "{{.DisplayName}}", "TeamID": "{{.TeamId}}", "ChannelID": "{{.Id}}", "UserID": "{{.CreatorId}}"}},
 	}
 	s.Actions.AddGraphData(&graph)
 
@@ -722,7 +737,7 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "log in startup",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.StartUp.ID},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.LogID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.LogID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{
@@ -736,7 +751,7 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "log in shutdown",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.ShutDown.ID},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.LogID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.LogID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{
@@ -750,7 +765,7 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "create channel on delete post",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.PostDeleted.ID},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.CreateChannelID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.CreateChannelID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{
@@ -764,8 +779,8 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "create channel on post text detected",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.PostCreated.ID},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeFlow, ControlType: actions.NodeTypeFlowTypeIf, IfValue: "new channel", IfComparison: "contains"},
-			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.CreateChannelID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeFlow, ControlType: actions.NodeTypeFlowTypeIf, IfValue: "new channel", IfComparison: "contains"},
+			{ID: model.NewId(), X: 500, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.CreateChannelID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{
@@ -780,10 +795,10 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "Random welcome message",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.ChannelCreated.ID},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeFlow, ControlType: actions.NodeTypeFlowTypeRandom, RandomOptions: 3},
-			{ID: model.NewId(), X: 300, Y: 50, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
-			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
-			{ID: model.NewId(), X: 300, Y: 150, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeFlow, ControlType: actions.NodeTypeFlowTypeRandom, RandomOptions: 3},
+			{ID: model.NewId(), X: 500, Y: 50, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
+			{ID: model.NewId(), X: 500, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
+			{ID: model.NewId(), X: 500, Y: 150, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{
@@ -800,7 +815,7 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "pass all messages through lua",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.PostCreated.ID},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.LuaID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.LuaID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{
@@ -814,7 +829,7 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "pass all messages through javascript",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.PostCreated.ID},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.JavascriptID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.JavascriptID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{
@@ -828,9 +843,9 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "delayed reply",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.PostCreated.ID},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeFlow, ControlType: actions.NodeTypeFlowTypeIf, IfValue: "hello", IfComparison: "contains"},
-			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.DelayID},
-			{ID: model.NewId(), X: 400, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeFlow, ControlType: actions.NodeTypeFlowTypeIf, IfValue: "hello", IfComparison: "contains"},
+			{ID: model.NewId(), X: 500, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.DelayID},
+			{ID: model.NewId(), X: 700, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{
@@ -846,8 +861,8 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "send email",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.PostCreated.ID},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeFlow, ControlType: actions.NodeTypeFlowTypeIf, IfValue: "email", IfComparison: "contains"},
-			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.SendEmailID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeFlow, ControlType: actions.NodeTypeFlowTypeIf, IfValue: "email", IfComparison: "contains"},
+			{ID: model.NewId(), X: 500, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.SendEmailID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{
@@ -862,7 +877,7 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "webhook",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeWebhook, Secret: "secret"},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.PostMessageID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{
@@ -876,7 +891,7 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "Notify user on new logins",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeEvent, EventName: events.LoginSuccess.ID},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.SendDMID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.SendDMID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{
@@ -901,7 +916,7 @@ func (s *Server) addBuiltinGraphs() {
 		Name: "log slash command",
 		Nodes: []actions.NodeData{
 			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeSlashCommand, Command: commandNode},
-			{ID: model.NewId(), X: 200, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.LogID},
+			{ID: model.NewId(), X: 300, Y: 100, Type: actions.NodeTypeAction, ActionName: builtinactions.LogID},
 		},
 	}
 	graph.Edges = []actions.EdgeData{

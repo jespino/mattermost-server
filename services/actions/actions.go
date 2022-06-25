@@ -99,14 +99,6 @@ func (a *Actions) ListGraphs() ([]*Graph, error) {
 	return graphs, nil
 }
 
-func (a *Actions) Run(actionID string, data map[string]string) (map[string]string, error) {
-	action, ok := a.actions[actionID]
-	if !ok {
-		return nil, fmt.Errorf("Action %s not found", actionID)
-	}
-	return action.Handler(data)
-}
-
 func (a *Actions) RunHook(hookID string, data map[string]string) error {
 	graph, ok := a.graphsByHook[hookID]
 	if !ok {
@@ -176,6 +168,7 @@ func (a *Actions) AddGraphData(g *GraphData) {
 				node.(*FlowNode).id = nodeData.ID
 			}
 		}
+		node.SetPos(nodeData.X, nodeData.Y)
 		nodes = append(nodes, node)
 		nodesById[node.ID()] = node
 	}
