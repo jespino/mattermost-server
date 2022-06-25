@@ -732,13 +732,13 @@ func (c *Context) RequireInvoiceId() *Context {
 	return c
 }
 
-func (c *Context) RequireLinkId() *Context {
+func (c *Context) RequireGraphId() *Context {
 	if c.Err != nil {
 		return c
 	}
 
-	if !model.IsValidId(c.Params.LinkId) {
-		c.SetInvalidURLParam("link_id")
+	if !model.IsValidId(c.Params.GraphId) {
+		c.SetInvalidURLParam("graph_id")
 	}
 	return c
 }

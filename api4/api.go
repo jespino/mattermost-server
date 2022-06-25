@@ -140,7 +140,7 @@ type Routes struct {
 
 	Usage *mux.Router // 'api/v4/usage'
 
-	SystemBus *mux.Router // 'api/v4/systembus'
+	Actions *mux.Router // 'api/v4/actions'
 }
 
 type API struct {
@@ -225,7 +225,7 @@ func Init(srv *app.Server) (*API, error) {
 	api.BaseRoutes.Cluster = api.BaseRoutes.APIRoot.PathPrefix("/cluster").Subrouter()
 	api.BaseRoutes.LDAP = api.BaseRoutes.APIRoot.PathPrefix("/ldap").Subrouter()
 	api.BaseRoutes.Brand = api.BaseRoutes.APIRoot.PathPrefix("/brand").Subrouter()
-	api.BaseRoutes.SystemBus = api.BaseRoutes.APIRoot.PathPrefix("/systembus").Subrouter()
+	api.BaseRoutes.Actions = api.BaseRoutes.APIRoot.PathPrefix("/actions").Subrouter()
 	api.BaseRoutes.System = api.BaseRoutes.APIRoot.PathPrefix("/system").Subrouter()
 	api.BaseRoutes.Preferences = api.BaseRoutes.User.PathPrefix("/preferences").Subrouter()
 	api.BaseRoutes.License = api.BaseRoutes.APIRoot.PathPrefix("/license").Subrouter()
@@ -311,7 +311,7 @@ func Init(srv *app.Server) (*API, error) {
 	api.InitExport()
 	api.InitInsights()
 	api.InitUsage()
-	api.InitSystemBus()
+	api.InitActions()
 	if err := api.InitGraphQL(); err != nil {
 		return nil, err
 	}

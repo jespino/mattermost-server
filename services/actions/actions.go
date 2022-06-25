@@ -17,14 +17,6 @@ type ActionDefinition struct {
 	Handler          func(data map[string]string) (map[string]string, error) `json:"-"`
 }
 
-type SubCommand struct {
-	SubCommand  string            `json:"subcommand"`
-	Description string            `json:"description"`
-	Hint        string            `json:"hint"`
-	Name        string            `json:"name"`
-	Flags       map[string]string `json:"flags"`
-}
-
 type Actions struct {
 	systemBus         systembus.SystemBus
 	registerCommand   func(*model.Command, func(*model.CommandArgs, string) *model.CommandResponse)
@@ -110,6 +102,40 @@ func (a *Actions) Run(actionID string, data map[string]string) (map[string]strin
 		return nil, fmt.Errorf("Action %s not found", actionID)
 	}
 	return action.Handler(data)
+}
+
+func (a *Actions) AddGraphData(g *GraphData) {
+	nodes := []Node{}
+	nodesById := map[string]Node{}
+	for _, nodeData := range g.nodes {
+		var node Node
+		switch nodeData.Type {
+		case "action":
+			node = NewActionNode(a.GetAction(nodeData.ActionName))
+		case "event":
+			node = NewEventNode(nodeData.EventName)
+		case "slash-command":
+			node = NewSlashCommandNode(nodeData.Command)
+		}
+		node.id = nodeData.ID
+		nodes = append(nodes, node)
+		nodesById[node.id] = node
+	}
+
+	edges := []*Edge{}
+	for _, edgeData := range g.Edges {
+		edge := NewEdge(nodesById[edgeData.From], nodesById[edgeData.To], edgeData.Config)
+		edge.id = edgeData.ID
+		edge.fromOutput = edgeData.FromOutput
+		edges = append(edges, edge)
+	}
+
+	a.AddGraph(&Graph{
+		id:    g.id,
+		name:  g.name,
+		nodes: nodes,
+		edges: edges,
+	})
 }
 
 func (a *Actions) AddGraph(graph *Graph) {

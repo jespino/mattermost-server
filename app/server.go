@@ -713,7 +713,7 @@ func (s *Server) linkSlashCommandActions() {
 		Name:        "My new subcommand",
 	})
 
-	graph := actions.NewGraph()
+	graph := actions.NewGraph("log slash command")
 	graph.AddNode(commandNode)
 	logAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.LogID))
 	graph.AddNode(logAction)
@@ -728,7 +728,7 @@ func (s *Server) linkSlashCommandActions() {
 }
 
 func (s *Server) linkSystemBusBuiltinActions() {
-	graph := actions.NewGraph()
+	graph := actions.NewGraph("welcome message in channel creation")
 	createPostEvent := actions.NewEventNode(events.ChannelCreated.ID)
 	graph.AddNode(createPostEvent)
 	createPostAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.PostMessageID))
@@ -736,7 +736,7 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	graph.AddEdge(actions.NewEdge(createPostEvent, createPostAction, map[string]string{"template": "Welcome to my channel {{.DisplayName}}.", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"}))
 	s.Actions.AddGraph(graph)
 
-	graph1 := actions.NewGraph()
+	graph1 := actions.NewGraph("log in startup")
 	startUpEvent := actions.NewEventNode(events.StartUp.ID)
 	graph1.AddNode(startUpEvent)
 	logAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.LogID))
@@ -744,7 +744,7 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	graph1.AddEdge(actions.NewEdge(startUpEvent, logAction, map[string]string{"template": "This is an example of event data {{.Data}}."}))
 	s.Actions.AddGraph(graph1)
 
-	graph2 := actions.NewGraph()
+	graph2 := actions.NewGraph("log in shutdown")
 	shutDownEvent := actions.NewEventNode(events.ShutDown.ID)
 	graph2.AddNode(shutDownEvent)
 	logAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.LogID))
@@ -752,7 +752,7 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	graph2.AddEdge(actions.NewEdge(shutDownEvent, logAction, map[string]string{"template": "This is an example of event data {{.Data}}."}))
 	s.Actions.AddGraph(graph2)
 
-	graph3 := actions.NewGraph()
+	graph3 := actions.NewGraph("create channel no delete post")
 	postDeletedEvent := actions.NewEventNode(events.PostDeleted.ID)
 	graph3.AddNode(postDeletedEvent)
 	createChannelAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.CreateChannelID))
@@ -760,7 +760,7 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	graph3.AddEdge(actions.NewEdge(postDeletedEvent, createChannelAction, map[string]string{"name": "deleted-a-post-{{.PostId}}", "display-name": "You deleted the post with id {{.PostId}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"}))
 	s.Actions.AddGraph(graph3)
 
-	graph4 := actions.NewGraph()
+	graph4 := actions.NewGraph("create channel on post text detected")
 	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
 	graph4.AddNode(createPostEvent)
 	filterAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.FilterID))
@@ -771,7 +771,7 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	graph4.AddEdge(actions.NewEdge(filterAction, createChannelAction, map[string]string{"name": "channel-from-post-{{.Id}}", "display-name": "Created Channel from Post {{.Id}}", "type": "P", "team-id": "{{.TeamId}}", "creator-id": "{{.UserId}}"}))
 	s.Actions.AddGraph(graph4)
 
-	graph5 := actions.NewGraph()
+	graph5 := actions.NewGraph("pass all messages through lua")
 	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
 	graph5.AddNode(createPostEvent)
 	luaAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.LuaID))
@@ -779,7 +779,7 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	graph5.AddEdge(actions.NewEdge(createPostEvent, luaAction, map[string]string{"code": "print(\"Hi from lua, I'm watching you, you posted the message: \", data_Message)"}))
 	s.Actions.AddGraph(graph5)
 
-	graph6 := actions.NewGraph()
+	graph6 := actions.NewGraph("delayed reply")
 	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
 	graph6.AddNode(createPostEvent)
 	filterAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.FilterID))
@@ -793,7 +793,7 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	graph6.AddEdge(actions.NewEdge(filterAction, createPostAction, map[string]string{"template": "Hello, I was a bit distracted", "channel-id": "{{.ChannelId}}", "root-id": "{{.PostId}}", "user-id": "{{.UserId}}"}))
 	s.Actions.AddGraph(graph6)
 
-	graph7 := actions.NewGraph()
+	graph7 := actions.NewGraph("pass all messages through javascript")
 	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
 	graph7.AddNode(createPostEvent)
 	javascriptAction := actions.NewActionNode(s.Actions.GetAction(builtinactions.JavascriptID))
@@ -801,7 +801,7 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	graph7.AddEdge(actions.NewEdge(createPostEvent, javascriptAction, map[string]string{"code": "console.log('Hi from javascript, I am watching you, you posted the message:', data.Message)"}))
 	s.Actions.AddGraph(graph7)
 
-	graph8 := actions.NewGraph()
+	graph8 := actions.NewGraph("send email")
 	createPostEvent = actions.NewEventNode(events.PostCreated.ID)
 	graph8.AddNode(createPostEvent)
 	filterAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.FilterID))

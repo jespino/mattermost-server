@@ -10,15 +10,78 @@ import (
 	"github.com/mattermost/mattermost-server/v6/services/systembus"
 )
 
+type NodeData struct {
+	ID         string            `json:"id"`
+	Type       string            `json:"type"`
+	EventName  string            `json:"eventName"`
+	ActionName string            `json:"actionName"`
+	Command    *SlashCommandNode `json:"command"`
+}
+
+type EdgeData struct {
+	ID         string            `json:"id"`
+	From       string            `json:"from"`
+	FromOutput string            `json:"fromOutput"`
+	To         string            `json:"to"`
+	Config     map[string]string `json:"config"`
+}
+
+type GraphData struct {
+	ID    string     `json:"id"`
+	Name  string     `json:"name"`
+	Nodes []NodeData `json:"nodes"`
+	Edges []EdgeData `json:"edges"`
+}
+
 type Graph struct {
 	id    string
+	name  string
 	nodes []Node
 	edges []*Edge
 }
 
-func NewGraph() *Graph {
+func (g *Graph) ToGraphData() *GraphData {
+	nodes := []NodeData{}
+	for _, node := range g.nodes {
+		nodeData := NodeData{
+			ID:   node.ID(),
+			Type: node.Type(),
+		}
+
+		switch node.Type() {
+		case "action":
+			nodeData.ActionName = node.(*ActionNode).action.ID
+		case "event":
+			nodeData.EventName = node.(*EventNode).eventName
+		case "slash-command":
+			nodeData.Command = node.(*SlashCommandNode)
+		}
+		nodes = append(nodes, nodeData)
+	}
+
+	edges := []EdgeData{}
+	for _, edge := range g.edges {
+		edges = append(edges, EdgeData{
+			ID:         edge.id,
+			From:       edge.from.ID(),
+			FromOutput: edge.fromOutput,
+			To:         edge.to.ID(),
+			Config:     edge.config,
+		})
+	}
+
+	return &GraphData{
+		ID:    g.id,
+		Name:  g.name,
+		Nodes: nodes,
+		Edges: edges,
+	}
+}
+
+func NewGraph(name string) *Graph {
 	return &Graph{
-		id: model.NewId(),
+		id:   model.NewId(),
+		name: name,
 	}
 }
 
@@ -108,14 +171,22 @@ func (e *ActionNode) Outputs() int {
 	return 1
 }
 
+type SubCommand struct {
+	SubCommand  string            `json:"subcommand"`
+	Description string            `json:"description"`
+	Hint        string            `json:"hint"`
+	Name        string            `json:"name"`
+	Flags       map[string]string `json:"flags"`
+}
+
 type SlashCommandNode struct {
-	id          string
-	Command     string
-	Description string
-	Hint        string
-	Name        string
-	SubCommands []SubCommand
-	Flags       map[string]string
+	id          string            `json:"id"`
+	Command     string            `json:"command"`
+	Description string            `json:"description"`
+	Hint        string            `json:"hint"`
+	Name        string            `json:"name"`
+	SubCommands []SubCommand      `json:"subCommands"`
+	Flags       map[string]string `json:"flags"`
 }
 
 func NewSlashCommandNode(command string, description string, hint string, name string) *SlashCommandNode {
