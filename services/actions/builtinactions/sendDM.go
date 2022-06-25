@@ -20,9 +20,9 @@ func NewSendDM(dmPoster DMPoster, ctx *request.Context) *actions.ActionDefinitio
 	sendDMActionHandler := func(data map[string]string) (map[string]string, error) {
 		message := data["template"]
 		receiverID := data["receiver-id"]
-		senderID := data["receiver-id"]
+		senderID := data["sender-id"]
 		receiverUsername := data["receiver-username"]
-		senderUsername := data["receiver-username"]
+		senderUsername := data["sender-username"]
 
 		if receiverID == "" {
 			receiver, appErr := dmPoster.GetUserByUsername(receiverUsername)
