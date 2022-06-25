@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -24,6 +25,7 @@ type Actions struct {
 	actions           map[string]*ActionDefinition
 	graphs            map[string]*Graph
 	graphsByEvent     map[string]map[string]*Graph
+	graphsByHook      map[string]*Graph
 	mutex             sync.RWMutex
 	logger            *mlog.Logger
 }
@@ -57,6 +59,7 @@ func New(logger *mlog.Logger, systemBus systembus.SystemBus, registerCommand fun
 		actions:           map[string]*ActionDefinition{},
 		graphs:            map[string]*Graph{},
 		graphsByEvent:     map[string]map[string]*Graph{},
+		graphsByHook:      map[string]*Graph{},
 		logger:            logger,
 	}
 	systemBus.Subscribe(EventToGraphSubscription(actions))
@@ -104,22 +107,55 @@ func (a *Actions) Run(actionID string, data map[string]string) (map[string]strin
 	return action.Handler(data)
 }
 
+func (a *Actions) RunHook(hookID string, data map[string]string) error {
+	graph, ok := a.graphsByHook[hookID]
+	if !ok {
+		fmt.Println("NO GRAPH FOUND")
+		return errors.New("hook not found")
+	}
+
+	fmt.Println("RUNNING GRAPH")
+	for _, node := range graph.nodes {
+		fmt.Println("LOOKING FOR EVENT NODES")
+		if node.Type() == NodeTypeWebhook && node.ID() == hookID {
+			fmt.Println("EVENT NODE FOUND, RUNNING")
+			if node.(*WebhookNode).secret != "" && data["secret"] != node.(*WebhookNode).secret {
+				return errors.New("invalid secret")
+			}
+
+			err := node.(*WebhookNode).Run(graph, data)
+			if err != nil {
+				fmt.Println("*************** ERROR ****************")
+				fmt.Println(err)
+				fmt.Println("**************************************")
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (a *Actions) AddGraphData(g *GraphData) {
 	nodes := []Node{}
 	nodesById := map[string]Node{}
-	for _, nodeData := range g.nodes {
+	for _, nodeData := range g.Nodes {
 		var node Node
 		switch nodeData.Type {
-		case "action":
+		case NodeTypeAction:
 			node = NewActionNode(a.GetAction(nodeData.ActionName))
-		case "event":
+			node.(*ActionNode).id = nodeData.ID
+		case NodeTypeEvent:
 			node = NewEventNode(nodeData.EventName)
-		case "slash-command":
-			node = NewSlashCommandNode(nodeData.Command)
+			node.(*EventNode).id = nodeData.ID
+		case NodeTypeWebhook:
+			node = NewWebhookNode(nodeData.Secret)
+			node.(*WebhookNode).id = nodeData.ID
+		case NodeTypeSlashCommand:
+			node = nodeData.Command
+			node.(*SlashCommandNode).id = nodeData.ID
 		}
-		node.id = nodeData.ID
 		nodes = append(nodes, node)
-		nodesById[node.id] = node
+		nodesById[node.ID()] = node
 	}
 
 	edges := []*Edge{}
@@ -131,8 +167,8 @@ func (a *Actions) AddGraphData(g *GraphData) {
 	}
 
 	a.AddGraph(&Graph{
-		id:    g.id,
-		name:  g.name,
+		id:    g.ID,
+		name:  g.Name,
 		nodes: nodes,
 		edges: edges,
 	})
@@ -144,13 +180,15 @@ func (a *Actions) AddGraph(graph *Graph) {
 
 	a.graphs[graph.id] = graph
 	for _, node := range graph.nodes {
-		if node.Type() == "event" {
+		if node.Type() == NodeTypeEvent {
 			if _, ok := a.graphsByEvent[node.(*EventNode).eventName]; ok {
 				a.graphsByEvent[node.(*EventNode).eventName][graph.id] = graph
 			} else {
 				a.graphsByEvent[node.(*EventNode).eventName] = map[string]*Graph{graph.id: graph}
 			}
-		} else if node.Type() == "slash-command" {
+		} else if node.Type() == NodeTypeWebhook {
+			a.graphsByHook[node.ID()] = graph
+		} else if node.Type() == NodeTypeSlashCommand {
 			realDoCommand := node.(*SlashCommandNode).DoCommand
 			doCommand := func(args *model.CommandArgs, message string) *model.CommandResponse {
 				return realDoCommand(graph, args, message)

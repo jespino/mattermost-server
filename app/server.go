@@ -811,6 +811,14 @@ func (s *Server) linkSystemBusBuiltinActions() {
 	graph8.AddEdge(actions.NewEdge(createPostEvent, filterAction, map[string]string{"template1": "{{.Message}}", "template2": "email", "comparison": "contains"}))
 	graph8.AddEdge(actions.NewEdge(filterAction, sendEmailAction, map[string]string{"to": "jesus@mattermost.com", "subject": "test email", "body": "test body {{.Message}}"}))
 	s.Actions.AddGraph(graph8)
+
+	graph9 := actions.NewGraph("webhook")
+	webhook := actions.NewWebhookNode("secret")
+	graph9.AddNode(webhook)
+	createPostAction = actions.NewActionNode(s.Actions.GetAction(builtinactions.PostMessageID))
+	graph9.AddNode(createPostAction)
+	graph9.AddEdge(actions.NewEdge(webhook, createPostAction, map[string]string{"template": "Webhook new message: {{.message}}", "channel-id": "xdfmdh66xjd5traix74zh1jaey", "user-id": "p9thdes94bnbxm9zw3dr9x6fmh"}))
+	s.Actions.AddGraph(graph9)
 }
 
 func (s *Server) registerSystemBusEvents() {

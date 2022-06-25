@@ -21,6 +21,7 @@ func (api *API) InitActions() {
 	api.BaseRoutes.Actions.Handle("/graphs", api.APISessionRequired(createActionsGraph)).Methods("POST")
 	api.BaseRoutes.Actions.Handle("/graphs/{graph_id:[A-Za-z0-9]+}", api.APISessionRequired(deleteActionsGraph)).Methods("DELETE")
 	api.BaseRoutes.Actions.Handle("/graphs/{graph_id:[A-Za-z0-9]+}", api.APISessionRequired(updateActionsGraph)).Methods("POST")
+	api.BaseRoutes.Actions.Handle("/webhook/{hook_id:[A-Za-z0-9]+}", api.APIHandler(triggerActionsWebhook)).Methods("POST")
 }
 
 func getSystemBusEvents(c *Context, w http.ResponseWriter, r *http.Request) {
@@ -149,6 +150,27 @@ func updateActionsGraph(c *Context, w http.ResponseWriter, r *http.Request) {
 	graphData.ID = c.Params.GraphId
 
 	c.App.Srv().Actions.AddGraphData(&graphData)
+
+	ReturnStatusOK(w)
+}
+
+func triggerActionsWebhook(c *Context, w http.ResponseWriter, r *http.Request) {
+	c.RequireHookId()
+	if c.Err != nil {
+		return
+	}
+
+	var data map[string]string
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		c.Err = model.NewAppError("Api4.createSystemBusLink", "api.systembus.request_error", nil, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := c.App.Srv().Actions.RunHook(c.Params.HookId, data); err != nil {
+		c.Err = model.NewAppError("Api4.createActionsLink", "api.systembus.request_error", nil, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	ReturnStatusOK(w)
 }

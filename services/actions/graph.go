@@ -10,12 +10,18 @@ import (
 	"github.com/mattermost/mattermost-server/v6/services/systembus"
 )
 
+const NodeTypeAction = "action"
+const NodeTypeEvent = "event"
+const NodeTypeSlashCommand = "slash-command"
+const NodeTypeWebhook = "webhook"
+
 type NodeData struct {
 	ID         string            `json:"id"`
 	Type       string            `json:"type"`
 	EventName  string            `json:"eventName"`
 	ActionName string            `json:"actionName"`
 	Command    *SlashCommandNode `json:"command"`
+	Secret     string            `json:"secret"`
 }
 
 type EdgeData struct {
@@ -49,12 +55,14 @@ func (g *Graph) ToGraphData() *GraphData {
 		}
 
 		switch node.Type() {
-		case "action":
+		case NodeTypeAction:
 			nodeData.ActionName = node.(*ActionNode).action.ID
-		case "event":
+		case NodeTypeEvent:
 			nodeData.EventName = node.(*EventNode).eventName
-		case "slash-command":
+		case NodeTypeSlashCommand:
 			nodeData.Command = node.(*SlashCommandNode)
+		case NodeTypeWebhook:
+			nodeData.Secret = node.(*WebhookNode).secret
 		}
 		nodes = append(nodes, nodeData)
 	}
@@ -132,7 +140,7 @@ func (e *EventNode) ID() string {
 }
 
 func (e *EventNode) Type() string {
-	return "event"
+	return NodeTypeEvent
 }
 
 func (e *EventNode) Inputs() int {
@@ -140,6 +148,34 @@ func (e *EventNode) Inputs() int {
 }
 
 func (e *EventNode) Outputs() int {
+	return 1
+}
+
+type WebhookNode struct {
+	id     string
+	secret string
+}
+
+func NewWebhookNode(secret string) *WebhookNode {
+	return &WebhookNode{
+		id:     model.NewId(),
+		secret: secret,
+	}
+}
+
+func (e *WebhookNode) ID() string {
+	return e.id
+}
+
+func (e *WebhookNode) Type() string {
+	return NodeTypeWebhook
+}
+
+func (e *WebhookNode) Inputs() int {
+	return 0
+}
+
+func (e *WebhookNode) Outputs() int {
 	return 1
 }
 
@@ -160,7 +196,7 @@ func (e *ActionNode) ID() string {
 }
 
 func (e *ActionNode) Type() string {
-	return "action"
+	return NodeTypeAction
 }
 
 func (e *ActionNode) Inputs() int {
@@ -318,7 +354,7 @@ func (s *SlashCommandNode) ID() string {
 }
 
 func (s *SlashCommandNode) Type() string {
-	return "slash-command"
+	return NodeTypeSlashCommand
 }
 
 func (s *SlashCommandNode) Inputs() int {
@@ -333,7 +369,7 @@ func (g *Graph) RunEvent(event *systembus.Event) {
 	fmt.Println("RUNNING GRAPH INSIDE")
 	for _, node := range g.nodes {
 		fmt.Println("LOOKING FOR EVENT NODES")
-		if node.Type() == "event" && node.(*EventNode).eventName == event.ID {
+		if node.Type() == NodeTypeEvent && node.(*EventNode).eventName == event.ID {
 			fmt.Println("EVENT NODE FOUND, RUNNING")
 			err := node.(*EventNode).Run(g, event.Data)
 			if err != nil {
@@ -382,6 +418,12 @@ func (g *Graph) RunEdgesForNode(n Node, data map[string]string) error {
 }
 
 func (e *EventNode) Run(g *Graph, data map[string]string) error {
+	fmt.Println("EVENT NODE FOUND, RUNNING INSIDE", g.getEdgesFrom(e.ID()), g.edges)
+	g.RunEdgesForNode(e, data)
+	return nil
+}
+
+func (e *WebhookNode) Run(g *Graph, data map[string]string) error {
 	fmt.Println("EVENT NODE FOUND, RUNNING INSIDE", g.getEdgesFrom(e.ID()), g.edges)
 	g.RunEdgesForNode(e, data)
 	return nil
