@@ -712,7 +712,7 @@ func (s *Server) addBuiltinGraphs() {
 		},
 	}
 	graph.Edges = []actions.EdgeData{
-		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"template": "Welcome to my channel {{.DisplayName}}.", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"}},
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"template": "Welcome to my channel {{.DisplayName}}.", "channel-id": "{{.Id}}", "user-id": "{{.CreatorId}}"}},
 	}
 	s.Actions.AddGraphData(&graph)
 
@@ -804,9 +804,9 @@ func (s *Server) addBuiltinGraphs() {
 	}
 	graph.Edges = []actions.EdgeData{
 		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{}},
-		{From: graph.Nodes[1].ID, FromOutput: "out-0", To: graph.Nodes[2].ID, Config: map[string]string{"template": "Welcome message 1", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"}},
-		{From: graph.Nodes[1].ID, FromOutput: "out-1", To: graph.Nodes[3].ID, Config: map[string]string{"template": "Welcome message 2", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"}},
-		{From: graph.Nodes[1].ID, FromOutput: "out-2", To: graph.Nodes[4].ID, Config: map[string]string{"template": "Welcome message 3", "channel-id": "{{.ID}}", "user-id": "{{.CreatorId}}"}},
+		{From: graph.Nodes[1].ID, FromOutput: "out-0", To: graph.Nodes[2].ID, Config: map[string]string{"template": "Welcome message 1", "channel-id": "{{.Id}}", "user-id": "{{.CreatorId}}"}},
+		{From: graph.Nodes[1].ID, FromOutput: "out-1", To: graph.Nodes[3].ID, Config: map[string]string{"template": "Welcome message 2", "channel-id": "{{.Id}}", "user-id": "{{.CreatorId}}"}},
+		{From: graph.Nodes[1].ID, FromOutput: "out-2", To: graph.Nodes[4].ID, Config: map[string]string{"template": "Welcome message 3", "channel-id": "{{.Id}}", "user-id": "{{.CreatorId}}"}},
 	}
 	s.Actions.AddGraphData(&graph)
 
