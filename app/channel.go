@@ -322,7 +322,7 @@ func (a *App) CreateChannel(c *request.Context, channel *model.Channel, addMembe
 				&systembus.Event{
 					ID: events.ChannelCreated.ID,
 					Data: map[string]string{
-						"ID":          sc.Id,
+						"Id":          sc.Id,
 						"Name":        sc.Name,
 						"DisplayName": sc.DisplayName,
 						"Type":        string(sc.Type),

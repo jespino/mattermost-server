@@ -101,8 +101,6 @@ func createActionsGraph(c *Context, w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(graphData); err != nil {
 		mlog.Warn("Error while writing response", mlog.Err(err))
 	}
-
-	ReturnStatusOK(w)
 }
 
 func deleteActionsGraph(c *Context, w http.ResponseWriter, r *http.Request) {
