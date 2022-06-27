@@ -53,7 +53,7 @@ require (
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	github.com/spf13/cobra v1.4.0
 	github.com/splitio/go-client/v6 v6.1.0
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	github.com/throttled/throttled v2.2.5+incompatible
 	github.com/tinylib/msgp v1.1.6
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
@@ -107,6 +107,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/gigawattio/window v0.0.0-20180317192513-0f5467e35573 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.4 // indirect
+	github.com/go-co-op/gocron v1.14.0 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/go-resty/resty/v2 v2.7.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -150,6 +151,7 @@ require (
 	github.com/richardlehane/msoleps v1.0.3 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/robertkrimen/otto v0.0.0-20211024170158-b87d35c0b86f // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/rs/xid v1.4.0 // indirect
 	github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3 // indirect
@@ -179,7 +181,7 @@ require (
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 // Hack to prevent the willf/bitset module from being upgraded to 1.2.0.

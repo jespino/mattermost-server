@@ -697,6 +697,8 @@ func NewServer(options ...Option) (*Server, error) {
 
 	s.SystemBus.SendEvent(&systembus.Event{ID: events.StartUp.ID})
 
+	s.Actions.Start()
+
 	return s, nil
 }
 
@@ -923,6 +925,32 @@ func (s *Server) addBuiltinGraphs() {
 	graph.Edges = []actions.EdgeData{
 		{From: graph.Nodes[0].ID, FromOutput: "main", To: graph.Nodes[1].ID, Config: map[string]string{"template": "This is an slash command action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"}},
 		{From: graph.Nodes[0].ID, FromOutput: "subcommand:test", To: graph.Nodes[1].ID, Config: map[string]string{"template": "This is an slash subcommand action fomr user {{.UserId}}, in channel {{.ChannelId}}, in tem  {{.TeamId}}, with other param {{.other}}"}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "log every 5 seconds",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeSched, ControlType: actions.NodeTypeSchedTypeInterval, Seconds: 5},
+			{ID: model.NewId(), X: 700, Y: 400, Type: actions.NodeTypeAction, ActionName: builtinactions.LogID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"template": "Running from job on interval"}},
+	}
+	s.Actions.AddGraphData(&graph)
+
+	graph = actions.GraphData{
+		ID:   model.NewId(),
+		Name: "at every other minute",
+		Nodes: []actions.NodeData{
+			{ID: model.NewId(), X: 100, Y: 100, Type: actions.NodeTypeSched, ControlType: actions.NodeTypeSchedTypeCron, Cron: "*/2 * * * *"},
+			{ID: model.NewId(), X: 700, Y: 400, Type: actions.NodeTypeAction, ActionName: builtinactions.LogID},
+		},
+	}
+	graph.Edges = []actions.EdgeData{
+		{From: graph.Nodes[0].ID, To: graph.Nodes[1].ID, Config: map[string]string{"template": "Running from cron job every 2 minutes"}},
 	}
 	s.Actions.AddGraphData(&graph)
 }
@@ -1303,6 +1331,7 @@ func (s *Server) Shutdown() {
 	s.stopSearchEngine()
 
 	s.Audit.Shutdown()
+	s.Actions.Shutdown()
 
 	s.stopFeatureFlagUpdateJob()
 

@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
+	"github.com/go-co-op/gocron"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/services/systembus"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
@@ -26,6 +28,8 @@ type Actions struct {
 	graphs            map[string]*Graph
 	graphsByEvent     map[string]map[string]*Graph
 	graphsByHook      map[string]*Graph
+	jobsByNode        map[string]*gocron.Job
+	scheduler         *gocron.Scheduler
 	mutex             sync.RWMutex
 	logger            *mlog.Logger
 }
@@ -60,6 +64,8 @@ func New(logger *mlog.Logger, systemBus systembus.SystemBus, registerCommand fun
 		graphs:            map[string]*Graph{},
 		graphsByEvent:     map[string]map[string]*Graph{},
 		graphsByHook:      map[string]*Graph{},
+		scheduler:         gocron.NewScheduler(time.UTC),
+		jobsByNode:        map[string]*gocron.Job{},
 		logger:            logger,
 	}
 	systemBus.Subscribe(EventToGraphSubscription(actions))
@@ -167,6 +173,16 @@ func (a *Actions) AddGraphData(g *GraphData) {
 			if nodeData.ID != "" {
 				node.(*FlowNode).id = nodeData.ID
 			}
+		case NodeTypeSched:
+			switch nodeData.ControlType {
+			case NodeTypeSchedTypeCron:
+				node = NewSchedCronNode(nodeData.Cron)
+			case NodeTypeSchedTypeInterval:
+				node = NewSchedIntervalNode(nodeData.Seconds)
+			}
+			if nodeData.ID != "" {
+				node.(*SchedNode).id = nodeData.ID
+			}
 		}
 		node.SetPos(nodeData.X, nodeData.Y)
 		nodes = append(nodes, node)
@@ -209,6 +225,19 @@ func (a *Actions) AddGraph(graph *Graph) {
 				return realDoCommand(graph, args, message)
 			}
 			a.registerCommand(node.(*SlashCommandNode).GetCommand(), doCommand)
+		} else if node.Type() == NodeTypeSched {
+			localNode := node
+			if node.(*SchedNode).controlType == NodeTypeSchedTypeCron {
+				job, _ := a.scheduler.Cron(node.(*SchedNode).cron).Do(func() {
+					localNode.Run(graph, map[string]string{})
+				})
+				a.jobsByNode[node.ID()] = job
+			} else if node.(*SchedNode).controlType == NodeTypeSchedTypeInterval {
+				job, _ := a.scheduler.Every(node.(*SchedNode).seconds).Do(func() {
+					localNode.Run(graph, map[string]string{})
+				})
+				a.jobsByNode[node.ID()] = job
+			}
 		}
 	}
 }
@@ -222,6 +251,10 @@ func (a *Actions) DeleteGraph(graphID string) error {
 			delete(a.graphsByEvent[node.(*EventNode).eventName], graph.id)
 		} else if node.Type() == "slash-command" {
 			a.unregisterCommand(node.(*SlashCommandNode).Command)
+		} else if node.Type() == "sched" {
+			job := a.jobsByNode[node.ID()]
+			a.scheduler.RemoveByReference(job)
+			delete(a.jobsByNode, node.ID())
 		}
 	}
 	delete(a.graphs, graph.id)
@@ -229,9 +262,13 @@ func (a *Actions) DeleteGraph(graphID string) error {
 }
 
 func (a *Actions) Start() error {
+	a.scheduler.StartAsync()
 	return nil
 }
 
 func (a *Actions) Shutdown() error {
+	if a.scheduler != nil {
+		a.scheduler.Stop()
+	}
 	return nil
 }

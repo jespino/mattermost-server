@@ -16,6 +16,8 @@ type NodeData struct {
 	IfComparison  string            `json:"ifComparison,omitempty"`
 	CaseValues    []string          `json:"caseValues,omitempty"`
 	RandomOptions int               `json:"randomOptions,omitempty"`
+	Cron          string            `json:"cron,omitempty"`
+	Seconds       int               `json:"seconds,omitempty"`
 }
 
 type Node interface {
