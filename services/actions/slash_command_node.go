@@ -131,8 +131,8 @@ func (s *SlashCommandNode) DoCommand(g *Graph, args *model.CommandArgs, message 
 	data["TriggerId"] = args.TriggerId
 
 	if !ok {
+		data["Output"] = "main"
 		s.Run(g, data)
-		data["Output"] = "0"
 		return &model.CommandResponse{}
 	}
 

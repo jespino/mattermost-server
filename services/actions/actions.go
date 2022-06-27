@@ -156,7 +156,7 @@ func (a *Actions) AddGraphData(g *GraphData) {
 				node.(*WebhookNode).id = nodeData.ID
 			}
 		case NodeTypeSlashCommand:
-			node = nodeData.Command
+			node = NewSlashCommandNode(nodeData.Command.Command, nodeData.Command.Description, nodeData.Command.Hint, nodeData.Command.Name)
 			if nodeData.ID != "" {
 				node.(*SlashCommandNode).id = nodeData.ID
 			} else {
