@@ -68,6 +68,7 @@ func New(logger *mlog.Logger, systemBus systembus.SystemBus, registerCommand fun
 		jobsByNode:        map[string]*gocron.Job{},
 		logger:            logger,
 	}
+	actions.scheduler.WaitForScheduleAll()
 	systemBus.Subscribe(EventToGraphSubscription(actions))
 	return actions
 }
@@ -245,7 +246,10 @@ func (a *Actions) AddGraph(graph *Graph) {
 func (a *Actions) DeleteGraph(graphID string) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	graph := a.graphs[graphID]
+	graph, ok := a.graphs[graphID]
+	if !ok {
+		return nil
+	}
 	for _, node := range graph.nodes {
 		if node.Type() == "event" {
 			delete(a.graphsByEvent[node.(*EventNode).eventName], graph.id)
