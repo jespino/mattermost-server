@@ -28,7 +28,7 @@ func NewLog(logger *mlog.Logger) *actions.ActionDefinition {
 		}
 
 		if data["template"] == "" {
-			logFunc(fmt.Sprintf("Data: %s", data))
+			logFunc(fmt.Sprintf("Data: %v", data))
 			return data, nil
 		}
 

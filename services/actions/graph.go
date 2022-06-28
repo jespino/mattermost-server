@@ -50,6 +50,10 @@ func (g *Graph) ToGraphData() *GraphData {
 			nodeData.IfComparison = node.(*FlowNode).ifComparison
 			nodeData.CaseValues = node.(*FlowNode).caseValues
 			nodeData.RandomOptions = node.(*FlowNode).randomOptions
+		case NodeTypeSched:
+			nodeData.ControlType = node.(*SchedNode).controlType
+			nodeData.Cron = node.(*SchedNode).cron
+			nodeData.Seconds = node.(*SchedNode).seconds
 		}
 		nodes = append(nodes, nodeData)
 	}
