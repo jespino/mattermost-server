@@ -117,12 +117,6 @@ LDFLAGS += -X "github.com/mattermost/mattermost-server/v6/model.BuildEnterpriseR
 LDFLAGS += -X "github.com/mattermost/mattermost-server/v6/model.BuildHashBoards=$(BUILD_HASH_BOARDS)"
 LDFLAGS += -X "github.com/mattermost/mattermost-server/v6/model.BuildBoards=$(BUILD_BOARDS)"
 
-GO_MAJOR_VERSION = $(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1)
-GO_MINOR_VERSION = $(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
-MINIMUM_SUPPORTED_GO_MAJOR_VERSION = 1
-MINIMUM_SUPPORTED_GO_MINOR_VERSION = 15
-GO_VERSION_VALIDATION_ERR_MSG = Golang version is not supported, please update to at least $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION).$(MINIMUM_SUPPORTED_GO_MINOR_VERSION)
-
 # GOOS/GOARCH of the build host, used to determine whether we're cross-compiling or not
 BUILDER_GOOS_GOARCH="$(shell $(GO) env GOOS)_$(shell $(GO) env GOARCH)"
 
@@ -144,24 +138,6 @@ TESTS=.
 TE_PACKAGES=$(shell $(GO) list ./...)
 
 TEMPLATES_DIR=templates
-
-# Plugins Packages
-PLUGIN_PACKAGES ?= mattermost-plugin-antivirus-v0.1.2
-PLUGIN_PACKAGES += mattermost-plugin-autolink-v1.2.2
-PLUGIN_PACKAGES += mattermost-plugin-aws-SNS-v1.2.0
-PLUGIN_PACKAGES += mattermost-plugin-calls-v0.7.0
-PLUGIN_PACKAGES += mattermost-plugin-channel-export-v1.0.0
-PLUGIN_PACKAGES += mattermost-plugin-custom-attributes-v1.3.0
-PLUGIN_PACKAGES += mattermost-plugin-github-v2.0.1
-PLUGIN_PACKAGES += mattermost-plugin-gitlab-v1.3.0
-PLUGIN_PACKAGES += mattermost-plugin-playbooks-v1.29.1
-PLUGIN_PACKAGES += mattermost-plugin-jenkins-v1.1.0
-PLUGIN_PACKAGES += mattermost-plugin-jira-v2.4.0
-PLUGIN_PACKAGES += mattermost-plugin-nps-v1.2.0
-PLUGIN_PACKAGES += mattermost-plugin-welcomebot-v1.2.0
-PLUGIN_PACKAGES += mattermost-plugin-zoom-v1.6.0
-PLUGIN_PACKAGES += focalboard-v7.1.0
-PLUGIN_PACKAGES += mattermost-plugin-apps-v1.1.0
 
 # Prepares the enterprise build if exists. The IGNORE stuff is a hack to get the Makefile to execute the commands outside a target
 ifeq ($(BUILD_ENTERPRISE_READY),true)
@@ -213,16 +189,6 @@ ifeq ($(RUN_SERVER_IN_BACKGROUND),true)
 	RUN_IN_BACKGROUND := &
 endif
 
-DOCKER_COMPOSE_OVERRIDE=
-ifneq ("$(wildcard ./docker-compose.override.yaml)","")
-  DOCKER_COMPOSE_OVERRIDE=-f docker-compose.override.yaml
-endif
-
-ifeq ($(M1_MAC),true)
-  $(info M1 detected, applying elasticsearch override)
-  DOCKER_COMPOSE_OVERRIDE := -f docker-compose.makefile.m1.yml $(DOCKER_COMPOSE_OVERRIDE)
-endif
-
 ifneq ($(DOCKER_SERVICES_OVERRIDE),true)
   ifeq (,$(findstring minio,$(ENABLED_DOCKER_SERVICES)))
     TEMP_DOCKER_SERVICES:=$(TEMP_DOCKER_SERVICES) minio
@@ -239,63 +205,7 @@ ifneq ($(DOCKER_SERVICES_OVERRIDE),true)
 endif
 
 start-docker: ## Starts the docker containers for local development.
-ifneq ($(IS_CI),false)
-	@echo CI Build: skipping docker start
-else ifeq ($(MM_NO_DOCKER),true)
-	@echo No Docker Enabled: skipping docker start
-else
-	@echo Starting docker containers
-
-	docker-compose rm start_dependencies
-	$(GO) run ./build/docker-compose-generator/main.go $(ENABLED_DOCKER_SERVICES) | docker-compose -f docker-compose.makefile.yml -f /dev/stdin $(DOCKER_COMPOSE_OVERRIDE) run -T --rm start_dependencies
-  ifneq (,$(findstring openldap,$(ENABLED_DOCKER_SERVICES)))
-	cat tests/${LDAP_DATA}-data.ldif | docker-compose -f docker-compose.makefile.yml $(DOCKER_COMPOSE_OVERRIDE) exec -T openldap bash -c 'ldapadd -x -D "cn=admin,dc=mm,dc=test,dc=com" -w mostest || true';
-  endif
-  ifneq (,$(findstring mysql-read-replica,$(ENABLED_DOCKER_SERVICES)))
-	./scripts/replica-mysql-config.sh
-  endif
-endif
-
-run-haserver:
-ifeq ($(BUILD_ENTERPRISE_READY),true)
-	@echo Starting mattermost in an HA topology '(3 node cluster)'
-
-	docker-compose -f docker-compose.yaml $(DOCKER_COMPOSE_OVERRIDE) up --remove-orphans haproxy
-endif
-
-stop-haserver:
-	@echo Stopping docker containers for HA topology
-	docker-compose stop
-
-stop-docker: ## Stops the docker containers for local development.
-ifeq ($(MM_NO_DOCKER),true)
-	@echo No Docker Enabled: skipping docker stop
-else
-	@echo Stopping docker containers
-
-	docker-compose stop
-endif
-
-clean-docker: ## Deletes the docker containers for local development.
-ifeq ($(MM_NO_DOCKER),true)
-	@echo No Docker Enabled: skipping docker clean
-else
-	@echo Removing docker containers
-
-	docker-compose down -v
-	docker-compose rm -v
-endif
-
-plugin-checker:
-	$(GO) run $(GOFLAGS) ./plugin/checker
-
-prepackaged-plugins: ## Populate the prepackaged-plugins directory
-	@echo Downloading prepackaged plugins
-	mkdir -p prepackaged_plugins
-	@cd prepackaged_plugins && for plugin_package in $(PLUGIN_PACKAGES) ; do \
-		curl -f -O -L https://plugins-store.test.mattermost.com/release/$$plugin_package.tar.gz; \
-		curl -f -O -L https://plugins-store.test.mattermost.com/release/$$plugin_package.tar.gz.sig; \
-	done
+	IS_CI=$(IS_CI) MM_NO_DOCKER=$(MM_NO_DOCKER) LDAP_DATA="$(LDAP_DATA)" ENABLED_DOCKER_SERVICES="$(ENABLED_DOCKER_SERVICES)" mage -v docker:start
 
 prepackaged-binaries: ## Populate the prepackaged-binaries to the bin directory
 ifeq ($(shell test -f bin/mmctl && printf "yes"),yes)
@@ -554,17 +464,6 @@ inject-test-data: # add test data to the local instance.
 	@echo Login with a regular account username=user-1 password=SampleUs@r-1
 	@echo ========================================================================
 
-validate-go-version: ## Validates the installed version of go against Mattermost's minimum requirement.
-	@if [ $(GO_MAJOR_VERSION) -gt $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION) ]; then \
-		exit 0 ;\
-	elif [ $(GO_MAJOR_VERSION) -lt $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION) ]; then \
-		echo '$(GO_VERSION_VALIDATION_ERR_MSG)';\
-		exit 1; \
-	elif [ $(GO_MINOR_VERSION) -lt $(MINIMUM_SUPPORTED_GO_MINOR_VERSION) ] ; then \
-		echo '$(GO_VERSION_VALIDATION_ERR_MSG)';\
-		exit 1; \
-	fi
-
 build-templates: ## Compile all mjml email templates
 	cd $(TEMPLATES_DIR) && $(MAKE) build
 
@@ -680,35 +579,6 @@ config-reset: ## Resets the config/config.json file to the default.
 diff-config: ## Compares default configuration between two mattermost versions
 	@./scripts/diff-config.sh
 
-clean: stop-docker ## Clean up everything except persistent server data.
-	@echo Cleaning
-
-	rm -Rf $(DIST_ROOT)
-	$(GO) clean $(GOFLAGS) -i ./...
-
-	cd $(BUILD_WEBAPP_DIR) && $(MAKE) clean
-
-	find . -type d -name data | xargs rm -rf
-	rm -rf logs
-
-	rm -f mattermost.log
-	rm -f mattermost.log.jsonl
-	rm -f npm-debug.log
-	rm -f .prepare-go
-	rm -f enterprise
-	rm -f cover.out
-	rm -f ecover.out
-	rm -f *.out
-	rm -f *.test
-	rm -f imports/imports.go
-	rm -f cmd/mattermost/cprofile*.out
-
-nuke: clean clean-docker ## Clean plus removes persistent server data.
-	@echo BOOM
-
-	rm -rf data
-	rm -f go.work go.work.sum
-
 setup-mac: ## Adds macOS hosts entries for Docker.
 	echo $$(boot2docker ip 2> /dev/null) dockerhost | sudo tee -a /etc/hosts
 
@@ -728,21 +598,6 @@ endif
 
 ifeq ($(BUILD_ENTERPRISE_READY),true)
 	cp $(BUILD_ENTERPRISE_DIR)/imports/imports.go imports/
-endif
-
-vet: ## Run mattermost go vet specific checks
-	$(GO) install github.com/mattermost/mattermost-govet/v2@new
-	@VET_CMD="-license -structuredLogging -inconsistentReceiverName -inconsistentReceiverName.ignore=session_serial_gen.go,team_member_serial_gen.go,user_serial_gen.go -emptyStrCmp -tFatal -configtelemetry -errorAssertions"; \
-	if ! [ -z "${MM_VET_OPENSPEC_PATH}" ] && [ -f "${MM_VET_OPENSPEC_PATH}" ]; then \
-		VET_CMD="$$VET_CMD -openApiSync -openApiSync.spec=$$MM_VET_OPENSPEC_PATH"; \
-	else \
-		echo "MM_VET_OPENSPEC_PATH not set or spec yaml path in it is incorrect. Skipping API check"; \
-	fi; \
-	$(GO) vet -vettool=$(GOBIN)/mattermost-govet $$VET_CMD ./...
-ifeq ($(BUILD_ENTERPRISE_READY),true)
-  ifneq ($(MM_NO_ENTERPRISE_LINT),true)
-	$(GO) vet -vettool=$(GOBIN)/mattermost-govet -enterpriseLicense -structuredLogging -tFatal ../enterprise/...
-  endif
 endif
 
 gen-serialized:	export LICENSE_HEADER:=$(LICENSE_HEADER)
