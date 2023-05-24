@@ -27,7 +27,9 @@ import (
 	"github.com/mattermost/mattermost-server/server/v8/platform/services/cache"
 	"github.com/mattermost/mattermost-server/server/v8/platform/services/searchengine"
 	"github.com/mattermost/mattermost-server/server/v8/platform/services/searchengine/bleveengine"
+	"github.com/mattermost/mattermost-server/server/v8/platform/services/systembus"
 	"github.com/mattermost/mattermost-server/server/v8/platform/shared/filestore"
+	"github.com/pkg/errors"
 )
 
 // PlatformService is the service for the platform related tasks. It is
@@ -96,6 +98,7 @@ type PlatformService struct {
 	sharedChannelService      SharedChannelServiceIFace
 
 	pluginEnv HookRunner
+	SystemBus *systembus.SystemBus
 }
 
 type HookRunner interface {
@@ -124,6 +127,12 @@ func New(sc ServiceConfig, options ...Option) (*PlatformService, error) {
 		},
 		licenseListeners:          map[string]func(*model.License, *model.License){},
 		additionalClusterHandlers: map[model.ClusterEvent]einterfaces.ClusterMessageHandler{},
+	}
+
+	var err error
+	ps.SystemBus, err = systembus.New()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize the system bus")
 	}
 
 	// Step 1: Cache provider.
@@ -233,7 +242,6 @@ func New(sc ServiceConfig, options ...Option) (*PlatformService, error) {
 		ps.filestore = backend
 	}
 
-	var err error
 	ps.Store, err = ps.newStore()
 	if err != nil {
 		return nil, fmt.Errorf("cannot create store: %w", err)
@@ -314,6 +322,9 @@ func New(sc ServiceConfig, options ...Option) (*PlatformService, error) {
 
 func (ps *PlatformService) Start() error {
 	ps.hubStart()
+	if err := ps.SystemBus.Start(); err != nil {
+		return errors.Wrap(err, "failed to start the system bus")
+	}
 
 	ps.configListenerId = ps.AddConfigListener(func(_, _ *model.Config) {
 		ps.regenerateClientConfig()
@@ -400,6 +411,7 @@ func (ps *PlatformService) TotalWebsocketConnections() int {
 
 func (ps *PlatformService) Shutdown() error {
 	ps.HubStop()
+	ps.SystemBus.Stop()
 
 	ps.RemoveLicenseListener(ps.licenseListenerId)
 

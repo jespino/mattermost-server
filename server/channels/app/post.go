@@ -24,6 +24,7 @@ import (
 	"github.com/mattermost/mattermost-server/server/v8/channels/store"
 	"github.com/mattermost/mattermost-server/server/v8/channels/store/sqlstore"
 	"github.com/mattermost/mattermost-server/server/v8/platform/services/cache"
+	"github.com/mattermost/mattermost-server/server/v8/platform/services/systembus"
 )
 
 const (
@@ -365,9 +366,15 @@ func (a *App) CreatePost(c request.CTX, post *model.Post, channel *model.Channel
 		}, plugin.MessageHasBeenPostedID)
 	})
 
-	if a.Metrics() != nil {
-		a.Metrics().IncrementPostCreate()
+	postData, err2 := json.Marshal(rpost)
+	if err2 != nil {
+		c.Logger().Warn("Unable to marshal the created post", mlog.String("post_id", post.Id), mlog.Err(err2))
 	}
+	a.Srv().Platform().SystemBus.Publish(systembus.PostCreatedSubject, postData)
+
+	// if a.Metrics() != nil {
+	// 	a.Metrics().IncrementPostCreate()
+	// }
 
 	if len(post.FileIds) > 0 {
 		if err = a.attachFilesToPost(post); err != nil {
