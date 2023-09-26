@@ -15,11 +15,15 @@ function mapStateToProps(state: GlobalState) {
     const pluggableId = getPluggableId(state);
     const pluginComponent = rhsPlugins.find((element: PluginComponent) => element.id === pluggableId);
     const pluginTitle = pluginComponent ? pluginComponent.title : '';
+    const goBack = pluginComponent ? pluginComponent.goBack : undefined;
+    const canGoBack = pluginComponent ? pluginComponent.canGoBack : undefined;
 
     return {
         showPluggable: Boolean(pluginComponent),
         pluggableId,
         title: pluginTitle,
+        goBack,
+        canGoBack,
     };
 }
 

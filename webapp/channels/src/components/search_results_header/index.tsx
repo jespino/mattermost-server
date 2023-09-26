@@ -18,11 +18,12 @@ import {RHSStates} from 'utils/constants';
 
 import type {GlobalState} from 'types/store/index.js';
 
-import SearchResultsHeader from './search_results_header';
+import SearchResultsHeader, {Props as OwnProps} from './search_results_header';
 
-function mapStateToProps(state: GlobalState) {
+function mapStateToProps(state: GlobalState, ownProps: OwnProps) {
     const previousRhsState = getPreviousRhsState(state);
-    const canGoBack = previousRhsState === RHSStates.CHANNEL_INFO ||
+    const canGoBack = ownProps.canGoBack ||
+        previousRhsState === RHSStates.CHANNEL_INFO ||
         previousRhsState === RHSStates.CHANNEL_MEMBERS ||
         previousRhsState === RHSStates.CHANNEL_FILES ||
         previousRhsState === RHSStates.PIN;

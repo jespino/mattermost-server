@@ -29,10 +29,11 @@ const BackButtonIcon = styled(LocalizedIcon)`
     font-size: 18px;
 `;
 
-type Props = {
+export type Props = {
     isExpanded: boolean;
     previousRhsState?: RhsState;
     canGoBack: boolean;
+    goBack?: () => void;
     children?: React.ReactNode;
     actions: {
         closeRightHandSide: () => void;
@@ -88,7 +89,7 @@ export default class SearchResultsHeader extends React.PureComponent<Props> {
                     {this.props.canGoBack && (
                         <BackButton
                             className='sidebar--right__back'
-                            onClick={() => this.props.actions.goBack()}
+                            onClick={this.props.goBack || this.props.actions.goBack}
                         >
                             <BackButtonIcon
                                 className='icon-arrow-back-ios'

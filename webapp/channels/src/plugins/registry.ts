@@ -903,7 +903,7 @@ export default class PluginRegistry {
     // - showRHSPlugin: the action to dispatch that will open the RHS.
     // - hideRHSPlugin: the action to dispatch that will close the RHS
     // - toggleRHSPlugin: the action to dispatch that will toggle the RHS
-    registerRightHandSidebarComponent = reArg(['component', 'title'], ({component, title}: {component: PluginComponent['component']; title: ReactResolvable}) => {
+    registerRightHandSidebarComponent = reArg(['component', 'title', 'canGoBack', 'goBack'], ({component, title, goBack, canGoBack}: {component: PluginComponent['component']; title: ReactResolvable, canGoBack?: () => boolean, goBack?: () => void}) => {
         const id = generateId();
 
         store.dispatch({
@@ -914,6 +914,8 @@ export default class PluginRegistry {
                 pluginId: this.id,
                 component,
                 title: resolveReactElement(title),
+                goBack,
+                canGoBack,
             },
         });
 

@@ -11,6 +11,8 @@ export type Props = {
     showPluggable: boolean;
     pluggableId: string;
     title: React.ReactNode;
+    goBack?: () => void;
+    canGoBack?: () => boolean;
 }
 
 export default class RhsPlugin extends React.PureComponent<Props> {
@@ -20,7 +22,10 @@ export default class RhsPlugin extends React.PureComponent<Props> {
                 id='rhsContainer'
                 className='sidebar-right__body'
             >
-                <SearchResultsHeader>
+                <SearchResultsHeader
+                    goBack={this.props.goBack}
+                    canGoBack={this.props.canGoBack ? this.props.canGoBack() : false}
+                >
                     {this.props.title}
                 </SearchResultsHeader>
                 {
