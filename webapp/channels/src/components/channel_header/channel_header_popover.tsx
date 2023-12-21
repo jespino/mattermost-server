@@ -1,21 +1,23 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import React, {memo, useState, useMemo, useCallback, useRef} from 'react';
-import {useSelector} from 'react-redux';
 import classNames from 'classnames';
+import React, {memo, useState, useMemo, useCallback, useRef} from 'react';
 import {Overlay} from 'react-bootstrap';
+import {useSelector} from 'react-redux';
 
 import type {UserProfile} from '@mattermost/types/users';
 
-import {handleFormattedTextClick} from 'utils/utils';
+import {getCurrentChannel} from 'mattermost-redux/selectors/entities/channels';
+import {getCurrentRelativeTeamUrl, getMyTeams} from 'mattermost-redux/selectors/entities/teams';
+
+import {getAnnouncementBarCount} from 'selectors/views/announcement_bar';
 
 import Markdown from 'components/markdown';
 import Popover from 'components/widgets/popover';
-import {getCurrentChannel} from 'mattermost-redux/selectors/entities/channels';
+
 import {Constants} from 'utils/constants';
-import {getCurrentRelativeTeamUrl, getMyTeams} from 'mattermost-redux/selectors/entities/teams';
-import {getAnnouncementBarCount} from 'selectors/views/announcement_bar';
+import {handleFormattedTextClick} from 'utils/utils';
 
 const headerMarkdownOptionsBase = {singleline: true, mentionHighlight: false, atMentions: true};
 const popoverMarkdownOptionsBase = {singleline: false, mentionHighlight: false, atMentions: true};
@@ -133,7 +135,7 @@ const ChannelHeaderText = ({
                 />
             </span>
         </>
-    )
-}
+    );
+};
 
 export default memo(ChannelHeaderText);

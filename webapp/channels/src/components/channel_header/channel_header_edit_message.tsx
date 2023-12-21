@@ -2,21 +2,22 @@
 // See LICENSE.txt for license information.
 
 import React, {memo, useCallback, useRef} from 'react';
+import type {Overlay} from 'react-bootstrap';
+import {useIntl, FormattedMessage} from 'react-intl';
 import {useSelector, useDispatch} from 'react-redux';
-import {useIntl} from 'react-intl';
-import {Overlay} from 'react-bootstrap';
-import {FormattedMessage} from 'react-intl';
 
 import type {UserProfile} from '@mattermost/types/users';
 
 import {Permissions} from 'mattermost-redux/constants';
-import EditChannelHeaderModal from 'components/edit_channel_header_modal';
+import {getCurrentChannel} from 'mattermost-redux/selectors/entities/channels';
+import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
+
 import {openModal} from 'actions/views/modals';
 
+import EditChannelHeaderModal from 'components/edit_channel_header_modal';
 import ChannelPermissionGate from 'components/permissions_gates/channel_permission_gate';
-import {getCurrentChannel} from 'mattermost-redux/selectors/entities/channels';
+
 import {Constants, ModalIdentifiers} from 'utils/constants';
-import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
 
 type Props = {
     dmUser?: UserProfile;
@@ -25,7 +26,7 @@ type Props = {
 const ChannelHeaderEditMessage = ({
     dmUser,
 }: Props) => {
-    const teamId = useSelector(getCurrentTeamId)
+    const teamId = useSelector(getCurrentTeamId);
     const intl = useIntl();
     const dispatch = useDispatch();
     const channel = useSelector(getCurrentChannel) || {};
@@ -50,7 +51,7 @@ const ChannelHeaderEditMessage = ({
     }, [channel]);
 
     if (channelIsArchived) {
-        return null
+        return null;
     }
 
     if (isDirect || isGroup) {
@@ -94,6 +95,6 @@ const ChannelHeaderEditMessage = ({
             </button>
         </ChannelPermissionGate>
     );
-}
+};
 
 export default memo(ChannelHeaderEditMessage);

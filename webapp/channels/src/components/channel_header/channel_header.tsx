@@ -2,15 +2,15 @@
 // See LICENSE.txt for license information.
 
 import React, {memo, useEffect, useCallback} from 'react';
-import {useSelector, useDispatch} from 'react-redux';
 import {FormattedMessage, useIntl} from 'react-intl';
+import {useSelector, useDispatch} from 'react-redux';
 
+import {updateChannelNotifyProps} from 'mattermost-redux/actions/channels';
+import {getCustomEmojisInText} from 'mattermost-redux/actions/emojis';
+import {General} from 'mattermost-redux/constants';
 import {getCurrentChannel, isCurrentChannelMuted, getMyCurrentChannelMembership} from 'mattermost-redux/selectors/entities/channels';
 import {getCurrentUser, getUser, makeGetProfilesInChannel} from 'mattermost-redux/selectors/entities/users';
-import {getCustomEmojisInText} from 'mattermost-redux/actions/emojis';
-import {updateChannelNotifyProps} from 'mattermost-redux/actions/channels';
 import {getUserIdFromChannelName} from 'mattermost-redux/utils/channel_utils';
-import {General} from 'mattermost-redux/constants';
 
 import OverlayTrigger from 'components/overlay_trigger';
 import Tooltip from 'components/tooltip';
@@ -19,10 +19,11 @@ import CallButton from 'plugins/call_button';
 import ChannelHeaderPlug from 'plugins/channel_header_plug';
 import {Constants, NotificationLevels} from 'utils/constants';
 import {isEmptyObject} from 'utils/utils';
+
 import type {GlobalState} from 'types/store';
 
-import ChannelHeaderTitle from './channel_header_title';
 import ChannelHeaderText from './channel_header_text';
+import ChannelHeaderTitle from './channel_header_title';
 import ChannelInfoButton from './channel_info_button';
 
 const ChannelHeader = () => {
@@ -35,7 +36,7 @@ const ChannelHeader = () => {
             return getUser(state, dmUserId);
         }
         return undefined;
-    })
+    });
     const doGetProfilesInChannel = makeGetProfilesInChannel();
 
     const gmMembers = useSelector((state: GlobalState) => {
@@ -62,7 +63,7 @@ const ChannelHeader = () => {
         dispatch(updateChannelNotifyProps(currentUser.id, channel.id, options));
     }, [channel, channelMember, currentUser]);
 
-    const ariaLabelChannelHeader = intl.formatMessage({id:'accessibility.sections.channelHeader', defaultMessage: 'channel header region'});
+    const ariaLabelChannelHeader = intl.formatMessage({id: 'accessibility.sections.channelHeader', defaultMessage: 'channel header region'});
 
     if (isEmptyObject(channel) ||
         isEmptyObject(channelMember) ||
@@ -74,7 +75,6 @@ const ChannelHeader = () => {
             <div className='channel-header'/>
         );
     }
-
 
     const channelMutedTooltip = (
         <Tooltip id='channelMutedTooltip'>
@@ -138,6 +138,6 @@ const ChannelHeader = () => {
             </div>
         </div>
     );
-}
+};
 
 export default memo(ChannelHeader);

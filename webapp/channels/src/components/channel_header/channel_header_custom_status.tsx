@@ -3,9 +3,9 @@
 
 import React, {memo} from 'react';
 import {useSelector} from 'react-redux';
-import type {UserCustomStatus} from '@mattermost/types/users';
 
-import type {UserProfile} from '@mattermost/types/users';
+import type {UserCustomStatus, UserProfile} from '@mattermost/types/users';
+
 import {isCustomStatusEnabled, isCustomStatusExpired} from 'selectors/views/custom_status';
 
 import CustomStatusEmoji from 'components/custom_status/custom_status_emoji';
@@ -44,7 +44,7 @@ const ChannelHeaderCustomStatus = ({
             />
         </div>
     );
-}
+};
 
 export default memo(ChannelHeaderCustomStatus);
 

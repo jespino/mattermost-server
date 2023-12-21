@@ -1,31 +1,32 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import React, {ReactNode, memo, useCallback} from 'react';
-import {useSelector, useDispatch} from 'react-redux';
 import classNames from 'classnames';
+import React, {memo, useCallback} from 'react';
+import type {ReactNode} from 'react';
 import {FormattedMessage} from 'react-intl';
-import type {UserCustomStatus} from '@mattermost/types/users';
+import {useSelector, useDispatch} from 'react-redux';
 
 import type {UserProfile} from '@mattermost/types/users';
 
-import {getRhsState} from 'selectors/rhs';
-import {isFileAttachmentsEnabled as isFileAttachmentsEnabledCheck} from 'utils/file_utils';
+import {getCurrentChannel, getCurrentChannelStats} from 'mattermost-redux/selectors/entities/channels';
+import {getConfig} from 'mattermost-redux/selectors/entities/general';
+
 import {
     showPinnedPosts,
     showChannelFiles,
     closeRightHandSide,
 } from 'actions/views/rhs';
+import {getRhsState} from 'selectors/rhs';
 
-import {getCurrentChannel, getCurrentChannelStats} from 'mattermost-redux/selectors/entities/channels';
 import {Constants, RHSStates} from 'utils/constants';
-import {getConfig} from 'mattermost-redux/selectors/entities/general';
+import {isFileAttachmentsEnabled as isFileAttachmentsEnabledCheck} from 'utils/file_utils';
 
-import HeaderIconWrapper from './components/header_icon_wrapper';
-import ChannelHeaderMembersButton from './channel_header_members_button';
 import ChannelHeaderDmStatus from './channel_header_dm_status';
 import ChannelHeaderEditMessage from './channel_header_edit_message';
+import ChannelHeaderMembersButton from './channel_header_members_button';
 import ChannelHeaderPopover from './channel_header_popover';
+import HeaderIconWrapper from './components/header_icon_wrapper';
 
 type Props = {
     dmUser?: UserProfile;
@@ -183,6 +184,6 @@ const ChannelHeaderText = ({
         );
     }
     return headerTextContainer;
-}
+};
 
 export default memo(ChannelHeaderText);
