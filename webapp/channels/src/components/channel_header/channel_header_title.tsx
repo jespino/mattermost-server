@@ -1,20 +1,25 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import React, {ReactNode, memo, useState} from 'react';
-import {useSelector} from 'react-redux';
+import type {ReactNode} from 'react';
+import React, {memo, useState} from 'react';
 import {useIntl} from 'react-intl';
+import {useSelector} from 'react-redux';
+
+import type {UserProfile} from '@mattermost/types/users';
+
+import {getCurrentChannel} from 'mattermost-redux/selectors/entities/channels';
+
+import {ChannelHeaderDropdown} from 'components/channel_header_dropdown';
+import SharedChannelIndicator from 'components/shared_channel_indicator';
 import ArchiveIcon from 'components/widgets/icons/archive_icon';
 import MenuWrapper from 'components/widgets/menu/menu_wrapper';
 import BotTag from 'components/widgets/tag/bot_tag';
-import SharedChannelIndicator from 'components/shared_channel_indicator';
-import {ChannelHeaderDropdown} from 'components/channel_header_dropdown';
-import type {UserProfile} from '@mattermost/types/users';
-import {getCurrentChannel} from 'mattermost-redux/selectors/entities/channels';
+
 import {Constants} from 'utils/constants';
 
-import ChannelHeaderTitleFavorite from './channel_header_title_favorite';
 import ChannelHeaderTitleDirect from './channel_header_title_direct';
+import ChannelHeaderTitleFavorite from './channel_header_title_favorite';
 import ChannelHeaderTitleGroup from './channel_header_title_group';
 
 type Props = {
@@ -26,23 +31,21 @@ const ChannelHeaderTitle = ({
     dmUser,
     gmMembers,
 }: Props) => {
-    const [titleMenuOpen, setTitleMenuOpen] = useState(false)
+    const [titleMenuOpen, setTitleMenuOpen] = useState(false);
     const intl = useIntl();
+    const channel = useSelector(getCurrentChannel);
 
-    const channel = useSelector(getCurrentChannel) || {};
+    if (!channel) {
+        return null;
+    }
+
     const isDirect = (channel.type === Constants.DM_CHANNEL);
     const isGroup = (channel.type === Constants.GM_CHANNEL);
     const channelIsArchived = channel.delete_at !== 0;
 
-    const archivedIcon = channelIsArchived ? <ArchiveIcon className='icon icon__archive icon channel-header-archived-icon svg-text-color'/> : null;
-
-    let channelTitle: ReactNode = channel.display_name;
-    if (isDirect) {
-        channelTitle = <ChannelHeaderTitleDirect dmUser={dmUser}/>
-    }
-
-    if (isGroup) {
-        channelTitle = <ChannelHeaderTitleGroup gmMembers={gmMembers}/>
+    let archivedIcon: React.ReactNode = null;
+    if (channelIsArchived) {
+        archivedIcon = <ArchiveIcon className='icon icon__archive icon channel-header-archived-icon svg-text-color'/>;
     }
 
     let sharedIcon = null;
@@ -55,6 +58,14 @@ const ChannelHeaderTitle = ({
             />
         );
     }
+
+    let channelTitle: ReactNode = channel.display_name;
+    if (isDirect) {
+        channelTitle = <ChannelHeaderTitleDirect dmUser={dmUser}/>;
+    } else if (isGroup) {
+        channelTitle = <ChannelHeaderTitleGroup gmMembers={gmMembers}/>;
+    }
+
     if (isDirect && dmUser?.is_bot) {
         return (
             <div

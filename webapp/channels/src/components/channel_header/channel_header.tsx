@@ -21,9 +21,9 @@ import {Constants, NotificationLevels} from 'utils/constants';
 import {isEmptyObject} from 'utils/utils';
 import type {GlobalState} from 'types/store';
 
-import ChannelInfoButton from './channel_info_button';
 import ChannelHeaderTitle from './channel_header_title';
 import ChannelHeaderText from './channel_header_text';
+import ChannelInfoButton from './channel_info_button';
 
 const ChannelHeader = () => {
     const intl = useIntl();
