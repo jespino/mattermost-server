@@ -352,6 +352,16 @@ func (a *App) CreateOAuthUser(c request.CTX, service string, userData io.Reader,
 		return nil, model.NewAppError("CreateOAuthUser", "api.user.create_user.disabled.app_error", nil, "", http.StatusNotImplemented)
 	}
 
+	if a.Channels().License() == nil {
+		usersCount, appErr := a.Srv().Store().User().Count(model.UserCountOptions{})
+		if appErr != nil {
+			return nil, model.NewAppError("CreateOAuthUser", "app.limits.get_user_limits.user_count.store_error", nil, "", http.StatusNotImplemented)
+		}
+		if usersCount > 300 {
+			return nil, model.NewAppError("CreateOAuthUser", "api.user.create_user.not-licensed.app_error", nil, "", http.StatusNotImplemented)
+		}
+	}
+
 	provider, e := a.getSSOProvider(service)
 	if e != nil {
 		return nil, e
