@@ -12,6 +12,7 @@ import OverlayTrigger from 'components/overlay_trigger';
 import type {BaseOverlayTrigger} from 'components/overlay_trigger';
 import ProfilePopover from 'components/profile_popover';
 import SharedUserIndicator from 'components/shared_user_indicator';
+import Tag from 'components/widgets/tag/tag';
 import BotTag from 'components/widgets/tag/bot_tag';
 import GuestTag from 'components/widgets/tag/guest_tag';
 
@@ -154,6 +155,11 @@ export default class UserProfile extends PureComponent<Props> {
                     </button>
                 </OverlayTrigger>
                 {sharedIcon}
+                {(user && user.badge) && (<Tag
+                    className='user-popover__role'
+                    size={'sm'}
+                    text={user.badge}
+                />)}
                 {(user && user.is_bot) && <BotTag/>}
                 {(user && isGuest(user.roles)) && <GuestTag/>}
             </>

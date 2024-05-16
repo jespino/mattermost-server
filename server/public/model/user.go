@@ -82,6 +82,7 @@ type User struct {
 	AuthData               *string   `json:"auth_data,omitempty"`
 	AuthService            string    `json:"auth_service"`
 	Email                  string    `json:"email"`
+	Badge                  string    `json:"badge"`
 	EmailVerified          bool      `json:"email_verified,omitempty"`
 	Nickname               string    `json:"nickname"`
 	FirstName              string    `json:"first_name"`
@@ -648,6 +649,7 @@ func (u *User) Sanitize(options map[string]bool) {
 	if len(options) != 0 && !options["authservice"] {
 		u.AuthService = ""
 	}
+	u.Badge = "Organización"
 }
 
 // Remove any input data from the user object that is not user controlled

@@ -25,6 +25,7 @@ import TeamSelectorModal from 'components/team_selector_modal';
 import AdminHeader from 'components/widgets/admin_console/admin_header';
 import AdminPanel from 'components/widgets/admin_console/admin_panel';
 import AtIcon from 'components/widgets/icons/at_icon';
+import FlagIcon from 'components/widgets/icons/flag_icon';
 import EmailIcon from 'components/widgets/icons/email_icon';
 import SheidOutlineIcon from 'components/widgets/icons/shield_outline_icon';
 import LoadingSpinner from 'components/widgets/loading/loading_spinner';
@@ -45,6 +46,7 @@ export type Props = PropsFromRedux & RouteComponentProps<Params> & WrappedCompon
 export type State = {
     user?: UserProfile;
     emailField: string;
+    badgeField: string;
     isLoading: boolean;
     error?: string | null;
     isSaveNeeded: boolean;
@@ -62,6 +64,7 @@ export class SystemUserDetail extends PureComponent<Props, State> {
         super(props);
         this.state = {
             emailField: '',
+            badgeField: '',
             isLoading: false,
             error: null,
             isSaveNeeded: false,
@@ -84,6 +87,7 @@ export class SystemUserDetail extends PureComponent<Props, State> {
                 this.setState({
                     user: data,
                     emailField: data.email, // Set emailField to the email of the user for editing purposes
+                    badgeField: data.badge, // Set emailField to the email of the user for editing purposes
                     isLoading: false,
                 });
             } else {
@@ -203,6 +207,22 @@ export class SystemUserDetail extends PureComponent<Props, State> {
         this.props.setNavigationBlocked(didEmailChanged);
     };
 
+    handleBadgeChange = (event: ChangeEvent<HTMLInputElement>) => {
+        if (!this.state.user) {
+            return;
+        }
+
+        const {target: {value}} = event;
+
+        const didBadgeChanged = value !== this.state.user.badge;
+        this.setState({
+            badgeField: value,
+            isSaveNeeded: didBadgeChanged,
+        });
+
+        this.props.setNavigationBlocked(didBadgeChanged);
+    };
+
     handleSubmit = async (event: MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
 
@@ -210,7 +230,7 @@ export class SystemUserDetail extends PureComponent<Props, State> {
             return;
         }
 
-        if (this.state.user.email === this.state.emailField) {
+        if (this.state.user.email === this.state.emailField && this.state.user.badge === this.state.badgeField) {
             return;
         }
 
@@ -219,7 +239,7 @@ export class SystemUserDetail extends PureComponent<Props, State> {
             return;
         }
 
-        const updatedUser = Object.assign({}, this.state.user, {email: this.state.emailField.trim().toLowerCase()});
+        const updatedUser = Object.assign({}, this.state.user, {email: this.state.emailField.trim().toLowerCase(), badge: this.state.badgeField.trim()});
 
         this.setState({
             error: null,
@@ -232,6 +252,7 @@ export class SystemUserDetail extends PureComponent<Props, State> {
                 this.setState({
                     user: data,
                     emailField: data.email,
+                    badgeField: data.badge,
                     error: null,
                     isSaving: false,
                     isSaveNeeded: false,
@@ -330,6 +351,20 @@ export class SystemUserDetail extends PureComponent<Props, State> {
                                         />
                                         <AtIcon/>
                                         <span>{this.state?.user?.username}</span>
+                                    </label>
+                                    <label>
+                                        <FormattedMessage
+                                            id='admin.userManagement.userDetail.badge'
+                                            defaultMessage='Badge'
+                                        />
+                                        <FlagIcon/>
+                                        <input
+                                            className='form-control'
+                                            type='text'
+                                            value={this.state.badgeField}
+                                            onChange={this.handleBadgeChange}
+                                            disabled={this.state.error !== null || this.state.isSaving}
+                                        />
                                     </label>
                                     <label>
                                         <FormattedMessage

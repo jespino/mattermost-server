@@ -22,6 +22,7 @@ import type {GlobalState} from 'types/store';
 
 type Props = {
     isBot: boolean;
+    userBadge?: string;
     roles: string;
     username: string;
     returnFocus: () => void;
@@ -54,6 +55,7 @@ function getIsChannelAdmin(state: GlobalState, userId: string, channelId?: strin
 
 const ProfilePopoverTitle = ({
     isBot,
+    userBadge,
     roles,
     username,
     returnFocus,
@@ -127,6 +129,13 @@ const ProfilePopoverTitle = ({
         <div className={titleClassName}>
             <span data-testid={`profilePopoverTitle_${username}`}>
                 {roleTitle}
+                {userBadge && (
+                    <Tag
+                        className='user-popover__role'
+                        size={'sm'}
+                        text={userBadge}
+                    />
+                )}
                 <button
                     ref={closeButtonRef}
                     className='user-popover__close'
