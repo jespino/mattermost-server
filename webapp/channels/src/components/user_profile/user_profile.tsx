@@ -89,6 +89,10 @@ export default function UserProfile({
             />
             }
             {(user && user.is_bot) && <BotTag/>}
+            {(user && user.badge) && <Tag
+                size={'xs'}
+                text={user.badge}
+            />}
             {(user && isGuest(user.roles)) && <GuestTag/>}
         </>
     );

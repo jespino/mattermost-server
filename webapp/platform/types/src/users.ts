@@ -36,6 +36,7 @@ export type UserProfile = {
     update_at: number;
     delete_at: number;
     username: string;
+    badge: string;
     password: string;
     auth_service: string;
     email: string;

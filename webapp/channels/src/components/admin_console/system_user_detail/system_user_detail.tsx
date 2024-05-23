@@ -87,9 +87,11 @@ export class SystemUserDetail extends PureComponent<Props, State> {
                 this.setState({
                     user: data,
                     emailField: data.email, // Set emailField to the email of the user for editing purposes
-                    badgeField: data.badge, // Set emailField to the email of the user for editing purposes
+                    badgeField: data.badge, // Set badgeField to the badge of the user for editing purposes
                     isLoading: false,
                 });
+                console.log(this.state);
+                console.log(data);
             } else {
                 throw new Error(error ? error.message : 'Unknown error');
             }

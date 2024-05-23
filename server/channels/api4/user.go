@@ -913,6 +913,9 @@ func getUsers(c *Context, w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		profiles, appErr = c.App.GetUsersPage(userGetOptions, c.IsSystemAdmin())
+		for _, p := range profiles {
+			c.Logger.Debug("getUsers", mlog.String("username", p.Username), mlog.String("badge", p.Badge))
+		}
 	}
 
 	if appErr != nil {

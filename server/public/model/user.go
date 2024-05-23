@@ -172,6 +172,7 @@ type UserPatch struct {
 	Locale      *string   `json:"locale"`
 	Timezone    StringMap `json:"timezone"`
 	RemoteId    *string   `json:"remote_id"`
+	Badge       *string   `json:"badge"`
 }
 
 func (u *UserPatch) Auditable() map[string]interface{} {
@@ -622,11 +623,15 @@ func (u *User) Patch(patch *UserPatch) {
 	if patch.RemoteId != nil {
 		u.RemoteId = patch.RemoteId
 	}
+
+	if patch.Badge != nil {
+		u.Badge = *patch.Badge
+	}
 }
 
 // Generate a valid strong etag so the browser can cache the results
 func (u *User) Etag(showFullName, showEmail bool) string {
-	return Etag(u.Id, u.UpdateAt, u.TermsOfServiceId, u.TermsOfServiceCreateAt, showFullName, showEmail, u.BotLastIconUpdate)
+	return Etag(u.Id, u.UpdateAt, u.TermsOfServiceId, u.TermsOfServiceCreateAt, showFullName, showEmail, u.BotLastIconUpdate, u.Badge)
 }
 
 // Remove any private data from the user object
@@ -649,7 +654,6 @@ func (u *User) Sanitize(options map[string]bool) {
 	if len(options) != 0 && !options["authservice"] {
 		u.AuthService = ""
 	}
-	u.Badge = "Organización"
 }
 
 // Remove any input data from the user object that is not user controlled
