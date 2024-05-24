@@ -46,7 +46,8 @@ const MoonIcon = styled(Moon)`
         height: 20px;
     }
     svg path {
-        fill: rgba(var(--center-channel-color-rgb), 0.76);
+        stroke: rgba(var(--center-channel-color-rgb), 0.75);
+        fill: transparent;
     }
 `
 
