@@ -1,6 +1,7 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
+import {DateTime} from 'luxon';
 import React from 'react';
 import type {ReactNode} from 'react';
 import {FormattedMessage, useIntl} from 'react-intl';
@@ -8,6 +9,7 @@ import {FormattedMessage, useIntl} from 'react-intl';
 import type {UserProfile} from '@mattermost/types/users';
 
 import {isGuest} from 'mattermost-redux/utils/user_utils';
+import {getTimezoneForUserProfile} from 'mattermost-redux/selectors/entities/timezone';
 
 import CustomStatusEmoji from 'components/custom_status/custom_status_emoji';
 import SharedUserIndicator from 'components/shared_user_indicator';
@@ -16,6 +18,7 @@ import BotTag from 'components/widgets/tag/bot_tag';
 import GuestTag from 'components/widgets/tag/guest_tag';
 import Tag from 'components/widgets/tag/tag';
 import Avatar from 'components/widgets/users/avatar';
+import Timestamp from 'components/timestamp';
 
 import {Constants} from 'utils/constants';
 import * as Utils from 'utils/utils';
@@ -40,6 +43,7 @@ const AtMentionSuggestion = React.forwardRef<HTMLDivElement, SuggestionProps<Ite
     const intl = useIntl();
 
     let itemname: string;
+    let localTime: ReactNode = null;
     let description: ReactNode;
     let icon: JSX.Element;
     let customStatus: ReactNode;
@@ -128,6 +132,27 @@ const AtMentionSuggestion = React.forwardRef<HTMLDivElement, SuggestionProps<Ite
             </span>
         );
 
+        const itemTimezone = getTimezoneForUserProfile(item);
+        const itemUserDate = DateTime.local().setZone(itemTimezone.useAutomaticTimezone ? itemTimezone.automaticTimezone : itemTimezone.manualTimezone);
+
+        if (!item.isCurrentUser && (itemUserDate.get('hour') >= Constants.REMOTE_USERS_HOUR_LIMIT_END_OF_THE_DAY || itemUserDate.get('hour') < Constants.REMOTE_USERS_HOUR_LIMIT_BEGINNING_OF_THE_DAY)) {
+            localTime = (
+                <div>
+                    <i className='icon-clock-outline'/>
+                    <Timestamp
+                        useRelative={false}
+                        value={itemUserDate.toMillis()}
+                        useDate={false}
+                        userTimezone={itemTimezone}
+                        useTime={{
+                            hour: 'numeric',
+                            minute: 'numeric',
+                        }}
+                    />
+                </div>
+            )
+        }
+
         customStatus = (
             <CustomStatusEmoji
                 showTooltip={true}
@@ -190,6 +215,7 @@ const AtMentionSuggestion = React.forwardRef<HTMLDivElement, SuggestionProps<Ite
                 {customStatus}
                 {sharedIcon}
                 {isGuest(item.roles) && <GuestTag/>}
+                {localTime}
             </span>
             {countBadge}
         </SuggestionContainer>
