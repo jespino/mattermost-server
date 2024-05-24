@@ -5,6 +5,7 @@ import {DateTime} from 'luxon';
 import React from 'react';
 import type {ReactNode} from 'react';
 import {FormattedMessage, useIntl} from 'react-intl';
+import styled from 'styled-components';
 
 import type {UserProfile} from '@mattermost/types/users';
 
@@ -19,6 +20,8 @@ import GuestTag from 'components/widgets/tag/guest_tag';
 import Tag from 'components/widgets/tag/tag';
 import Avatar from 'components/widgets/users/avatar';
 import Timestamp from 'components/timestamp';
+import Moon from 'components/common/svg_images_components/moon_svg';
+import WithTooltip from 'components/with_tooltip';
 
 import {Constants} from 'utils/constants';
 import * as Utils from 'utils/utils';
@@ -36,6 +39,16 @@ export interface Item extends UserProfile {
 interface Group extends Item {
     member_count: number;
 }
+
+const MoonIcon = styled(Moon)`
+    svg {
+        width: 20px;
+        height: 20px;
+    }
+    svg path {
+        fill: rgba(var(--center-channel-color-rgb), 0.76);
+    }
+`
 
 const AtMentionSuggestion = React.forwardRef<HTMLDivElement, SuggestionProps<Item>>((props, ref) => {
     const {item} = props;
@@ -138,17 +151,26 @@ const AtMentionSuggestion = React.forwardRef<HTMLDivElement, SuggestionProps<Ite
         if (!item.isCurrentUser && (itemUserDate.get('hour') >= Constants.REMOTE_USERS_HOUR_LIMIT_END_OF_THE_DAY || itemUserDate.get('hour') < Constants.REMOTE_USERS_HOUR_LIMIT_BEGINNING_OF_THE_DAY)) {
             localTime = (
                 <div>
-                    <i className='icon-clock-outline'/>
-                    <Timestamp
-                        useRelative={false}
-                        value={itemUserDate.toMillis()}
-                        useDate={false}
-                        userTimezone={itemTimezone}
-                        useTime={{
-                            hour: 'numeric',
-                            minute: 'numeric',
-                        }}
-                    />
+                    <WithTooltip
+                        id={'localTimeTooltip'}
+                        title={
+                            <Timestamp
+                                useRelative={false}
+                                value={itemUserDate.toMillis()}
+                                useDate={false}
+                                userTimezone={itemTimezone}
+                                useTime={{
+                                    hour: 'numeric',
+                                    minute: 'numeric',
+                                }}
+                            />
+                        }
+                        placement='right'
+                    >
+                        <div>
+                            <MoonIcon/>
+                        </div>
+                    </WithTooltip>
                 </div>
             )
         }
