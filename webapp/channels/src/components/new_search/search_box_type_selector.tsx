@@ -68,6 +68,15 @@ const SearchTypeSelector = ({searchType, setSearchType}: Props) => {
                     defaultMessage='Files'
                 />
             </SearchTypeItem>
+            <SearchTypeItem
+                selected={searchType === 'omnisearch'}
+                onClick={() => setSearchType('omnisearch')}
+            >
+                <FormattedMessage
+                    id='search_bar.usage.search_type_omnisearch'
+                    defaultMessage='OmniSearch'
+                />
+            </SearchTypeItem>
             {SearchPluginButtons.map(({component, pluginId}: any) => {
                 const Component = component as React.ComponentType;
                 return (

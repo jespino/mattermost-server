@@ -5,12 +5,13 @@ import {connect} from 'react-redux';
 
 import type {FileSearchResultItem} from '@mattermost/types/files';
 import type {Post} from '@mattermost/types/posts';
+import type {OmniSearchResult} from '@mattermost/types/search';
 
 import {getChannel} from 'mattermost-redux/selectors/entities/channels';
 import {getSearchFilesResults} from 'mattermost-redux/selectors/entities/files';
 import {getConfig} from 'mattermost-redux/selectors/entities/general';
 import {getSearchMatches, getSearchResults} from 'mattermost-redux/selectors/entities/posts';
-import {getCurrentSearchForCurrentTeam} from 'mattermost-redux/selectors/entities/search';
+import {getCurrentSearchForCurrentTeam, getOmniSearchResults} from 'mattermost-redux/selectors/entities/search';
 import {getCurrentTeam} from 'mattermost-redux/selectors/entities/teams';
 
 import {
@@ -30,6 +31,8 @@ function makeMapStateToProps() {
     let results: Post[];
     let fileResults: FileSearchResultItem[];
     let files: FileSearchResultItem[] = [];
+    let omniSearchResults: OmniSearchResult[] = [];
+    let omniSearches: OmniSearchResult[] = [];
     let posts: Post[];
 
     return function mapStateToProps(state: GlobalState) {
@@ -74,6 +77,21 @@ function makeMapStateToProps() {
             });
         }
 
+        const newOmniSearchResults = getOmniSearchResults(state);
+
+        // Cache omnisearches
+        if (newOmniSearchResults && newOmniSearchResults !== omniSearchResults) {
+            omniSearchResults = newOmniSearchResults;
+
+            omniSearches = [];
+            omniSearchResults.forEach((omniSearch) => {
+                if (!omniSearch) {
+                    return;
+                }
+                omniSearches.push(omniSearch);
+            });
+        }
+
         // this is basically a hack to make ts compiler happy
         // add correct type when it is known what exactly is returned from the function
         const currentSearch = getCurrentSearchForCurrentTeam(state) as unknown as Record<string, any> || {};
@@ -82,6 +100,7 @@ function makeMapStateToProps() {
         return {
             results: posts,
             fileResults: files,
+            omniSearchResults: omniSearches,
             matches: getSearchMatches(state),
             searchTerms: getSearchResultsTerms(state),
             isSearchingTerm: getIsSearchingTerm(state),
@@ -90,6 +109,7 @@ function makeMapStateToProps() {
             isSearchGettingMore: getIsSearchGettingMore(state),
             isSearchAtEnd: currentSearch.isEnd,
             isSearchFilesAtEnd: currentSearch.isFilesEnd,
+            isOmniSearchAtEnd: currentSearch.isOmniSearchAtEnd,
             searchPage: currentSearch.params?.page,
             currentTeamName,
         };

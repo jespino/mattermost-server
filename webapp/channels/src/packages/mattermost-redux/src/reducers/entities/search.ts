@@ -54,6 +54,22 @@ function fileResults(state: string[] = [], action: AnyAction) {
     }
 }
 
+function omniSearchResults(state: string[] = [], action: AnyAction) {
+    switch (action.type) {
+    case SearchTypes.RECEIVED_OMNISEARCH_RESULTS: {
+        if (action.isGettingMore) {
+            return [...new Set(state.concat(action.data))];
+        }
+        return action.data;
+    }
+    case UserTypes.LOGOUT_SUCCESS:
+        return [];
+
+    default:
+        return state;
+    }
+}
+
 function matches(state: Record<string, string[]> = {}, action: AnyAction) {
     switch (action.type) {
     case SearchTypes.RECEIVED_SEARCH_POSTS:
@@ -281,6 +297,9 @@ export default combineReducers({
 
     // An ordered array with files ids from the search results
     fileResults,
+
+    // An array of omnisearch results
+    omniSearchResults,
 
     // Object where every key is a post id mapping to an array of matched words in that post
     matches,

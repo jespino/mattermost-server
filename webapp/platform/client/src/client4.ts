@@ -27,6 +27,7 @@ import type {
 } from '@mattermost/types/channels';
 import type {Options, StatusOK, ClientResponse, FetchPaginatedThreadOptions} from '@mattermost/types/client4';
 import {LogLevel} from '@mattermost/types/client4';
+import {OmniSearchResult} from '@mattermost/types/search';
 import type {
     Address,
     Product,
@@ -2289,6 +2290,17 @@ export default class Client4 {
             {method: 'get'},
         );
     };
+
+    searchInOmniSearch = (params: any) => {
+        this.trackEvent('api', 'api_omnisearch_search');
+
+        let route = `${this.getBaseRoute()}/omnisearch/search`;
+
+        return this.doFetch<OmniSearchResult[]>(
+            route,
+            {method: 'post', body: JSON.stringify(params)},
+        );
+    }
 
     searchPostsWithParams = (teamId: string, params: any) => {
         this.trackEvent('api', 'api_posts_search', {team_id: teamId});
