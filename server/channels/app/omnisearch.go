@@ -10,7 +10,9 @@ import (
 func (a *App) OmniSearch(ctx request.CTX, terms string, userID string, isOrSearch bool, timeZoneOffset int, page int, perPage int) ([]*model.OmniSearchResult, *model.AppError) {
 	searchResults := []*model.OmniSearchResult{}
 	pluginContext := pluginContext(ctx)
+	ctx.Logger().Warn("Running the OmniSearchHook", mlog.Int("plugin_hook_id", plugin.OnOmniSearchID))
 	a.ch.RunMultiHook(func(hooks plugin.Hooks) bool {
+		ctx.Logger().Warn("Running the OmniSearchHook inside the plugin", mlog.Int("plugin_hook_id", plugin.OnOmniSearchID))
 		results, err := hooks.OnOmniSearch(pluginContext, terms, userID, isOrSearch, timeZoneOffset, page, perPage)
 		if err != nil {
 			ctx.Logger().Warn("Failed to run OnOmniSearch on plugin", mlog.Err(err))

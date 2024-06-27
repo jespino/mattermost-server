@@ -348,13 +348,13 @@ const SearchResults: React.FC<Props> = (props: Props): JSX.Element => {
             }
             if (searchType === DataSearchTypes.OMNISEARCH_SEARCH_TYPE && !props.isChannelFiles) {
                 const result = item as OmniSearchResult;
-                console.log(item)
                 return (
                     <OmniSearchResultItem
                         key={result.id}
                         icon={result.icon}
                         link={result.link}
                         title={result.title}
+                        subtitle={result.subtitle || ''}
                         description={result.description}
                     />
                 );
