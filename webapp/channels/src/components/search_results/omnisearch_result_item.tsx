@@ -4,6 +4,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import Markdown from 'components/markdown';
+import Timestamp from 'components/timestamp';
 
 type Props = {
     icon: string
@@ -11,13 +12,20 @@ type Props = {
     title: string
     subtitle: string
     description: string
+    create_at: number
+    source: string
 }
 
 const OmniSearchResultItemContainer = styled.div`
     display: flex;
-    align-items: center;
     padding: 10px;
     border-bottom: 1px solid var(--center-channel-color-08);
+    flex-direction: column;
+`
+
+const Body = styled.div`
+    display: flex;
+    align-items: center;
 `
 
 const Icon = styled.img`
@@ -46,22 +54,39 @@ const Subtitle = styled.div`
     margin-bottom: 5px;
 `
 
-const Description= styled.div`
+const Description = styled.div`
     max-height: 100px;
     overflow: hidden;
 `
 
-const OmniSearchResultItem = ({icon, link, title, subtitle, description}: Props) => {
+const Source = styled.div`
+    font-weight: 600;
+    margin-right: 10px;
+`
+
+const Header = styled.div`
+    opacity: 0.73;
+    display: flex;
+    margin-bottom: 5px;
+`
+
+const OmniSearchResultItem = ({ icon, link, title, subtitle, description, create_at, source }: Props) => {
     return (
         <OmniSearchResultItemContainer>
-            <Icon src={icon}/>
-            <div>
-                <Title><a href={link} target="_blank">{title}</a></Title>
-                {subtitle && <Subtitle>{subtitle}</Subtitle>}
-                <Description>
-                    <Markdown message={description}/>
-                </Description>
-            </div>
+            <Header>
+                <Source>{source}</Source>
+                <Timestamp value={create_at} />
+            </Header>
+            <Body>
+                <Icon src={icon} />
+                <div>
+                    <Title><a href={link} target="_blank">{title}</a></Title>
+                    {subtitle && <Subtitle>{subtitle}</Subtitle>}
+                    <Description>
+                        <Markdown message={description} />
+                    </Description>
+                </div>
+            </Body>
         </OmniSearchResultItemContainer>
     )
 }

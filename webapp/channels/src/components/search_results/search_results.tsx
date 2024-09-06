@@ -356,6 +356,8 @@ const SearchResults: React.FC<Props> = (props: Props): JSX.Element => {
                         title={result.title}
                         subtitle={result.subtitle || ''}
                         description={result.description}
+                        create_at={result.create_at}
+                        source={result.source}
                     />
                 );
             }

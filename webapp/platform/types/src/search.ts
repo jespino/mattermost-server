@@ -37,4 +37,7 @@ export type OmniSearchResult = {
     subtitle: string;
     link: string;
     description: string;
+    source: string;
+    create_at: number;
+    update_at: number;
 }
