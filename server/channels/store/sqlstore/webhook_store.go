@@ -143,12 +143,7 @@ func (s SqlWebhookStore) GetIncomingByTeamByUser(teamId string, userId string, o
 		query = query.Where(sq.Eq{"UserId": userId})
 	}
 
-	queryString, args, err := query.ToSql()
-	if err != nil {
-		return nil, errors.Wrap(err, "incoming_webhook_tosql")
-	}
-
-	if err := s.GetReplicaX().Select(&webhooks, queryString, args...); err != nil {
+	if err := s.GetReplicaX().SelectBuilder(&webhooks, query); err != nil {
 		return nil, errors.Wrapf(err, "failed to find IncomingWebhook with teamId=%s", teamId)
 	}
 
@@ -248,12 +243,7 @@ func (s SqlWebhookStore) GetOutgoingByChannelByUser(channelId string, userId str
 		query = query.Limit(uint64(limit)).Offset(uint64(offset))
 	}
 
-	queryString, args, err := query.ToSql()
-	if err != nil {
-		return nil, errors.Wrap(err, "outgoing_webhook_tosql")
-	}
-
-	if err := s.GetReplicaX().Select(&webhooks, queryString, args...); err != nil {
+	if err := s.GetReplicaX().SelectBuilder(&webhooks, query); err != nil {
 		return nil, errors.Wrap(err, "failed to find OutgoingWebhooks")
 	}
 
@@ -282,12 +272,7 @@ func (s SqlWebhookStore) GetOutgoingByTeamByUser(teamId string, userId string, o
 		query = query.Limit(uint64(limit)).Offset(uint64(offset))
 	}
 
-	queryString, args, err := query.ToSql()
-	if err != nil {
-		return nil, errors.Wrap(err, "outgoing_webhook_tosql")
-	}
-
-	if err := s.GetReplicaX().Select(&webhooks, queryString, args...); err != nil {
+	if err := s.GetReplicaX().SelectBuilder(&webhooks, query); err != nil {
 		return nil, errors.Wrap(err, "failed to find OutgoingWebhooks")
 	}
 
