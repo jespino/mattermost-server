@@ -121,12 +121,7 @@ func (s SqlWebhookStore) GetIncomingListByUser(userId string, offset, limit int)
 		query = query.Where(sq.Eq{"UserId": userId})
 	}
 
-	queryString, args, err := query.ToSql()
-	if err != nil {
-		return nil, errors.Wrap(err, "incoming_webhook_tosql")
-	}
-
-	if err := s.GetReplicaX().Select(&webhooks, queryString, args...); err != nil {
+	if err := s.GetReplicaX().SelectBuilder(&webhooks, query); err != nil {
 		return nil, errors.Wrap(err, "failed to find IncomingWebhooks")
 	}
 
@@ -224,12 +219,7 @@ func (s SqlWebhookStore) GetOutgoingListByUser(userId string, offset, limit int)
 		query = query.Where(sq.Eq{"CreatorId": userId})
 	}
 
-	queryString, args, err := query.ToSql()
-	if err != nil {
-		return nil, errors.Wrap(err, "outgoing_webhook_tosql")
-	}
-
-	if err := s.GetReplicaX().Select(&webhooks, queryString, args...); err != nil {
+	if err := s.GetReplicaX().SelectBuilder(&webhooks, query); err != nil {
 		return nil, errors.Wrap(err, "failed to find OutgoingWebhooks")
 	}
 
@@ -367,13 +357,8 @@ func (s SqlWebhookStore) AnalyticsIncomingCount(teamID string, userID string) (i
 		queryBuilder = queryBuilder.Where(sq.Eq{"UserId": userID})
 	}
 
-	queryString, args, err := queryBuilder.ToSql()
-	if err != nil {
-		return 0, errors.Wrap(err, "incoming_webhook_tosql")
-	}
-
 	var count int64
-	if err := s.GetReplicaX().Get(&count, queryString, args...); err != nil {
+	if err := s.GetReplicaX().GetBuilder(&count, queryBuilder); err != nil {
 		return 0, errors.Wrap(err, "failed to count IncomingWebhooks")
 	}
 	return count, nil
@@ -390,13 +375,8 @@ func (s SqlWebhookStore) AnalyticsOutgoingCount(teamId string) (int64, error) {
 		queryBuilder = queryBuilder.Where("TeamId", teamId)
 	}
 
-	queryString, args, err := queryBuilder.ToSql()
-	if err != nil {
-		return 0, errors.Wrap(err, "outgoing_webhook_tosql")
-	}
-
 	var count int64
-	if err := s.GetReplicaX().Get(&count, queryString, args...); err != nil {
+	if err := s.GetReplicaX().GetBuilder(&count, queryBuilder); err != nil {
 		return 0, errors.Wrap(err, "failed to count OutgoingWebhooks")
 	}
 	return count, nil
